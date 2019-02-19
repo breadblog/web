@@ -6,6 +6,7 @@ import Init exposing (init)
 import View exposing (view)
 import Update exposing (update)
 import Subscription exposing (subscriptions)
+import Port
 
 
 -- TODO: Replace build.sh w/ Dockerfile

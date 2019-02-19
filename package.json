@@ -6,8 +6,10 @@
     "copy:js": "copyfiles src/js/**/*.js dist --up 2",
     "copy:html": "copyfiles src/html/**/*.html dist --up 2",
     "make": "elm make src/Main.elm --output=dist/elm.js",
-    "dev": "npm run clean && npm run copy && npm run make",
-    "prod": "npm run dev -- --optimize"
+    "make:dev": "npm run make -- --debug",
+    "make:prod": "npm run make -- --optimize",
+    "dev": "npm run clean && npm run copy && npm run make:dev",
+    "prod": "npm run clean && npm run copy && npm run make:prod"
   },
   "repository": {
     "type": "git",

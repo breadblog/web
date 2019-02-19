@@ -1,6 +1,5 @@
 (function () {
-  app.ports.cache.subscribe(function (data) {
-    const { key, value } = data
-    localStorage.setItem(key, value)
+  app.ports.cacheSet.subscribe(function (data) {
+    localStorage.setItem('elm-cache', data)
   })
 })()
