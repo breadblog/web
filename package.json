@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "test": "elm-test --compiler ./node_modules/.bin/elm",
     "start": "http-server dist -p 9080",
     "clean": "rimraf dist",
     "copy": "npm run copy:js && npm run copy:html",
@@ -9,7 +10,17 @@
     "make:dev": "npm run make -- --debug",
     "make:prod": "npm run make -- --optimize",
     "dev": "npm run clean && npm run copy && npm run make:dev",
-    "prod": "npm run clean && npm run copy && npm run make:prod"
+    "prod": "npm run clean && npm run copy && npm run make:prod",
+    "lint": "npm run lint:elm && npm run lint:js",
+    "lint:elm": "npm run lint:elm:src && npm run lint:elm:test",
+    "lint:elm:src": "elm-format src/ --validate",
+    "lint:elm:test": "elm-format tests/ --validate",
+    "lint:js": "eslint src/**/*.js",
+    "format": "npm run format:elm && npm run format:js",
+    "format:elm": "npm run format:elm:src && npm run format:elm:test",
+    "format:elm:src": "elm-format src/",
+    "format:elm:test": "elm-format tests/",
+    "format:js": "eslint src/**/*.js --fix"
   },
   "repository": {
     "type": "git",
@@ -21,8 +32,14 @@
   "devDependencies": {
     "copyfiles": "^2.1.0",
     "elm": "^0.19.0-bugfix6",
+    "elm-format": "^0.8.1",
+    "elm-test": "^0.19.0-rev4",
     "eslint": "^5.14.0",
     "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-node": "^8.0.1",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0",
     "http-server": "^0.11.1",
     "rimraf": "^2.6.3"
   }
