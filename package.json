@@ -1,0 +1,29 @@
+{
+  "scripts": {
+    "start": "http-server dist -p 9080",
+    "clean": "rimraf dist",
+    "copy": "npm run copy:js && npm run copy:html",
+    "copy:js": "copyfiles src/js/**/*.js dist --up 2",
+    "copy:html": "copyfiles src/html/**/*.html dist --up 2",
+    "make": "elm make src/Main.elm --output=dist/elm.js",
+    "make:dev": "npm run make -- --debug",
+    "make:prod": "npm run make -- --optimize",
+    "dev": "npm run clean && npm run copy && npm run make:dev",
+    "prod": "npm run clean && npm run copy && npm run make:prod"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/breadblog/web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/breadblog/web/issues"
+  },
+  "devDependencies": {
+    "copyfiles": "^2.1.0",
+    "elm": "^0.19.0-bugfix6",
+    "eslint": "^5.14.0",
+    "eslint-config-standard": "^12.0.0",
+    "http-server": "^0.11.1",
+    "rimraf": "^2.6.3"
+  }
+}
