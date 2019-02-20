@@ -1,30 +1,36 @@
 module View exposing (view)
 
 import Browser exposing (Document)
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (..)
+import Html.Styled.Events exposing (..)
+import Css exposing (..)
 import Message exposing (Msg)
 import Model exposing (Model)
-import Url
+import Nav exposing (Route(..))
+import Page.Fork
+import Page.NotFound
 
 
 view : Model -> Document Msg
 view model =
     { title = "Bits n' Bites"
-    , body =
-        [ text "The current URL is: "
-        , b [] [ text (Url.toString model.url) ]
-        , ul []
-            [ viewLink "/home"
-            , viewLink "/profile"
-            , viewLink "/reviews/the-century-of-the-self"
-            , viewLink "/reviews/public-opinion"
-            , viewLink "/reviews/shah-of-shahs"
-            ]
-        ]
+    , body = List.map toUnstyled (body model)
     }
 
 
-viewLink : String -> Html msg
-viewLink path =
-    li [] [ a [ href path ] [ text path ] ]
+body : Model -> List (Html Msg)
+body model =
+        [ 
+        ]
+
+
+page : Model -> Html Msg
+page model =
+    case model.route of
+        Fork ->
+            Page.Fork.view model
+
+        _ ->
+            Page.NotFound.view model

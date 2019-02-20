@@ -1,23 +1,29 @@
 module Init exposing (init)
 
-import Browser.Navigation as Nav
+import Browser.Navigation exposing (Key)
 import Json.Decode as Decode exposing (Value, field, string)
 import Json.Decode.Pipeline exposing (optional, required)
 import Message exposing (Msg)
 import Model exposing (Cache, Model)
 import Url
+import Nav exposing (Route, urlToRoute)
+import Port exposing (setCache)
 
 
-init : Value -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init : Value -> Url.Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
-    ( defaultModel (initCache flags) url key
-    , Cmd.none
-    )
+    let
+        cache =
+            initCache flags
+    in
+        ( defaultModel cache url key
+        , setCache cache
+        )
 
 
-defaultModel : Cache -> Url.Url -> Nav.Key -> Model
+defaultModel : Cache -> Url.Url -> Key -> Model
 defaultModel cache url key =
-    { url = url
+    { route = urlToRoute url
     , key = key
     , cache = cache
     }

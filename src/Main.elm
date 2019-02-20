@@ -11,12 +11,6 @@ import Update exposing (update)
 import View exposing (view)
 
 
-
--- TODO: Replace build.sh w/ Dockerfile
--- TODO: Use similar build process as Rust
--- MAIN
-
-
 main : Program Value Model Msg
 main =
     Browser.application
