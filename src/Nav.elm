@@ -1,5 +1,4 @@
-module Nav exposing (Route(..), routeParser, routeToName, routeToTitle, routeToClass, urlToRoute)
-
+module Nav exposing (Route(..), routeParser, routeToClass, routeToName, routeToTitle, urlToRoute)
 
 import Url exposing (Url)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
@@ -41,15 +40,20 @@ toRoute str =
 routeToName : Route -> String
 routeToName route =
     case route of
-        Fork -> "Fork"
+        Fork ->
+            "Fork"
 
-        BitsHome -> "Bits"
+        BitsHome ->
+            "Bits"
 
-        BitesHome -> "Bites"
+        BitesHome ->
+            "Bites"
 
-        About -> "About"
+        About ->
+            "About"
 
-        NotFound -> "404"
+        NotFound ->
+            "404"
 
 
 routeToTitle : Route -> String
@@ -57,14 +61,13 @@ routeToTitle route =
     let
         routeName =
             routeToName route
-
     in
-        case route of
-            Fork ->
-                titlePrefix
+    case route of
+        Fork ->
+            titlePrefix
 
-            _ ->
-                titlePrefix ++ " | " ++ routeName
+        _ ->
+            titlePrefix ++ " | " ++ routeName
 
 
 titlePrefix : String
@@ -75,8 +78,8 @@ titlePrefix =
 urlToRoute : Url -> Route
 urlToRoute url =
     url
-    |> Url.toString
-    |> toRoute
+        |> Url.toString
+        |> toRoute
 
 
 routeToClass : Route -> String

@@ -1,11 +1,11 @@
 module View exposing (view)
 
 import Browser exposing (Document)
+import Css exposing (..)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (..)
-import Css exposing (..)
 import Message exposing (Msg)
 import Model exposing (Model)
 import Nav exposing (Route(..))
@@ -22,8 +22,7 @@ view model =
 
 body : Model -> List (Html Msg)
 body model =
-        [ 
-        ]
+    []
 
 
 page : Model -> Html Msg

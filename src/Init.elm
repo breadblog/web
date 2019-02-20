@@ -5,9 +5,9 @@ import Json.Decode as Decode exposing (Value, field, string)
 import Json.Decode.Pipeline exposing (optional, required)
 import Message exposing (Msg)
 import Model exposing (Cache, Model)
-import Url
 import Nav exposing (Route, urlToRoute)
 import Port exposing (setCache)
+import Url
 
 
 init : Value -> Url.Url -> Key -> ( Model, Cmd Msg )
@@ -16,9 +16,9 @@ init flags url key =
         cache =
             initCache flags
     in
-        ( defaultModel cache url key
-        , setCache cache
-        )
+    ( defaultModel cache url key
+    , setCache cache
+    )
 
 
 defaultModel : Cache -> Url.Url -> Key -> Model

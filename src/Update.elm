@@ -1,11 +1,11 @@
 module Update exposing (update)
 
 import Browser
-import Browser.Navigation exposing (pushUrl, load)
+import Browser.Navigation exposing (load, pushUrl)
 import Message exposing (Msg(..))
 import Model exposing (Cache, Model)
-import Url
 import Nav
+import Url
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -26,8 +26,7 @@ update msg model =
             let
                 route =
                     Nav.urlToRoute url
-
             in
-                ( { model | route = route }
-                , Cmd.none
-                )
+            ( { model | route = route }
+            , Cmd.none
+            )
