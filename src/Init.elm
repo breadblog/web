@@ -4,8 +4,8 @@ import Browser.Navigation exposing (Key)
 import Json.Decode as Decode exposing (Value, field, string)
 import Json.Decode.Pipeline exposing (optional, required)
 import Message exposing (Msg)
-import Model exposing (Cache, Model)
-import Nav exposing (Route, urlToRoute)
+import Model exposing (Cache, Model, Route)
+import Nav exposing (urlToRoute)
 import Port exposing (setCache)
 import Url
 

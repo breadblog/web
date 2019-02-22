@@ -1,9 +1,18 @@
-module Model exposing (Cache, Model)
+module Model exposing (..)
 
 import Browser.Navigation exposing (Key)
-import Nav exposing (Route)
 import Time
 import Url
+
+
+type Route
+    = Fork
+    | DarkHome
+    | DarkPost Slug
+    | QnHome
+    | QnPost Slug
+    | About
+    | NotFound
 
 
 type alias Model =
@@ -24,3 +33,7 @@ type alias Post =
 type alias Cache =
     { version : String
     }
+
+
+type Slug
+    = Slug String
