@@ -1,15 +1,14 @@
 module Page.DarkPost exposing (view)
 
-
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing(..)
+import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
-import Model exposing (Model)
 import Message exposing (Msg)
-import View.Post
-import Time
+import Model exposing (Model)
 import Style.Post
+import Time
+import View.Post
 
 
 view : Model -> Html Msg
@@ -21,9 +20,9 @@ view model =
             , date = Time.millisToPosix 1550810346641
             , content = content
             }
-
     in
-        View.Post.view "dark-post" post Style.Post.darkPostStyle
+    View.Post.view "dark-post" post Style.Post.darkPostStyle
+
 
 content =
     """

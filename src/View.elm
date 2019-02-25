@@ -7,11 +7,11 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (..)
 import Message exposing (Msg)
-import Model exposing (Route(..), Model)
-import Style.Global
+import Model exposing (Model, Route(..))
+import Page.DarkPost
 import Page.Fork
 import Page.NotFound
-import Page.DarkPost
+import Style.Global
 import Style.Theme as Theme
 
 

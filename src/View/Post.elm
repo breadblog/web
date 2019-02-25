@@ -1,16 +1,15 @@
 module View.Post exposing (view)
 
-
-import View.Markdown as Markdown
+import Css exposing (Style)
+import Css.Global exposing (Snippet)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
-import Css exposing (Style)
-import Css.Global exposing (Snippet)
 import Message exposing (Msg)
 import Model exposing (Post)
 import Style.Post exposing (PostStyle)
+import View.Markdown as Markdown
 
 
 view : String -> Post -> PostStyle -> Html Msg

@@ -1,9 +1,8 @@
 module Style.Global exposing (style)
 
-
-import Html.Styled exposing (Html)
-import Css.Global exposing (..)
 import Css exposing (..)
+import Css.Global exposing (..)
+import Html.Styled exposing (Html)
 
 
 style : Html msg

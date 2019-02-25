@@ -1,4 +1,4 @@
-module Model exposing (..)
+module Model exposing (Cache, ErrorPage(..), Model, Post, Route(..), Slug(..), Theme(..))
 
 import Browser.Navigation exposing (Key)
 import Time

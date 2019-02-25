@@ -1,8 +1,7 @@
 module Style.Post exposing (PostStyle, darkPostStyle, qnPostStyle)
 
-
-import Css.Global exposing (Snippet)
 import Css exposing (..)
+import Css.Global exposing (Snippet)
 import Style.Font exposing (firaCode)
 
 
@@ -38,6 +37,7 @@ darkPostStyle =
         , Css.Global.code
             [ fontFamilies firaCode
             ]
+
         -- Code block containers
         , Css.Global.pre
             [ backgroundColor (hex "282828")

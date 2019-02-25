@@ -19,13 +19,15 @@ encodeCache : Cache -> E.Value
 encodeCache cache =
     E.object
         [ ( "version", E.string cache.version )
-        , ( "theme", E.string (themeToString cache.theme))
+        , ( "theme", E.string (themeToString cache.theme) )
         ]
 
 
 themeToString : Theme -> String
 themeToString theme =
     case theme of
-        Light -> "light"
+        Light ->
+            "light"
 
-        Dark -> "dark"
+        Dark ->
+            "dark"

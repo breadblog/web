@@ -1,8 +1,8 @@
 module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlToRoute)
 
+import Model exposing (ErrorPage(..), Route(..), Slug(..))
 import Url exposing (Url)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
-import Model exposing (Route(..), Slug(..), ErrorPage(..))
 
 
 routeParser : Parser (Route -> a) a
@@ -67,7 +67,6 @@ routeToName route =
             case e of
                 CorruptCache _ ->
                     "Corrupt Cache"
-
 
 
 routeToTitle : Route -> String

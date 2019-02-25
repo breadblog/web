@@ -1,5 +1,4 @@
-module Style.Theme exposing (..)
-
+module Style.Theme exposing (Themed, background, primaryFont)
 
 import Css exposing (..)
 import Model exposing (Model, Theme(..))
@@ -7,7 +6,7 @@ import Model exposing (Model, Theme(..))
 
 type alias Themed a =
     { a
-    | theme : Theme
+        | theme : Theme
     }
 
 

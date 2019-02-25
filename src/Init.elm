@@ -52,17 +52,18 @@ cacheDecoder =
 themeDecoder : Decode.Decoder Theme
 themeDecoder =
     string
-        |> Decode.andThen (\str ->
-            case str of
-                "light" ->
-                    Decode.succeed Light
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "light" ->
+                        Decode.succeed Light
 
-                "dark" ->
-                    Decode.succeed Dark
+                    "dark" ->
+                        Decode.succeed Dark
 
-                somethingElse ->
-                    Decode.fail <| "Unknown theme" ++ somethingElse
-        )
+                    somethingElse ->
+                        Decode.fail <| "Unknown theme" ++ somethingElse
+            )
 
 
 defaultCache : Cache
@@ -70,6 +71,7 @@ defaultCache =
     { version = "0.0.1"
     , theme = Light
     }
+
 
 
 -- Migrations

@@ -1,9 +1,8 @@
-module Style.Font exposing (..)
+module Style.Font exposing (firaCode)
 
-
-import Html.Styled exposing (Html)
 import Css exposing (..)
 import Css.Global as Global
+import Html.Styled exposing (Html)
 
 
 firaCode : List String
