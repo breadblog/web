@@ -39,6 +39,7 @@ I hope you like it
 * Lorem Ipsum :D
 
 ```elm
+view : Model -> Html Msg
 view model =
     let
         post =
@@ -48,5 +49,7 @@ view model =
             , content = content
             }
 
+    in
+        View.Post.view "dark-post" post Style.Post.darkPostStyle
 ```
     """

@@ -2,7 +2,7 @@ module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlTo
 
 import Url exposing (Url)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
-import Model exposing (Route(..), Slug(..))
+import Model exposing (Route(..), Slug(..), ErrorPage(..))
 
 
 routeParser : Parser (Route -> a) a
@@ -18,6 +18,8 @@ routeParser =
         -- Bites
         , Parser.map QnHome (s "bites")
         , Parser.map QnPost (s "bites" </> s "post" </> slugUrlParser)
+
+        -- ErrorPages
         ]
 
 
@@ -60,6 +62,12 @@ routeToName route =
 
         NotFound ->
             "404"
+
+        Error e ->
+            case e of
+                CorruptCache _ ->
+                    "Corrupt Cache"
+
 
 
 routeToTitle : Route -> String

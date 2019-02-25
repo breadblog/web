@@ -38,6 +38,13 @@ darkPostStyle =
         , Css.Global.code
             [ fontFamilies firaCode
             ]
+        -- Code block containers
+        , Css.Global.pre
+            [ backgroundColor (hex "282828")
+            , color (hex "ebdbb2")
+            , borderRadius (px 20)
+            , padding (px 20)
+            ]
         ]
     }
 

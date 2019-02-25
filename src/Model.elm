@@ -13,6 +13,11 @@ type Route
     | QnPost Slug
     | About
     | NotFound
+    | Error ErrorPage
+
+
+type ErrorPage
+    = CorruptCache String
 
 
 type alias Model =
@@ -33,8 +38,14 @@ type alias Post =
 
 type alias Cache =
     { version : String
+    , theme : Theme
     }
 
 
 type Slug
     = Slug String
+
+
+type Theme
+    = Dark
+    | Light

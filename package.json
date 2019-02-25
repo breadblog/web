@@ -1,7 +1,7 @@
 {
   "scripts": {
     "test": "elm-test --compiler ./node_modules/.bin/elm",
-    "start": "node script/dev",
+    "start": "node script/devServer",
     "clean": "rimraf dist/",
     "copy:js": "copyfiles src/js/**/*.js dist --up 2",
     "copy:assets": "copyfiles assets/**/* dist --up 1",
