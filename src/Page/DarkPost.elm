@@ -38,7 +38,7 @@ I hope you like it
 * And this is under active development
 * Lorem Ipsum :D
 
-```
+```elm
 view model =
     let
         post =

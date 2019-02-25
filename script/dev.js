@@ -9,6 +9,7 @@ const {
   print,
   Color,
   compileDev,
+  compileHtml,
 } = require('./util')
 
 const app = express()
@@ -26,6 +27,7 @@ app.get('/**/(*).js$', (req, res) => {
   const onChange = async () => {
     try {
       await compileDev()
+      await compileHtml()
     } catch (err) {
       print('Error has occurred:', Color.red)
       print(err.message || err, Color.green)

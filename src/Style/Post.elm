@@ -36,7 +36,8 @@ darkPostStyle =
             [ fontSize (rem 1.1)
             ]
         , Css.Global.code
-            [ fontFamilies firaCode ]
+            [ fontFamilies firaCode
+            ]
         ]
     }
 

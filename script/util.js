@@ -1,5 +1,7 @@
 const path = require('path')
+const fs = require('fs')
 const { exec } = require('child_process')
+const { compileFile } = require('pug')
 
 const Color = {
   blue: '\x1b[34m',
@@ -43,3 +45,25 @@ exports.compileDev = compileDev
 
 const compileProd = () => compile('prod')
 exports.compileProd = compileProd
+
+// ---------------------------------- //
+//                Pug                 //
+// ---------------------------------- //
+
+exports.compileHtml = (function () {
+  return async () => {
+    return new Promise((resolve, reject) => {
+      const injections = {
+        jsFile: prod() ? 'elm.min.js' : 'elm.js',
+      }
+      const compile = compileFile(src('index.pug'))
+      const html = compile(injections)
+      const outputPath = dist('index.html')
+
+      fs.writeFile(outputPath, html, { encoding: 'utf8' }, (err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    })
+  }
+})()
