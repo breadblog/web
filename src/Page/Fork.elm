@@ -2,12 +2,12 @@ module Page.Fork exposing (view)
 
 import Css exposing (..)
 import Html
-import Html.Styled exposing (Html, div, main_, span)
-import Html.Styled.Attributes exposing (class, css)
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import Message exposing (Msg)
-import Model exposing (Model)
-import Nav exposing (Route(..), routeToClass)
+import Message exposing (Msg(..))
+import Model exposing (Model, Route(..))
+import Nav exposing (routeToClass)
 
 
 view : Model -> Html Msg
@@ -23,7 +23,11 @@ view model =
             ]
             [ darkContainer
             , princessAngelQueenContainer
+            , a [ href "/bits/post/test-ing" ] [ text "click me!" ]
             ]
+        , button
+            [ onClick ToggleTheme ]
+            [ text "Toggle Theme" ]
         ]
 
 

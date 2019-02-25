@@ -1,16 +1,18 @@
 {
   "scripts": {
     "test": "elm-test --compiler ./node_modules/.bin/elm",
-    "start": "http-server dist -p 9080",
-    "clean": "rimraf dist",
-    "copy": "npm run copy:js && npm run copy:html",
+    "start": "node script/devServer",
+    "clean": "rimraf dist/",
     "copy:js": "copyfiles src/js/**/*.js dist --up 2",
-    "copy:html": "copyfiles src/html/**/*.html dist --up 2",
+    "copy:assets": "copyfiles assets/**/* dist --up 1",
+    "html:prod": "cross-env BUILD=prod node script/compile-html",
+    "html:dev": "cross-env BUILD=dev node script/compile-html",
     "make": "elm make src/Main.elm --output=dist/elm.js",
     "make:dev": "npm run make -- --debug",
     "make:prod": "npm run make -- --optimize",
-    "dev": "npm run clean && npm run copy && npm run make:dev",
-    "prod": "npm run clean && npm run copy && npm run make:prod",
+    "uglify": "uglifyjs dist/elm.js --compress 'pure_funcs=\"F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9\",pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle --output=dist/elm.min.js && rimraf dist/elm.js",
+    "dev": "npm run clean && npm run copy:js && npm run copy:assets && npm run make:dev && npm run html:dev",
+    "prod": "npm run clean && npm run copy:js && npm run make:prod && npm run uglify && npm run html:prod",
     "lint": "npm run lint:elm && npm run lint:js",
     "lint:elm": "npm run lint:elm:src && npm run lint:elm:test",
     "lint:elm:src": "elm-format src/ --validate",
@@ -30,7 +32,9 @@
     "url": "https://github.com/breadblog/web/issues"
   },
   "devDependencies": {
+    "chokidar": "^2.1.2",
     "copyfiles": "^2.1.0",
+    "cross-env": "^5.2.0",
     "elm": "^0.19.0-bugfix6",
     "elm-format": "^0.8.1",
     "elm-test": "^0.19.0-rev4",
@@ -40,7 +44,10 @@
     "eslint-plugin-node": "^8.0.1",
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0",
-    "http-server": "^0.11.1",
-    "rimraf": "^2.6.3"
+    "express": "^4.16.4",
+    "express-history-api-fallback": "^2.2.1",
+    "pug": "^2.0.3",
+    "rimraf": "^2.6.3",
+    "uglify-js": "^3.4.9"
   }
 }

@@ -1,15 +1,8 @@
-module Nav exposing (Route(..), routeParser, routeToClass, routeToName, routeToTitle, urlToRoute)
+module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlToRoute)
 
+import Model exposing (ErrorPage(..), Route(..), Slug(..))
 import Url exposing (Url)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
-
-
-type Route
-    = Fork
-    | BitsHome
-    | BitesHome
-    | About
-    | NotFound
 
 
 routeParser : Parser (Route -> a) a
@@ -19,11 +12,20 @@ routeParser =
         [ Parser.map Fork top
 
         -- Bits
-        , Parser.map BitsHome (s "bits")
+        , Parser.map DarkHome (s "bits")
+        , Parser.map DarkPost (s "bits" </> s "post" </> slugUrlParser)
 
         -- Bites
-        , Parser.map BitesHome (s "bites")
+        , Parser.map QnHome (s "bites")
+        , Parser.map QnPost (s "bites" </> s "post" </> slugUrlParser)
+
+        -- ErrorPages
         ]
+
+
+slugUrlParser : Parser (Slug -> a) a
+slugUrlParser =
+    Parser.custom "SLUG" (\str -> Just (Slug str))
 
 
 toRoute : String -> Route
@@ -43,17 +45,28 @@ routeToName route =
         Fork ->
             "Fork"
 
-        BitsHome ->
-            "Bits"
+        DarkHome ->
+            "Parasrah"
 
-        BitesHome ->
-            "Bites"
+        QnHome ->
+            "Qnbst"
 
         About ->
             "About"
 
+        DarkPost slug ->
+            "Parasrah Post"
+
+        QnPost slug ->
+            "Qnbst Post"
+
         NotFound ->
             "404"
+
+        Error e ->
+            case e of
+                CorruptCache _ ->
+                    "Corrupt Cache"
 
 
 routeToTitle : Route -> String

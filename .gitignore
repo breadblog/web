@@ -11,6 +11,11 @@ npm-debug.log*
 *.log
 node_modules/
 
+# --------------- Editors --------------- #
+
+.vscode/
+*.vim
+
 # --------------- General --------------- #
 
 dist/
