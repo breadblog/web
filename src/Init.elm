@@ -26,6 +26,7 @@ defaultModel cache url key =
     { route = urlToRoute url
     , key = key
     , cache = cache
+    , postCache = []
     }
 
 

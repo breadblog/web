@@ -19,6 +19,7 @@ type alias Model =
     { cache : Cache
     , key : Key
     , route : Route
+    , postCache : List Post
     }
 
 

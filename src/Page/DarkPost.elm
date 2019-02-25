@@ -9,6 +9,7 @@ import Model exposing (Model)
 import Message exposing (Msg)
 import View.Post
 import Time
+import Style.Post
 
 
 view : Model -> Html Msg
@@ -22,7 +23,7 @@ view model =
             }
 
     in
-        View.Post.view post
+        View.Post.view "dark-post" post Style.Post.darkPostStyle
 
 content =
     """
@@ -36,4 +37,16 @@ I hope you like it
 * This is clearly not a blog post yet
 * And this is under active development
 * Lorem Ipsum :D
+
+```
+view model =
+    let
+        post =
+            { title = "My Post"
+            , author = "Parasrah"
+            , date = Time.millisToPosix 1550810346641
+            , content = content
+            }
+
+```
     """

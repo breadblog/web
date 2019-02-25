@@ -1,12 +1,12 @@
 {
   "scripts": {
     "test": "elm-test --compiler ./node_modules/.bin/elm",
-    "start": "http-server dist -p 9080",
-    "clean": "rimraf dist/ && rimraf elm-stuff/",
+    "start": "node script/dev",
+    "clean": "rimraf dist/",
     "copy:js": "copyfiles src/js/**/*.js dist --up 2",
     "copy:assets": "copyfiles assets/**/* dist --up 1",
-    "html:prod": "cross-env BUILD=prod node scripts/compile-html",
-    "html:dev": "cross-env BUILD=dev node scripts/compile-html",
+    "html:prod": "cross-env BUILD=prod node script/compile-html",
+    "html:dev": "cross-env BUILD=dev node script/compile-html",
     "make": "elm make src/Main.elm --output=dist/elm.js",
     "make:dev": "npm run make -- --debug",
     "make:prod": "npm run make -- --optimize",
@@ -32,6 +32,7 @@
     "url": "https://github.com/breadblog/web/issues"
   },
   "devDependencies": {
+    "chokidar": "^2.1.2",
     "copyfiles": "^2.1.0",
     "cross-env": "^5.2.0",
     "elm": "^0.19.0-bugfix6",
@@ -43,7 +44,8 @@
     "eslint-plugin-node": "^8.0.1",
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0",
-    "http-server": "^0.11.1",
+    "express": "^4.16.4",
+    "express-history-api-fallback": "^2.2.1",
     "pug": "^2.0.3",
     "rimraf": "^2.6.3",
     "uglify-js": "^3.4.9"

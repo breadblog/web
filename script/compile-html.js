@@ -1,11 +1,6 @@
 const { compileFile } = require('pug')
-const path = require('path')
 const fs = require('fs')
-
-const prod = () => process.env.BUILD === 'prod'
-const root = (...args) => path.resolve(__dirname, '..', ...args)
-const src = (...args) => root('src', ...args)
-const dist = (...args) => root('dist', ...args)
+const { prod, dist, src } = require('./util')
 
 const injections = {
   jsFile: prod() ? 'elm.min.js' : 'elm.js',
