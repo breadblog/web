@@ -3,8 +3,8 @@
     "test": "elm-test --compiler ./node_modules/.bin/elm",
     "start": "node script/devServer",
     "clean": "rimraf dist/",
-    "copy:js": "copyfiles src/js/**/*.js dist --up 2",
-    "copy:assets": "copyfiles assets/**/* dist --up 1",
+    "copy:js": "cpx \"src/js/**/*.js\" dist",
+    "copy:assets": "cpx \"assets/**/*\" dist",
     "html:prod": "cross-env BUILD=prod node script/compile-html",
     "html:dev": "cross-env BUILD=dev node script/compile-html",
     "make": "elm make src/Main.elm --output=dist/elm.js",
@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "chokidar": "^2.1.2",
-    "copyfiles": "^2.1.0",
+    "cpx": "^1.5.0",
     "cross-env": "^5.2.0",
     "elm": "^0.19.0-bugfix6",
     "elm-format": "^0.8.1",
@@ -46,6 +46,7 @@
     "eslint-plugin-standard": "^4.0.0",
     "express": "^4.16.4",
     "express-history-api-fallback": "^2.2.1",
+    "fs-extra": "^7.0.1",
     "pug": "^2.0.3",
     "rimraf": "^2.6.3",
     "uglify-js": "^3.4.9"
