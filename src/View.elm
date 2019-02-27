@@ -9,7 +9,7 @@ import Html.Styled.Events exposing (..)
 import Message exposing (Msg)
 import Model exposing (Model, Route(..))
 import Page.DarkPost
-import Page.Fork
+import Page.Home
 import Page.NotFound
 import Style.Global
 import Style.Theme as Theme
@@ -44,11 +44,8 @@ body model =
 page : Model -> Html Msg
 page model =
     case model.route of
-        Fork ->
-            Page.Fork.view model
-
-        DarkPost _ ->
-            Page.DarkPost.view model
+        Home ->
+            Page.Home.view model
 
         _ ->
             Page.NotFound.view model

@@ -6,11 +6,8 @@ import Url
 
 
 type Route
-    = Fork
-    | DarkHome
-    | DarkPost Slug
-    | QnHome
-    | QnPost Slug
+    = Home
+    | ReadPost Slug
     | About
     | NotFound
     | Error ErrorPage

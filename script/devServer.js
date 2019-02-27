@@ -35,6 +35,7 @@ app.get('/**/(*).js$', (req, res) => {
   }
   try {
     await compileDev()
+    await compileHtml()
 
     app.listen(port, () => print(`Development server running on localhost:${port}`))
 

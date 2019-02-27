@@ -9,15 +9,13 @@ routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         -- Common
-        [ Parser.map Fork top
+        [ Parser.map Home top
 
-        -- Bits
-        , Parser.map DarkHome (s "bits")
-        , Parser.map DarkPost (s "bits" </> s "post" </> slugUrlParser)
+        -- Posts
+        , Parser.map ReadPost (s "post" </> slugUrlParser)
 
-        -- Bites
-        , Parser.map QnHome (s "bites")
-        , Parser.map QnPost (s "bites" </> s "post" </> slugUrlParser)
+        -- Info
+        , Parser.map About (s "about")
 
         -- ErrorPages
         ]
@@ -42,23 +40,14 @@ toRoute str =
 routeToName : Route -> String
 routeToName route =
     case route of
-        Fork ->
+        Home ->
             "Fork"
-
-        DarkHome ->
-            "Parasrah"
-
-        QnHome ->
-            "Qnbst"
 
         About ->
             "About"
 
-        DarkPost slug ->
-            "Parasrah Post"
-
-        QnPost slug ->
-            "Qnbst Post"
+        ReadPost slug ->
+            "Post"
 
         NotFound ->
             "404"
@@ -76,7 +65,7 @@ routeToTitle route =
             routeToName route
     in
     case route of
-        Fork ->
+        Home ->
             titlePrefix
 
         _ ->
