@@ -7,6 +7,8 @@ import Css exposing (..)
 import Message exposing (Msg)
 import Model exposing (Model)
 import Style.Theme as Theme
+import Svg.Styled.Attributes
+import View.Svg as Svg
 
 
 view : Model -> Html Msg
@@ -17,7 +19,7 @@ view model =
             , flexDirection row
             , justifyContent spaceBetween
             , alignItems center
-            , Css.height (px 50)
+            , Css.height (px 60)
             , Css.width (pct 100)
             , backgroundColor (Theme.primary model.cache)
             ]
@@ -41,30 +43,32 @@ searchBar model =
             [ displayFlex
             , flexDirection row
             , position relative
-            , Css.height (px 35)
+            , Css.height (px 36)
+            , Css.width (px 260)
             ]
         ]
         [ input
             [ class "search"
             , css
                 [ flexGrow (num 1)
-                , borderStyle solid
                 , borderWidth (px 0)
+                , outline none
+                , backgroundColor (Theme.accent model.cache)
+                , color (Theme.secondaryFont model.cache)
                 ]
             ]
             []
-        , img
-            [ src "/icons/search.svg"
-            , css
+        , Svg.search
+            [ Svg.Styled.Attributes.css
                 [ position absolute
                 , right (px 0)
-                , Css.height (px 24)
-                , Css.width (px 24)
+                , Css.height (px 18)
+                , Css.width (px 18)
                 , alignSelf center
-                , marginRight (px 5)
+                , marginRight (px 8)
+                , Css.color (Theme.secondaryFont model.cache)
                 ]
             ]
-            []
         ]
 
 
