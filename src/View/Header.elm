@@ -9,6 +9,7 @@ import Model exposing (Model)
 import Style.Theme as Theme
 import Svg.Styled.Attributes
 import View.Svg as Svg
+import Style.Font as Font
 
 
 view : Model -> Html Msg
@@ -32,7 +33,12 @@ view model =
 
 logo : Html Msg
 logo =
-    div [] []
+    h1
+        [ css
+            [ fontFamilies Font.indieFlower ]
+        ]
+        [ text "Bits n' Bites"
+        ]
 
 
 searchBar : Model -> Html Msg
