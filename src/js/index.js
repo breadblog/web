@@ -1,4 +1,7 @@
+import 'highlight.js/styles/gruvbox-dark';
+
 import { Elm } from '@main'
+import highlight from '@js/highlight'
 import '@font/firacode'
 
 const { localStorage } = window
@@ -26,3 +29,6 @@ const app = Elm.Main.init({
     localStorage.setItem('elm-cache', JSON.stringify(data))
   })
 })()
+
+// -- Highlight
+document.addEventListener('DOMContentLoaded', highlight)

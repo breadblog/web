@@ -52,7 +52,10 @@ config
         .add(/elm-stuff/)
         .add(/node_modules/)
         .end()
-      .use('elm-loader')
+      .use('elm hot')
+        .loader('elm-hot-webpack-loader')
+        .end()
+      .use('elm')
         .loader('elm-webpack-loader')
         .options({
           cwd: root(),
@@ -106,6 +109,7 @@ if (build() === 'dev') {
     .devServer
       .contentBase(dist())
       .port(9080)
+      .historyApiFallback(true)
       .end()
     .output
       .path(dist())
