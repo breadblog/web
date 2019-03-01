@@ -8,6 +8,7 @@ import Model exposing (Cache, Model, Route, Theme(..))
 import Nav exposing (urlToRoute)
 import Port exposing (setCache)
 import Url
+import Version
 
 
 init : Value -> Url.Url -> Key -> ( Model, Cmd Msg )
@@ -68,7 +69,7 @@ themeDecoder =
 
 defaultCache : Cache
 defaultCache =
-    { version = "0.0.1"
+    { version = Version.current
     , theme = Light
     }
 

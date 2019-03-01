@@ -1,18 +1,10 @@
 {
   "scripts": {
     "test": "elm-test --compiler ./node_modules/.bin/elm",
-    "start": "node script/devServer",
+    "start": "webpack-dev-server",
     "clean": "rimraf dist/",
-    "copy:js": "cpx \"src/js/**/*.js\" dist",
-    "copy:assets": "cpx \"assets/**/*\" dist",
-    "html:prod": "cross-env BUILD=prod node script/compile-html",
-    "html:dev": "cross-env BUILD=dev node script/compile-html",
-    "make": "elm make src/Main.elm --output=dist/elm.js",
-    "make:dev": "npm run make -- --debug",
-    "make:prod": "npm run make -- --optimize",
-    "uglify": "uglifyjs dist/elm.js --compress 'pure_funcs=\"F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9\",pure_getters,keep_fargs=false,unsafe_comps,unsafe' | uglifyjs --mangle --output=dist/elm.min.js && rimraf dist/elm.js",
-    "dev": "npm run clean && npm run copy:js && npm run copy:assets && npm run make:dev && npm run html:dev",
-    "prod": "npm run clean && npm run copy:js && npm run copy:assets && npm run make:prod && npm run uglify && npm run html:prod",
+    "dev": "cross-env WEBPACK_ENV=dev webpack",
+    "prod": "cross-env WEBPACK_ENV=prod webpack",
     "lint": "npm run lint:elm && npm run lint:js",
     "lint:elm": "npm run lint:elm:src && npm run lint:elm:test",
     "lint:elm:src": "elm-format src/ --validate",
@@ -32,23 +24,37 @@
     "url": "https://github.com/breadblog/web/issues"
   },
   "devDependencies": {
-    "chokidar": "^2.1.2",
-    "cpx": "^1.5.0",
+    "@babel/core": "^7.3.4",
+    "@babel/preset-env": "^7.3.4",
+    "babel-loader": "^8.0.5",
+    "clean-webpack-plugin": "^1.0.1",
+    "copy-webpack-plugin": "^5.0.0",
     "cross-env": "^5.2.0",
+    "css-loader": "^2.1.0",
     "elm": "^0.19.0-bugfix6",
     "elm-format": "^0.8.1",
+    "elm-hot-webpack-loader": "^1.0.2",
     "elm-test": "^0.19.0-rev4",
+    "elm-webpack-loader": "^5.0.0",
     "eslint": "^5.14.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.16.0",
     "eslint-plugin-node": "^8.0.1",
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0",
-    "express": "^4.16.4",
-    "express-history-api-fallback": "^2.2.1",
-    "fs-extra": "^7.0.1",
-    "pug": "^2.0.3",
+    "file-loader": "^3.0.1",
+    "highlight.js": "^9.15.6",
+    "html-webpack-plugin": "^3.2.0",
+    "mini-css-extract-plugin": "^0.5.0",
     "rimraf": "^2.6.3",
-    "uglify-js": "^3.4.9"
-  }
+    "url-loader": "^1.1.2",
+    "webpack": "^4.29.5",
+    "webpack-chain": "^5.2.0",
+    "webpack-cli": "^3.2.3",
+    "webpack-dev-server": "^3.2.1"
+  },
+  "browserslist": [
+    "last 10 chrome versions",
+    "last 5 firefox versions"
+  ]
 }
