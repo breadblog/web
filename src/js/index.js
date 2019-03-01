@@ -1,4 +1,4 @@
-import 'highlight.js/styles/gruvbox-dark';
+import 'highlight.js/styles/gruvbox-dark'
 
 import { Elm } from '@main'
 import highlight from '@js/highlight'
