@@ -9,6 +9,7 @@ type Route
     = Home
     | ReadPost Slug
     | About
+    | Donate
     | NotFound
     | Error ErrorPage
 

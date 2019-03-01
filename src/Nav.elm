@@ -1,4 +1,4 @@
-module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlToRoute)
+module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlToRoute, routeToPath)
 
 import Model exposing (ErrorPage(..), Route(..), Slug(..))
 import Url exposing (Url)
@@ -45,6 +45,9 @@ routeToName route =
 
         About ->
             "About"
+
+        Donate ->
+            "Donate"
 
         ReadPost slug ->
             "Post"
@@ -95,3 +98,27 @@ routeToClass route =
                 |> routeToName
                 |> String.replace " " "-"
                 |> String.toLower
+
+
+routeToPath : Route -> String
+routeToPath route =
+    case route of
+        Home ->
+            "/"
+
+        ReadPost (Slug slug) ->
+            "/post/" ++ slug
+
+        About ->
+            "/about"
+
+        Donate ->
+            "/donate"
+
+        NotFound ->
+            "/404"
+
+        Error errorPage ->
+            case errorPage of
+                CorruptCache _ ->
+                    "/error/corruptCache"

@@ -1,7 +1,7 @@
 module Message exposing (Msg(..))
 
 import Browser
-import Model exposing (Cache)
+import Model exposing (Cache, Route)
 import Url
 
 
