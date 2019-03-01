@@ -18,26 +18,117 @@ view model =
         [ css
             [ displayFlex
             , flexDirection row
-            , justifyContent spaceBetween
             , alignItems center
             , Css.height (px 60)
             , Css.width (pct 100)
             , backgroundColor (Theme.primary model.cache)
             ]
         ]
-        [ logo
+        [ headerLeft model
         , searchBar model
-        , menu model
+        , headerRight model
         ]
+
+
+headerLeft : Model -> Html Msg
+headerLeft model =
+    div
+        [ css
+            [ headerSideStyle
+            ]
+        ]
+        [ logo
+        , filters model
+        , spacer
+        ]
+
+
+headerRight : Model -> Html Msg
+headerRight model =
+    div
+        [ css
+            [ headerSideStyle
+            ]
+        ]
+        []
+
+
+headerSideStyle : Style
+headerSideStyle =
+    batch
+        [ flexGrow (num 1)
+        , Css.width (px 0)
+        , Css.height (pct 100)
+        , flexBasis auto
+        , displayFlex
+        , flexDirection row
+        , justifyContent spaceBetween
+        , alignItems center
+        ]
+
+
+spacer : Html Msg
+spacer = div [ class "spacer" ] []
 
 
 logo : Html Msg
 logo =
     h1
         [ css
-            [ fontFamilies Font.indieFlower ]
+            [ fontFamilies Font.indieFlower
+            , fontWeight normal
+            , marginLeft (px 30)
+            ]
         ]
         [ text "Bits n' Bites"
+        ]
+
+
+filters : Model -> Html Msg
+filters model =
+    div
+        [ class "filters"
+        , css
+            [ displayFlex
+            , flexDirection row
+            ]
+        ]
+        [ filter model "tags"
+        , filter model "author"
+        ]
+
+
+filter : Model -> String -> Html Msg
+filter model name =
+    div
+        [ class "filter"
+        , css
+            [ position relative
+            , displayFlex
+            , Css.height (pct 100)
+            , alignItems center
+            , marginRight (px 30)
+            ]
+        ]
+        [ h2
+            [ css
+                [ fontWeight (int 300)
+                , fontSize (rem 1.5)
+                ]
+            ]
+            [ text name ]
+        , Svg.chevronDown
+            [ Svg.Styled.Attributes.css
+                [ Css.color (Theme.secondaryFont model.cache)
+                , position relative
+                , top (px 3)
+                , Css.width (px 20)
+                , Css.height (px 20)
+                , alignSelf center
+                , right (px 0)
+                , marginLeft (px 10)
+                ]
+            ]
         ]
 
 
