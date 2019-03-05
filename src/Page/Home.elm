@@ -9,14 +9,28 @@ import Message exposing (Msg(..))
 import Model exposing (Model, Route(..))
 import Nav exposing (routeToClass)
 import View.Header
+import View.Footer
 
 
 view : Model -> Html Msg
 view model =
     div
-        [ class (routeToClass Home) ]
+        [ class (routeToClass Home)
+        , css
+            [ displayFlex
+            , flexDirection column
+            , Css.height (pct 100)
+            ]
+        ]
         [ View.Header.view model
         , main_
-            []
-            []
+            [
+                css
+                    [ flexGrow (num 1)
+                    ]
+            ]
+            [
+                text "hello"
+            ]
+        , View.Footer.view model
         ]
