@@ -1,4 +1,4 @@
-module Style.Theme exposing (..)
+module Style.Theme exposing (Themed, accent, background, primary, primaryFont, secondary, secondaryFont)
 
 import Css exposing (..)
 import Model exposing (Model, Theme(..))

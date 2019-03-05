@@ -1,4 +1,4 @@
-module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlToRoute, routeToPath)
+module Nav exposing (routeParser, routeToClass, routeToName, routeToPath, routeToTitle, urlToRoute)
 
 import Model exposing (ErrorPage(..), Route(..), Slug(..))
 import Url exposing (Url)

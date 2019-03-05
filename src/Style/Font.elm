@@ -1,4 +1,4 @@
-module Style.Font exposing (..)
+module Style.Font exposing (firaCode, indieFlower, montserrat)
 
 import Css exposing (..)
 import Css.Global as Global

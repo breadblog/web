@@ -1,8 +1,7 @@
-module Style.Screen exposing (phoneScreen, smallScreen, medScreen, baseScreen, largeScreen, highResScreen)
+module Style.Screen exposing (baseScreen, highResScreen, largeScreen, medScreen, phoneScreen, smallScreen)
 
-
-import Css.Media as Media exposing (withMedia, only, screen)
 import Css exposing (Style, px)
+import Css.Media as Media exposing (only, screen, withMedia)
 
 
 phoneScreen : List Style -> Style
@@ -27,7 +26,6 @@ baseScreen : List Style -> Style
 baseScreen styles =
     withMedia [ only screen [ Media.minWidth (px 1201), Media.maxWidth (px 1600) ] ]
         styles
-
 
 
 largeScreen : List Style -> Style

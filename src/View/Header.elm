@@ -1,18 +1,17 @@
 module View.Header exposing (view)
 
-
+import Css exposing (..)
+import Css.Media as Media exposing (only, screen, withMedia)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
-import Css exposing (..)
-import Css.Media as Media exposing (withMedia, only, screen)
 import Message exposing (Msg)
 import Model exposing (Model, Route(..))
+import Nav exposing (routeToPath)
+import Style.Font as Font
+import Style.Screen as Screen
 import Style.Theme as Theme
 import Svg.Styled.Attributes
 import View.Svg as Svg
-import Style.Font as Font
-import Nav exposing (routeToPath)
-import Style.Screen as Screen
 
 
 view : Model -> Html Msg
@@ -33,6 +32,7 @@ view model =
         ]
 
 
+
 -- Left Side
 
 
@@ -45,8 +45,8 @@ headerLeft model =
         ]
         [ logo
         , filters model
-        , spacer
-            <| List.map
+        , spacer <|
+            List.map
                 (\f -> f [ display none ])
                 [ Screen.medScreen, Screen.smallScreen, Screen.phoneScreen ]
         ]
@@ -79,6 +79,7 @@ filters model =
         ]
 
 
+
 -- Search Bar
 
 
@@ -94,7 +95,8 @@ searchBar model =
             , Css.width (px 260)
             , List.map
                 (\f -> f [ display none ])
-                [ Screen.medScreen, Screen.smallScreen, Screen.phoneScreen ] |> batch
+                [ Screen.medScreen, Screen.smallScreen, Screen.phoneScreen ]
+                |> batch
             ]
         ]
         [ input
@@ -133,6 +135,8 @@ searchResults model =
 searchOverlay : Html Msg
 searchOverlay =
     text ""
+
+
 
 -- Right Side
 
@@ -175,39 +179,40 @@ profile model =
         chevronSize =
             20
     in
-        div
-            [ class "profile"
-            , css
-                [ Css.height (pct 100)
-                , displayFlex
-                , flexDirection row
-                , marginRight (px edgeMargin)
+    div
+        [ class "profile"
+        , css
+            [ Css.height (pct 100)
+            , displayFlex
+            , flexDirection row
+            , marginRight (px edgeMargin)
+            ]
+        ]
+        [ Svg.user
+            [ Svg.Styled.Attributes.css
+                [ Css.color (Theme.secondaryFont model.cache)
+                , position relative
+                , top (px 3)
+                , Css.width (px iconSize)
+                , Css.height (px iconSize)
+                , alignSelf center
+                , right (px 0)
+                , marginLeft (px 10)
+                , bottom (px 10)
                 ]
             ]
-            [ Svg.user
-                [ Svg.Styled.Attributes.css
-                    [ Css.color (Theme.secondaryFont model.cache)
-                    , position relative
-                    , top (px 3)
-                    , Css.width (px iconSize)
-                    , Css.height (px iconSize)
-                    , alignSelf center
-                    , right (px 0)
-                    , marginLeft (px 10)
-                    , bottom (px 10)
-                    ]
-                ]
-            , Svg.chevronDown
-                [ Svg.Styled.Attributes.css
-                    [ Css.color (Theme.secondaryFont model.cache)
-                    , Css.height (px chevronSize)
-                    , Css.width (px chevronSize)
-                    , alignSelf center
-                    , position relative
-                    , top (px 2)
-                    ]
+        , Svg.chevronDown
+            [ Svg.Styled.Attributes.css
+                [ Css.color (Theme.secondaryFont model.cache)
+                , Css.height (px chevronSize)
+                , Css.width (px chevronSize)
+                , alignSelf center
+                , position relative
+                , top (px 2)
                 ]
             ]
+        ]
+
 
 
 -- Common
@@ -228,11 +233,12 @@ headerSideStyle =
 
 
 spacer : List Style -> Html Msg
-spacer styles = div
-    [ class "spacer"
-    , css styles
-    ]
-    []
+spacer styles =
+    div
+        [ class "spacer"
+        , css styles
+        ]
+        []
 
 
 navLink : Model -> String -> Route -> Html Msg
@@ -254,7 +260,6 @@ navLink model name route =
             ]
             [ text name ]
         ]
-
 
 
 dropdown : Model -> String -> Html Msg
@@ -313,10 +318,10 @@ spacing side =
                 Right ->
                     marginRight
     in
-        batch
-            [ Screen.smallScreen [ spaceStyle (px 15) ]
-            , Screen.medScreen [ spaceStyle (px 20) ]
-            , Screen.baseScreen [ spaceStyle (px 25) ]
-            , Screen.largeScreen [ spaceStyle (px 30) ]
-            , Screen.highResScreen [ spaceStyle (px 45) ]
-            ]
+    batch
+        [ Screen.smallScreen [ spaceStyle (px 15) ]
+        , Screen.medScreen [ spaceStyle (px 20) ]
+        , Screen.baseScreen [ spaceStyle (px 25) ]
+        , Screen.largeScreen [ spaceStyle (px 30) ]
+        , Screen.highResScreen [ spaceStyle (px 45) ]
+        ]

@@ -1,13 +1,34 @@
-module View.Svg exposing (..)
-
+module View.Svg exposing (attribute, chevronDown, chevronLeft, chevronRight, chevronUp, github, linkedin, search, user)
 
 import Svg.Styled as Svg exposing (..)
-import Svg.Styled.Attributes exposing (..)
+import Svg.Styled.Attributes as Attributes exposing (..)
+
+
+attribute : List (Attribute msg) -> Svg msg
+attribute toSvgAttributes =
+    Svg.svg
+        (List.append
+            [ Attributes.fill "fff"
+            ]
+            toSvgAttributes
+        )
+        []
 
 
 search : List (Attribute msg) -> Svg msg
 search attr =
-    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-search" ] attr) [ circle [ cx "11", cy "11", r "8" ] [], line [ x1 "21", y1 "21", x2 "16.65", y2 "16.65" ] [] ]
+    svg
+        (List.append
+            [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-search" ]
+            attr
+        )
+        [ circle
+            [ cx "11", cy "11", r "8" ]
+            []
+        , line
+            [ x1 "21", y1 "21", x2 "16.65", y2 "16.65" ]
+            []
+        ]
 
 
 user : List (Attribute msg) -> Svg msg
