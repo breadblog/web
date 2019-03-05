@@ -45,15 +45,29 @@ footerRight model =
             [ margin (px 10)
             ]
         ]
-        [
-            Svg.github [
+        (List.map
+            (\x -> a [
+                href x.path,
+                Attr.target "_blank",
+                css [
+                    textDecoration none,
+                    color inherit
+                ]
+            ][
+                x.icon [
                 SvgAttr.css [
                     margin (px 5)
                 ]
-            ],
-            Svg.linkedin [
-                SvgAttr.css [
-                    margin (px 5)
                 ]
+            ])
+            [
+                {
+                    icon = Svg.github,
+                    path = "https://www.google.com"
+                },
+                {
+                    icon = Svg.linkedin,
+                    path = "https://www.google.com"
+                }
             ]
-        ]
+        )
