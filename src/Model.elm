@@ -1,8 +1,50 @@
 module Model exposing (Cache, ErrorPage(..), Model, Post, Route(..), Slug(..), Theme(..))
 
+
 import Browser.Navigation exposing (Key)
-import Time
 import Url
+import Data.Version as Version
+import Data.Post as Post exposing (Post)
+
+
+type alias Model =
+    { key : Key
+    , route : Route
+    , content : Content
+    }
+
+{-
+    How do we make impossible states impossible here?
+
+    If there is an error, there may still be other data? But it might be corrupt, so probably best
+    if it is impossible to access? But then we also can't recover from it
+
+    There will always be a key and route
+
+    There will always be a postCache, it just might be empty
+    There might not be a cache, as it might be corrupt
+
+    How do we match these individual error paths with the routes?
+
+    Seems impossible with the way that routes are currently setup
+-}
+
+type Content
+    = Error Error
+    | Working WorkingModel
+
+
+type Error
+    = CorruptCache String
+    | InvalidVersion Version.Error
+
+
+type alias WorkingModel =
+    { cache : Cache
+    , key : Key
+    , route : Route
+    , postCache : List Post
+    }
 
 
 type Route
@@ -13,27 +55,7 @@ type Route
     | QnPost Slug
     | About
     | NotFound
-    | Error ErrorPage
-
-
-type ErrorPage
-    = CorruptCache String
-
-
-type alias Model =
-    { cache : Cache
-    , key : Key
-    , route : Route
-    , postCache : List Post
-    }
-
-
-type alias Post =
-    { title : String
-    , content : String
-    , author : String
-    , date : Time.Posix
-    }
+    | Error Error
 
 
 type alias Cache =
