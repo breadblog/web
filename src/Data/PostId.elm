@@ -11,7 +11,10 @@ type PostId
 
 decoder : Decoder PostId
 decoder =
-    Decode.string
+    Decode.int
+        |> Decode.andThen (\int ->
+            Decode.succeed (PostId int)
+        )
 
 
 encode : PostId -> Value
