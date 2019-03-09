@@ -6,11 +6,12 @@ import Html.Styled exposing (Html, main_)
 import Html.Styled.Attributes exposing (class)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Msg)
-import Model exposing (Model, Route(..))
 import Nav exposing (routeToClass)
+import Data.Session exposing (Session)
+import Data.Route exposing (Route(..))
 
 
-view : Model -> Html Msg
+view : Session -> Html Msg
 view model =
     main_
         [ class (routeToClass NotFound)

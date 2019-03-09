@@ -1,11 +1,12 @@
-module Data.Cache exposing (Cache, encode, decoder)
+module Data.Cache exposing (Cache, encode, decoder, version, theme, init)
 
 
 import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
-import Data.Version as Version exposing (Version)
-import Data.Theme as Theme exposing (Theme)
+import Data.Version exposing (Version)
+import Data.Theme as Theme exposing (Theme(..))
+import Version
 
 
 type Cache =
@@ -18,8 +19,47 @@ type alias Internals =
     }
 
 
-type Problem =
-    CorruptCache
+type Problem
+    = CorruptCache
+    | BadVersion
+
+
+-- READONLY
+
+
+version : Cache -> Version
+version (Cache cache) =
+    cache.version
+
+
+-- READWRITE
+
+theme : Cache -> Theme
+theme (Cache cache) =
+    cache.theme
+
+
+mapTheme : (Theme -> Theme) -> Cache -> Cache
+mapTheme fn (Cache cache) =
+    Cache
+        { cache | theme = fn cache.theme }
+
+
+-- Util
+
+init : Result Problem Cache
+init =
+    case Version.current of
+        Just v ->
+            Ok
+                ( Cache
+                    { version = v
+                    , theme = Dark
+                    }
+                )
+
+        Nothing ->
+            Err BadVersion
 
 
 -- JSON
@@ -28,7 +68,7 @@ type Problem =
 encode : Cache -> Value
 encode (Cache cache) =
     Encode.object
-        [ ( "version", Version.encode cache.version )
+        [ ( "version", Data.Version.encode cache.version )
         , ( "theme", Theme.encode cache.theme )
         ]
 
@@ -36,7 +76,7 @@ encode (Cache cache) =
 decoder : Decoder Cache
 decoder =
     Decode.succeed Internals
-        |> required "version" Version.decoder
+        |> required "version" Data.Version.decoder
         |> required "theme" Theme.decoder
         |> Decode.map Cache
 

@@ -1,7 +1,8 @@
-module Data.Route exposing (Route)
+module Data.Route exposing (Route(..), ProblemPage(..))
 
 
 import Data.Slug exposing (Slug)
+import Data.ProblemInfo exposing (ProblemInfo)
 
 
 type Route

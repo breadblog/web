@@ -1,4 +1,4 @@
-module Data.Version exposing (Version, Problem, encode, decoder)
+module Data.Version exposing (Version, Problem, encode, decoder, toString, fromString)
 
 
 import Array
@@ -15,6 +15,22 @@ type alias Version =
 
 type Problem
     = FailedToParse
+
+
+toString : Version -> String
+toString version =
+    let
+        list =
+            [ version.major
+            , version.minor
+            , version.patch
+            ]
+
+    in
+        list
+            |> List.map String.fromInt
+            |> String.join "."
+
 
 
 -- TODO: Test this
@@ -59,18 +75,9 @@ fromString str =
 
 encode : Version -> Value
 encode version =
-    let
-        list =
-            [ version.major
-            , version.minor
-            , version.patch
-            ]
-
-    in
-        list
-            |> List.map String.fromInt
-            |> String.join "."
-            |> Encode.string
+    version
+        |> toString
+        |> Encode.string
 
 
 decoder : Decoder Version

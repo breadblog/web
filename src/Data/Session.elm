@@ -1,4 +1,4 @@
-module Data.Session exposing (Session)
+module Data.Session exposing (Session, init)
 
 
 import Browser.Navigation exposing (Key)
@@ -13,4 +13,11 @@ import Data.User as User exposing (User)
 type alias Session =
     { user : Maybe User
     , key : Key
+    }
+
+
+init : Key -> Session
+init key =
+    { user = Nothing
+    , key = key
     }

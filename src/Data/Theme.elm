@@ -1,4 +1,4 @@
-module Data.Theme exposing (Theme(..), encode, decoder)
+module Data.Theme exposing (Theme(..), encode, decoder, toString)
 
 
 import Json.Decode as Decode exposing (Decoder)
@@ -10,16 +10,22 @@ type Theme
     | Light
 
 
+toString : Theme -> String
+toString theme =
+    case theme of
+        Dark -> "dark"
+
+        Light -> "light"
+
+
 -- JSON
 
 
 encode : Theme -> Value
 encode theme =
-    Encode.string
-        <| case theme of
-            Light -> "light"
-
-            Dark -> "dark"
+    theme
+        |> toString
+        |> Encode.string
 
 
 -- TODO: How to handle fail case?
