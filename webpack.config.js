@@ -59,6 +59,7 @@ config
         .loader('elm-webpack-loader')
         .options({
           cwd: root(),
+          debug: true,
         })
         .end()
       .end()

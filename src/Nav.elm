@@ -1,7 +1,9 @@
-module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlToRoute)
+module Nav exposing (routeParser, routeToClass, routeToName, routeToPath, routeToTitle, urlToRoute)
 
-import Model exposing (ErrorPage(..), Route(..), Slug(..))
+import Data.Route as Route exposing (ProblemPage(..), Route(..))
+import Data.Slug as Slug exposing (Slug(..))
 import Url exposing (Url)
+import Url.Builder exposing (absolute)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
 
 
@@ -9,23 +11,13 @@ routeParser : Parser (Route -> a) a
 routeParser =
     oneOf
         -- Common
-        [ Parser.map Fork top
+        [ Parser.map Home top
 
         -- Bits
-        , Parser.map DarkHome (s "bits")
-        , Parser.map DarkPost (s "bits" </> s "post" </> slugUrlParser)
-
-        -- Bites
-        , Parser.map QnHome (s "bites")
-        , Parser.map QnPost (s "bites" </> s "post" </> slugUrlParser)
+        , Parser.map Post (s "post" </> Slug.urlParser)
 
         -- ErrorPages
         ]
-
-
-slugUrlParser : Parser (Slug -> a) a
-slugUrlParser =
-    Parser.custom "SLUG" (\str -> Just (Slug str))
 
 
 toRoute : String -> Route
@@ -42,31 +34,24 @@ toRoute str =
 routeToName : Route -> String
 routeToName route =
     case route of
-        Fork ->
+        Home ->
             "Fork"
 
-        DarkHome ->
-            "Parasrah"
+        Post slug ->
+            "Post" ++ Slug.toString slug
 
-        QnHome ->
-            "Qnbst"
+        Profile ->
+            "Profile"
 
-        About ->
-            "About"
-
-        DarkPost slug ->
-            "Parasrah Post"
-
-        QnPost slug ->
-            "Qnbst Post"
+        Login ->
+            "Login"
 
         NotFound ->
             "404"
 
-        Error e ->
-            case e of
-                CorruptCache _ ->
-                    "Corrupt Cache"
+        Problem problem ->
+            -- TODO: Replace me
+            "Problem"
 
 
 routeToTitle : Route -> String
@@ -76,7 +61,7 @@ routeToTitle route =
             routeToName route
     in
     case route of
-        Fork ->
+        Home ->
             titlePrefix
 
         _ ->
@@ -93,6 +78,33 @@ urlToRoute url =
     url
         |> Url.toString
         |> toRoute
+
+
+routeToPath : Route -> String
+routeToPath route =
+    case route of
+        Home ->
+            absolute [] []
+
+        Post slug ->
+            absolute [ "post", Slug.toString slug ] []
+
+        Profile ->
+            absolute [ "/profile" ] []
+
+        Login ->
+            absolute [ "/login" ] []
+
+        NotFound ->
+            absolute [ "/404" ] []
+
+        Problem problem ->
+            case problem of
+                CorruptCache ->
+                    absolute [ "/error", "corruptCache" ] []
+
+                InvalidVersion ->
+                    absolute [ "/error", "invalidVersion" ] []
 
 
 routeToClass : Route -> String

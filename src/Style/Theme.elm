@@ -1,17 +1,11 @@
-module Style.Theme exposing (Themed, background, primaryFont)
+module Style.Theme exposing (background, primaryFont)
 
 import Css exposing (..)
-import Model exposing (Model, Theme(..))
+import Data.Theme exposing (Theme(..))
 
 
-type alias Themed a =
-    { a
-        | theme : Theme
-    }
-
-
-background : Themed a -> Color
-background { theme } =
+background : Theme -> Color
+background theme =
     case theme of
         Dark ->
             rgb 0 0 0
@@ -20,8 +14,8 @@ background { theme } =
             rgb 255 255 255
 
 
-primaryFont : Themed a -> Color
-primaryFont { theme } =
+primaryFont : Theme -> Color
+primaryFont theme =
     case theme of
         Dark ->
             rgba 255 255 255 0.9

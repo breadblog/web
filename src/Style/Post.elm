@@ -1,7 +1,8 @@
-module Style.Post exposing (PostStyle, darkPostStyle, qnPostStyle)
+module Style.Post exposing (PostStyle, style)
 
 import Css exposing (..)
 import Css.Global exposing (Snippet)
+import Data.Theme exposing (Theme(..))
 import Style.Font exposing (firaCode)
 
 
@@ -10,6 +11,16 @@ type alias PostStyle =
     , author : List Style
     , content : List Snippet
     }
+
+
+style : Theme -> PostStyle
+style theme =
+    case theme of
+        Dark ->
+            darkPostStyle
+
+        Light ->
+            lightPostStyle
 
 
 darkPostStyle : PostStyle
@@ -49,8 +60,8 @@ darkPostStyle =
     }
 
 
-qnPostStyle : PostStyle
-qnPostStyle =
+lightPostStyle : PostStyle
+lightPostStyle =
     { title =
         []
     , author =
