@@ -1,13 +1,12 @@
-module Data.Version exposing (Version, encode, decoder, toString, fromString, error)
-
+module Data.Version exposing (Version, decoder, encode, error, fromString, toString)
 
 import Array
-import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
 
 
-type Version =
-    Version Internals
+type Version
+    = Version Internals
 
 
 type alias Internals =
@@ -15,6 +14,7 @@ type alias Internals =
     , minor : Int
     , patch : Int
     }
+
 
 
 -- Util
@@ -33,15 +33,16 @@ toString (Version version) =
             , version.minor
             , version.patch
             ]
-
     in
-        list
-            |> List.map String.fromInt
-            |> String.join "."
+    list
+        |> List.map String.fromInt
+        |> String.join "."
 
 
 
 -- TODO: Test this
+
+
 fromString : String -> Maybe Version
 fromString str =
     let
@@ -64,22 +65,23 @@ fromString str =
 
         numSplits =
             List.length splits
-
     in
-        case numSplits of
-            3 ->
-                case (first, second, third) of
-                    (Just (Just major), Just (Just minor), Just (Just patch)) ->
-                        Just <| Version <| Internals major minor patch
+    case numSplits of
+        3 ->
+            case ( first, second, third ) of
+                ( Just (Just major), Just (Just minor), Just (Just patch) ) ->
+                    Just <| Version <| Internals major minor patch
 
-                    (_, _, _) ->
-                        Nothing
+                ( _, _, _ ) ->
+                    Nothing
 
-            _ ->
-                Nothing
+        _ ->
+            Nothing
+
 
 
 -- JSON
+
 
 encode : Version -> Value
 encode version =
@@ -91,11 +93,12 @@ encode version =
 decoder : Decoder Version
 decoder =
     Decode.string
-        |> Decode.andThen (\str ->
-            case (fromString str) of
-                Just version ->
-                    Decode.succeed version
+        |> Decode.andThen
+            (\str ->
+                case fromString str of
+                    Just version ->
+                        Decode.succeed version
 
-                Nothing ->
-                    Decode.fail "failed to parse version"
-        )
+                    Nothing ->
+                        Decode.fail "failed to parse version"
+            )

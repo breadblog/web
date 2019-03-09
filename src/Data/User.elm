@@ -1,13 +1,12 @@
-module Data.User exposing (User, encode, decoder)
+module Data.User exposing (User, decoder, encode)
 
-
-import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
+import Json.Encode as Encode exposing (Value)
 
 
-type User =
-    User Internals
+type User
+    = User Internals
 
 
 type alias Internals =
@@ -18,8 +17,8 @@ type alias Internals =
 encode : User -> Value
 encode (User user) =
     Encode.object
-    [ ( "username", Encode.string user.username )
-    ]
+        [ ( "username", Encode.string user.username )
+        ]
 
 
 decoder : Decoder User

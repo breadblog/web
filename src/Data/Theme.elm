@@ -1,5 +1,4 @@
-module Data.Theme exposing (Theme(..), encode, decoder, toString)
-
+module Data.Theme exposing (Theme(..), decoder, encode, toString)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -13,9 +12,12 @@ type Theme
 toString : Theme -> String
 toString theme =
     case theme of
-        Dark -> "dark"
+        Dark ->
+            "dark"
 
-        Light -> "light"
+        Light ->
+            "light"
+
 
 
 -- JSON
@@ -28,13 +30,22 @@ encode theme =
         |> Encode.string
 
 
+
 -- TODO: How to handle fail case?
+
+
 decoder : Decoder Theme
 decoder =
     Decode.string
-        |> Decode.andThen (\str ->
-            case str of
-                "light" -> Decode.succeed Light
-                "dark" -> Decode.succeed Dark
-                somethingElse -> Decode.fail ("unknown theme " ++ somethingElse)
-        )
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "light" ->
+                        Decode.succeed Light
+
+                    "dark" ->
+                        Decode.succeed Dark
+
+                    somethingElse ->
+                        Decode.fail ("unknown theme " ++ somethingElse)
+            )

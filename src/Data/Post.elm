@@ -1,24 +1,24 @@
-module Data.Post exposing (Post, encode, decoder)
+module Data.Post exposing (Post, decoder, encode)
 
-
-import Time
 import Data.PostId as PostId exposing (PostId)
-import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
+import Json.Encode as Encode exposing (Value)
+import Time
 
 
-type Post =
-    Post Internals
+type Post
+    = Post Internals
 
 
 type alias Internals =
-    { id: PostId
+    { id : PostId
     , title : String
     , content : String
     , author : String
     , date : Time.Posix
     }
+
 
 
 -- READONLY id
@@ -27,6 +27,7 @@ type alias Internals =
 id : Post -> PostId
 id (Post post) =
     post.id
+
 
 
 -- READWRITE title
@@ -43,6 +44,7 @@ mapTitle fn (Post post) =
         { post | title = fn post.title }
 
 
+
 -- READWRITE content
 
 
@@ -57,6 +59,7 @@ mapContent fn (Post post) =
         { post | content = fn post.content }
 
 
+
 -- READONLY author
 
 
@@ -65,12 +68,14 @@ author (Post post) =
     post.author
 
 
+
 -- READONLY date
 
 
 date : Post -> Time.Posix
 date (Post post) =
     post.date
+
 
 
 -- JSON

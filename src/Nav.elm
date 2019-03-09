@@ -1,10 +1,10 @@
-module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlToRoute, routeToPath)
+module Nav exposing (routeParser, routeToClass, routeToName, routeToPath, routeToTitle, urlToRoute)
 
+import Data.Route as Route exposing (ProblemPage(..), Route(..))
+import Data.Slug as Slug exposing (Slug(..))
 import Url exposing (Url)
 import Url.Builder exposing (absolute)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
-import Data.Route as Route exposing (Route(..), ProblemPage(..))
-import Data.Slug as Slug exposing (Slug(..))
 
 
 routeParser : Parser (Route -> a) a
@@ -15,6 +15,7 @@ routeParser =
 
         -- Bits
         , Parser.map Post (s "post" </> Slug.urlParser)
+
         -- ErrorPages
         ]
 
@@ -37,7 +38,7 @@ routeToName route =
             "Fork"
 
         Post slug ->
-            "Post" ++ (Slug.toString slug)
+            "Post" ++ Slug.toString slug
 
         Profile ->
             "Profile"
@@ -104,7 +105,6 @@ routeToPath route =
 
                 InvalidVersion ->
                     absolute [ "/error", "invalidVersion" ] []
-
 
 
 routeToClass : Route -> String

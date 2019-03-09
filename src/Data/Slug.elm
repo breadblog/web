@@ -1,11 +1,11 @@
 module Data.Slug exposing (Slug, toString, urlParser)
 
-
 import Url.Parser exposing (Parser)
 
 
-type Slug =
-    Slug String
+type Slug
+    = Slug String
+
 
 
 -- Util

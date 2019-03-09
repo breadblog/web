@@ -1,5 +1,4 @@
-module Data.PostId exposing (PostId, encode, decoder)
-
+module Data.PostId exposing (PostId, decoder, encode)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -12,9 +11,10 @@ type PostId
 decoder : Decoder PostId
 decoder =
     Decode.int
-        |> Decode.andThen (\int ->
-            Decode.succeed (PostId int)
-        )
+        |> Decode.andThen
+            (\int ->
+                Decode.succeed (PostId int)
+            )
 
 
 encode : PostId -> Value

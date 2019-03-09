@@ -1,6 +1,5 @@
 module Version exposing (current)
 
-
 import Data.Version exposing (Version)
 
 

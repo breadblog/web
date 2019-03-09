@@ -1,5 +1,4 @@
-module Data.Route exposing (Route(..), ProblemPage(..))
-
+module Data.Route exposing (ProblemPage(..), Route(..))
 
 import Data.Slug exposing (Slug)
 

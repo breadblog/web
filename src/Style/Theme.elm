@@ -1,6 +1,5 @@
 module Style.Theme exposing (background, primaryFont)
 
-
 import Css exposing (..)
 import Data.Theme exposing (Theme(..))
 

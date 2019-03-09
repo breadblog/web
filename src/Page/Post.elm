@@ -1,5 +1,9 @@
-module Page.Post exposing (Model, view, init)
+module Page.Post exposing (Model, init, view)
 
+import Data.Cache as Cache exposing (Cache)
+import Data.Post exposing (Post)
+import Data.Session exposing (Session)
+import Data.Theme exposing (Theme)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
@@ -7,10 +11,6 @@ import Html.Styled.Events
 import Message exposing (Msg)
 import Style.Post
 import Time
-import Data.Session exposing (Session)
-import Data.Post exposing (Post)
-import Data.Cache as Cache exposing (Cache)
-import Data.Theme exposing (Theme)
 import View.Markdown as Markdown
 
 
@@ -50,16 +50,16 @@ view model =
         name =
             "post"
     in
-        div
-            [ class name ]
-            [ h1
-                [ class "title" ]
-                [ text post.title ]
-            , h2
-                [ class "author" ]
-                [ text post.author ]
-            , Markdown.toHtml name postStyle.content post.content
-            ]
+    div
+        [ class name ]
+        [ h1
+            [ class "title" ]
+            [ text post.title ]
+        , h2
+            [ class "author" ]
+            [ text post.author ]
+        , Markdown.toHtml name postStyle.content post.content
+        ]
 
 
 content =

@@ -2,8 +2,8 @@ module Style.Post exposing (PostStyle, style)
 
 import Css exposing (..)
 import Css.Global exposing (Snippet)
-import Style.Font exposing (firaCode)
 import Data.Theme exposing (Theme(..))
+import Style.Font exposing (firaCode)
 
 
 type alias PostStyle =
@@ -16,9 +16,11 @@ type alias PostStyle =
 style : Theme -> PostStyle
 style theme =
     case theme of
-        Dark -> darkPostStyle
+        Dark ->
+            darkPostStyle
 
-        Light -> lightPostStyle
+        Light ->
+            lightPostStyle
 
 
 darkPostStyle : PostStyle
