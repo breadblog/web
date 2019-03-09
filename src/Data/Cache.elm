@@ -1,4 +1,4 @@
-module Data.Cache exposing (Cache, encode, decoder, version, theme, init)
+module Data.Cache exposing (Cache, encode, decoder, version, theme, init, mapTheme, default)
 
 
 import Json.Encode as Encode exposing (Value)
@@ -6,6 +6,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Data.Version exposing (Version)
 import Data.Theme as Theme exposing (Theme(..))
+import Data.Route exposing (ProblemPage(..))
 import Version
 
 
@@ -17,11 +18,6 @@ type alias Internals =
     { version : Version
     , theme : Theme
     }
-
-
-type Problem
-    = CorruptCache
-    | BadVersion
 
 
 -- READONLY
@@ -47,19 +43,52 @@ mapTheme fn (Cache cache) =
 
 -- Util
 
-init : Result Problem Cache
-init =
+init : Value -> Result (Cache, ProblemPage) Cache
+init flags =
+    case Decode.decodeValue decoder flags of
+        Ok cache ->
+            Ok cache
+
+        Err _ ->
+            default
+
+
+default : Result (Cache, ProblemPage) Cache
+default =
     case Version.current of
         Just v ->
-            Ok
-                ( Cache
+            Ok <| Cache <|
                     { version = v
                     , theme = Dark
                     }
-                )
 
         Nothing ->
-            Err BadVersion
+            Err
+                ( Cache {
+                    version = Data.Version.error
+                    , theme = Dark
+                    }
+                , InvalidVersion
+                )
+
+        -- TODO: Turn this into an error page
+        -- Nothing ->
+        --     Err
+        --         ( ProblemInfo.create
+        --             { title = "Cannot parse version"
+        --             , description =
+        --                 """
+        --                 The current version for the application is invalid
+
+        --                 If you are a user seeing this message... I am so sorry. There is no reason this should ever have occurred in production.
+
+        --                 I hope you still have a nice day, and hopefully if you check back later this will be fixed. Feel free to send an email to blog@parasrah.com and let me know about this if you want to really go the extra mile. Make sure to include a subject line of "tsk tsk" or something similar
+
+        --                 PS: If you are a developer... This is why you always use CI
+        --                 """
+        --             , action = Nothing
+        --             }
+        --         )
 
 
 -- JSON

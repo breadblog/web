@@ -14,9 +14,8 @@ import Port
 import Nav
 import Data.Session as Session exposing (Session)
 import Data.Cache as Cache exposing (Cache)
-import Data.Route as Route exposing (Route(..))
+import Data.Route as Route exposing (Route(..), ProblemPage(..))
 import Data.Theme exposing (Theme(..))
-import Data.ProblemInfo exposing (ProblemInfo)
 import Style.Theme
 import Style.Global
 import Page.Post
@@ -26,13 +25,32 @@ import Page.Problem
 
 -- Model
 
-type Model
-    = NotFound Session
-    | Home Session
+
+{-
+    Application model
+
+    Modelling the data in this way is potentially dangerous, because it is
+    entirely possible that `model.session` and `model.pageModel.session` is different,
+    which would ideally be impossible state. Same for `model.cache` and
+    `model.pageModel.cache`.
+
+    TODO: make this impossible state impossible without
+    * Losing cache or session and having to remake/retrieve it (performance/usability cost)
+    * Requiring ALL pages to take in session and/or cache, unless this is deemed acceptable
+-}
+type alias Model =
+    { cache : Cache
+    , session : Session
+    , pageModel : PageModel
+    }
+
+type PageModel
+    = NotFound
+    | Home
     | Post Page.Post.Model
-    | Profile Session
-    | Login Session
-    | Problem Page.Problem.Model
+    | Profile
+    | Login
+    | Problem ProblemPage
 
 
 -- Init
@@ -40,17 +58,22 @@ type Model
 
 init : Value -> Url.Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
-    case Decode.decodeValue Cache.decoder flags of
-        Ok cache ->
-            ( defaultModel cache url key
-            , Port.setCache cache
-            )
+    let
+        session =
+            Session.init key
 
-        Err problem ->
-            case problem of
-                _ -> ( Problem {}, Cmd.none )
-                -- Cache.Problem.BadVersion ->
-                --     ( (Problem {}), Cmd.none )
+    in
+        case Cache.init flags of
+            Ok cache ->
+                ( defaultModel cache url key
+                , Port.setCache cache
+                )
+
+            Err (cache, problemPage) ->
+                ( defaultModel cache url key
+                , Browser.Navigation.pushUrl session.key (Nav.routeToPath (Route.Problem problemPage))
+                )
+
 
 
 defaultModel : Cache -> Url.Url -> Key -> Model
@@ -62,13 +85,19 @@ defaultModel cache url key =
         session =
             Session.init key
 
-    in
-        case route of
-            Route.Home ->
-                Home session
+        pageModel =
+            case route of
+                Route.Home ->
+                    Home
 
-            _ ->
-                NotFound session
+                _ ->
+                    NotFound
+
+    in
+        { cache = cache
+        , session = session
+        , pageModel = pageModel
+        }
 
 
 
@@ -77,109 +106,91 @@ defaultModel cache url key =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        session =
-            toSession model
+    case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
+        LinkClicked urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Browser.Navigation.pushUrl model.session.key (Url.toString url) )
+
+                Browser.External href ->
+                    ( model, Browser.Navigation.load href )
 
 
-    in
-        case msg of
-            NoOp ->
-                ( model, Cmd.none )
+        ToggleTheme ->
+            let
+                theme =
+                    Cache.theme model.cache
+                newTheme =
+                    case (Cache.theme model.cache) of
+                        Light ->
+                            Dark
 
-            LinkClicked urlRequest ->
-                case urlRequest of
-                    Browser.Internal url ->
-                        ( model, Browser.Navigation.pushUrl session.key (Url.toString url) )
+                        Dark ->
+                            Light
 
-                    Browser.External href ->
-                        ( model, Browser.Navigation.load href )
-
-            UrlChanged url ->
-                let
-                    route =
-                        Nav.urlToRoute url
-                in
-                ( { model | route = route }
-                , Cmd.none
-                )
-
-            ToggleTheme ->
-                let
-                    newTheme =
-                        case model.cache.theme of
-                            Light ->
-                                Dark
-
-                            Dark ->
-                                Light
-
-                    cache =
-                        model.cache
-
-                    newCache =
-                        { cache | theme = newTheme }
-                in
+                newCache =
+                    Cache.mapTheme (\n -> newTheme) model.cache
+            in
                 ( { model | cache = newCache }, Port.setCache newCache )
-
+        UrlChanged url ->
+            let
+                route =
+                    Nav.urlToRoute url
+            in
+                changeRoute route model
 
 changeRoute : Route -> Model -> (Model, Cmd Msg)
 changeRoute route model =
     let
         session =
-            toSession model
+            model.session
+        
+        cache =
+            model.cache
+
+        theme =
+            Cache.theme cache
+
+        (pageModel, cmd) =
+            case route of
+                Route.Problem problemPage ->
+                    ( Problem problemPage
+                    , Cmd.none
+                    )
+
+                Route.NotFound ->
+                    ( NotFound
+                    , Cmd.none
+                    )
+
+                Route.Home ->
+                    ( Home
+                    , Cmd.none
+                    )
+
+                Route.Post slug ->
+                    Page.Post.init Post theme
+
+                Route.Profile ->
+                    ( Profile
+                    , Cmd.none
+                    )
+
+                Route.Login ->
+                    ( Login
+                    , Cmd.none
+                    )
 
     in
-        case route of
-            Route.NotFound ->
-                NotFound session
-
-            Route.Home ->
-                Home session
-
-            Route.Post slug ->
-                Page.Post.init session
-
-            Route.Profile ->
-                Profile session
-
-            Route.Login ->
-                Login session
-
-            Route.Problem page ->
-                case page of
-                    _ ->
-                        Page.Problem.init
-                            { session = session
-                            , problemInfo =
-                                { title = "Testing"
-                                , description = "Not a real problem yet"
-                                }
-                            , action = Nothing
-                            }
-
-
-
-toSession : Model -> Session
-toSession model =
-    case model of
-        NotFound session ->
-            session
-
-        Home session ->
-            session
-
-        Post postModel ->
-            Page.Post.toSession postModel
-
-        Profile session ->
-            session
-
-        Login session ->
-            session
-
-        Problem problemModel ->
-            Page.Problem.toSession problemModel
+        ( { session = session
+            , cache = cache
+            , pageModel = pageModel
+            }
+        , cmd
+        )
 
 
 -- Subscriptions
@@ -226,12 +237,17 @@ body model =
 
 viewPage : Model -> Html Msg
 viewPage model =
-    case model of
-        Post postModel ->
-            Page.Post.view postModel
+    let
+        theme =
+            Cache.theme model.cache
 
-        NotFound session ->
-            Page.NotFound.view session
+    in
+        case model.pageModel of
+            Post post ->
+                Page.Post.view post
+
+            _ ->
+                Page.NotFound.view
 
 
 -- Program

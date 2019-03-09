@@ -1,4 +1,4 @@
-module Data.Version exposing (Version, Problem, encode, decoder, toString, fromString)
+module Data.Version exposing (Version, encode, decoder, toString, fromString, error)
 
 
 import Array
@@ -6,19 +6,27 @@ import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
 
 
-type alias Version =
+type Version =
+    Version Internals
+
+
+type alias Internals =
     { major : Int
     , minor : Int
     , patch : Int
     }
 
 
-type Problem
-    = FailedToParse
+-- Util
+
+
+error : Version
+error =
+    Version <| Internals -1 -1 -1
 
 
 toString : Version -> String
-toString version =
+toString (Version version) =
     let
         list =
             [ version.major
@@ -62,7 +70,7 @@ fromString str =
             3 ->
                 case (first, second, third) of
                     (Just (Just major), Just (Just minor), Just (Just patch)) ->
-                        Just (Version major minor patch)
+                        Just <| Version <| Internals major minor patch
 
                     (_, _, _) ->
                         Nothing
@@ -91,25 +99,3 @@ decoder =
                 Nothing ->
                     Decode.fail "failed to parse version"
         )
-
-
-
--- TODO: Delete or use
--- module Data.Version exposing (Version(..), encode, decoder)
-
-
--- import Json.Encode as Encode exposing (Value)
--- import Json.Decode as Decode exposing (Decoder)
-
-
--- type Version = Version String
-
-
--- encode : Version -> Value
--- encode (Version version) =
---     Encode.string version
-
-
--- decoder : Decoder Version
--- decoder =
---     Decode.string |> Decode.andThen (\str -> Decode.succeed (Version str))

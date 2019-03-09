@@ -1,6 +1,7 @@
-module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlToRoute)
+module Nav exposing (routeParser, routeToClass, routeToName, routeToTitle, urlToRoute, routeToPath)
 
 import Url exposing (Url)
+import Url.Builder exposing (absolute)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
 import Data.Route as Route exposing (Route(..), ProblemPage(..))
 import Data.Slug as Slug exposing (Slug(..))
@@ -47,10 +48,9 @@ routeToName route =
         NotFound ->
             "404"
 
-        Problem e ->
-            case e of
-                CorruptCache _ ->
-                    "Corrupt Cache"
+        Problem problem ->
+            -- TODO: Replace me
+            "Problem"
 
 
 routeToTitle : Route -> String
@@ -77,6 +77,34 @@ urlToRoute url =
     url
         |> Url.toString
         |> toRoute
+
+
+routeToPath : Route -> String
+routeToPath route =
+    case route of
+        Home ->
+            absolute [] []
+
+        Post slug ->
+            absolute [ "post", Slug.toString slug ] []
+
+        Profile ->
+            absolute [ "/profile" ] []
+
+        Login ->
+            absolute [ "/login" ] []
+
+        NotFound ->
+            absolute [ "/404" ] []
+
+        Problem problem ->
+            case problem of
+                CorruptCache ->
+                    absolute [ "/error", "corruptCache" ] []
+
+                InvalidVersion ->
+                    absolute [ "/error", "invalidVersion" ] []
+
 
 
 routeToClass : Route -> String

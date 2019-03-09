@@ -11,8 +11,8 @@ import Data.Session exposing (Session)
 import Data.Route exposing (Route(..))
 
 
-view : Session -> Html Msg
-view model =
+view : Html Msg
+view =
     main_
         [ class (routeToClass NotFound)
         ]

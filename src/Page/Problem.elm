@@ -1,4 +1,5 @@
-module Page.Problem exposing (Model, view, toSession, init)
+-- TODO: Scrap this page for different types of error pages
+module Page.Problem exposing (Model, view, init)
 
 
 import Html.Styled exposing (..)
@@ -6,24 +7,16 @@ import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
 import Message exposing (Msg(..))
 import Data.Session exposing (Session)
-import Data.ProblemInfo exposing (ProblemInfo)
 
 
 type alias Model =
-    { session : Session
-    , problemInfo : ProblemInfo
-    , action : Maybe (Html Msg)
+    {
     }
 
 
-init : Model -> Model
-init model =
-    model
-
-
-toSession : Model -> Session
-toSession model =
-    model.session
+init : Model
+init = 
+    {}
 
 
 view : Model -> Html Msg

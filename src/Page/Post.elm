@@ -1,4 +1,4 @@
-module Page.Post exposing (Model, view, toSession, init)
+module Page.Post exposing (Model, view, init)
 
 import Html
 import Html.Styled exposing (..)
@@ -10,30 +10,25 @@ import Time
 import Data.Session exposing (Session)
 import Data.Post exposing (Post)
 import Data.Cache as Cache exposing (Cache)
+import Data.Theme exposing (Theme)
 import View.Markdown as Markdown
 
 
 type alias Model =
-    { session : Session
-    , cache : Cache
-    , post : Maybe Post
+    { post : Maybe Post
+    , theme : Theme
     }
 
 
-init : { session : Session, cache : Cache } -> ( Model, Cmd Msg )
-init { session, cache } =
+init : (Model -> e) -> Theme -> ( e, Cmd Msg )
+init transform theme =
     -- TODO: How are these formatted?
-    ( { session = session
-        , cache = cache
-        , post = Nothing
+    ( transform <|
+        { post = Nothing
+        , theme = theme
         }
     , Cmd.none
     )
-
-
-toSession : Model -> Session
-toSession model =
-    model.session
 
 
 view : Model -> Html Msg
@@ -47,7 +42,7 @@ view model =
             }
 
         theme =
-            Cache.theme model.cache
+            model.theme
 
         postStyle =
             Style.Post.style theme

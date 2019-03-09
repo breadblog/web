@@ -2,7 +2,6 @@ module Data.Route exposing (Route(..), ProblemPage(..))
 
 
 import Data.Slug exposing (Slug)
-import Data.ProblemInfo exposing (ProblemInfo)
 
 
 type Route
@@ -15,4 +14,5 @@ type Route
 
 
 type ProblemPage
-    = CorruptCache String
+    = CorruptCache
+    | InvalidVersion
