@@ -1,12 +1,13 @@
-port module Data.Cache exposing (Cache, decoder, encode, init, mapTheme, theme, version)
+port module Data.Cache exposing (Cache, Msg(..), init, update, theme, version)
 
 import Data.Route exposing (ProblemPage(..))
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode as Decode exposing (Decoder, Error(..))
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
 import Version
+
 
 
 type Cache
@@ -19,17 +20,40 @@ type alias Internals =
     }
 
 
+-- Message
+
+type Msg =
+    SetTheme Theme
+
+
+-- Update
+
+update : Msg -> Cache -> (Cache, Cmd msg)
+update msg (Cache oldCache) =
+    let
+        internals =
+            case msg of
+                SetTheme newTheme ->
+                    { oldCache | theme = newTheme }
+
+        newCache =
+            Cache internals
+
+    in
+    ( newCache, set newCache )
+
+
 -- Ports
 
 
-port cacheSet : Value -> Cmd msg
+port setCache : Value -> Cmd msg
 
 
-setCache : Cache -> Cmd msg
-setCache cache =
+set : Cache -> Cmd msg
+set cache =
     cache
         |> encode
-        |> cacheSet
+        |> setCache
 
 
 
@@ -41,7 +65,7 @@ version (Cache cache) =
     cache.version
 
 
--- READWRITE
+-- READONLY
 
 
 theme : Cache -> Theme
@@ -49,50 +73,30 @@ theme (Cache cache) =
     cache.theme
 
 
-
--- TODO: Should only expose this as a message (so can only be sent to update)
-
-
-mapTheme : (Theme -> Theme) -> Cache -> (Cmd msg)
-mapTheme fn (Cache cache) =
-    setCache <|
-        Cache
-            { cache | theme = fn cache.theme }
-
-
-
 -- Util
 
 
 init : Value -> Result ( Cache, ProblemPage ) Cache
 init flags =
-    case Decode.decodeValue decoder flags of
-        Ok cache ->
-            Ok cache
-
-        Err _ ->
-            default
-
-
-default : Result ( Cache, ProblemPage ) Cache
-default =
     case Version.current of
-        Just v ->
-            Ok <|
-                Cache <|
-                    { version = v
-                    , theme = Dark
-                    }
+        Just currentVersion ->
+            case Decode.decodeValue decoders flags of
+                    Ok internals ->
+                        Ok <| Cache internals
 
+                    Err err ->
+                        Err ( Cache <| default currentVersion, CorruptCache err )
         Nothing ->
-            Err
-                ( Cache
-                    { version = Data.Version.error
-                    , theme = Dark
-                    }
-                , InvalidVersion
-                )
+            Err <|
+                ( Cache <| default Data.Version.error, InvalidVersion )
 
+
+
+default : Version -> Internals
+default ver =
+    { theme = Light
+    , version = ver
+    }
 
 
 -- TODO: Turn this into an error page
@@ -121,12 +125,22 @@ encode (Cache cache) =
         ]
 
 
-decoder : Decoder Cache
-decoder =
+defaultDecoder : Version -> Decoder Internals
+defaultDecoder currentVersion =
+    Decode.null <| default currentVersion
+
+
+decoders :  Decoder Internals 
+decoders =
+    Decode.oneOf
+        [ decoder__A
+        ]
+
+decoder__A : Decoder Internals
+decoder__A =
     Decode.succeed Internals
         |> required "version" Data.Version.decoder
         |> required "theme" Theme.decoder
-        |> Decode.map Cache
 
 
 

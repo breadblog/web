@@ -1,19 +1,18 @@
--- TODO: Scrap this page for different types of error pages
-
-
 module Page.Problem.CorruptCache exposing (Model, init, view)
 
+
 import Html.Styled exposing (..)
+import Json.Decode exposing (Error(..))
 
 
 type alias Model =
-    { message : String
+    { error : Error
     }
 
 
-init : String -> Model
-init message =
-    { message = message }
+init : Error -> Model
+init error =
+    { error = error }
 
 
 view : Model -> Html msg

@@ -20,9 +20,8 @@ type alias Model =
     }
 
 
-init : (Model -> e) -> Theme -> ( e, Cmd Msg )
+init : (Model -> e) -> Theme -> ( e, Cmd msg )
 init transform theme =
-    -- TODO: How are these formatted?
     ( transform <|
         { post = Nothing
         , theme = theme

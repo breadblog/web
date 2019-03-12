@@ -2,25 +2,26 @@ module Main exposing (main)
 
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
+import Html
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (class, css)
 import Css exposing (absolute, px)
+import Json.Decode as Decode
+import Json.Encode exposing (Value)
 import Data.Cache as Cache exposing (Cache)
 import Data.Route as Route exposing (ProblemPage(..), Route(..))
 import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme(..))
-import Html
-import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (class, css)
-import Json.Decode as Decode
-import Json.Encode exposing (Value)
 import Message exposing (Msg(..))
-import Nav
 import Page.NotFound
+import Page.Redirect
+import Page.Home
 import Page.Post
 import Page.Problem.CorruptCache
 import Page.Problem.InvalidVersion
-import Port
 import Style.Global
 import Style.Theme
+import Style.Font as Font
 import Url exposing (Url)
 
 
@@ -49,12 +50,14 @@ type alias Model =
 
 
 type PageModel
-    = NotFound
-    | Home
+    = Redirect
+    | NotFound
+    | Home Page.Home.Model
     | Post Page.Post.Model
     | Profile
     | Login
-
+    | About
+    | Donate
 
 
 -- Init
@@ -63,57 +66,37 @@ type PageModel
 init : Value -> Url.Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
     let
-        session =
-            Session.init key
-    in
-    case Cache.init flags of
-        Ok cache ->
-            ( defaultModel cache url key
-            , Port.setCache cache
-            )
+        (cache, problem) =
+            case Cache.init flags of
+                Ok c ->
+                    (c, None)
 
-        Err ( cache, problem ) ->
-            let
-                model =
-                    defaultModel cache url key
-            in
-            ( { model | problem = problem }, Cmd.none )
+                Err (c, p) ->
+                    (c, p)
 
+        model =
+            { cache = cache
+            , problem = problem
+            , session = session
+            , pageModel = Redirect
+            }
 
-defaultModel : Cache -> Url.Url -> Key -> Model
-defaultModel cache url key =
-    let
         route =
-            Nav.urlToRoute url
+            Route.fromUrl url
 
         session =
             Session.init key
 
-        pageModel =
-            case route of
-                Route.Home ->
-                    Home
-
-                _ ->
-                    NotFound
     in
-    { cache = cache
-    , session = session
-    , pageModel = pageModel
-    , problem = None
-    }
-
+    changeRoute route model
 
 
 -- Update
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        NoOp ->
-            ( model, Cmd.none )
-
+update wrapper model =
+    case wrapper of
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
@@ -125,9 +108,18 @@ update msg model =
         UrlChanged url ->
             let
                 route =
-                    Nav.urlToRoute url
+                    Route.fromUrl url
             in
             changeRoute route model
+
+        CacheMsg msg ->
+            let
+                (cache, cmd) =
+                    Cache.update msg model.cache
+
+            in
+            ({ model | cache = cache }, cmd)
+
 
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
@@ -150,9 +142,7 @@ changeRoute route model =
                     )
 
                 Route.Home ->
-                    ( Home
-                    , Cmd.none
-                    )
+                    Page.Home.init Home theme
 
                 Route.Post slug ->
                     Page.Post.init Post theme
@@ -164,6 +154,16 @@ changeRoute route model =
 
                 Route.Login ->
                     ( Login
+                    , Cmd.none
+                    )
+
+                Route.About ->
+                    ( About
+                    , Cmd.none
+                    )
+
+                Route.Donate ->
+                    ( Donate
                     , Cmd.none
                     )
     in
@@ -212,6 +212,7 @@ body model =
             , Css.right (px 0)
             , Css.backgroundColor (Style.Theme.background theme)
             , Css.color (Style.Theme.primaryFont theme)
+            , Css.fontFamilies Font.montserrat
             ]
         ]
         [ viewPage model ]
@@ -226,14 +227,6 @@ viewPage model =
             Cache.theme model.cache
     in
     case model.problem of
-        None ->
-            case model.pageModel of
-                Post post ->
-                    Page.Post.view post
-
-                _ ->
-                    Page.NotFound.view
-
         InvalidVersion ->
             Page.Problem.InvalidVersion.view <|
                 Page.Problem.InvalidVersion.init
@@ -241,6 +234,20 @@ viewPage model =
         CorruptCache msg ->
             Page.Problem.CorruptCache.view <|
                 Page.Problem.CorruptCache.init msg
+
+        None ->
+            case model.pageModel of
+                Redirect ->
+                    Page.Redirect.view theme
+
+                Home home ->
+                    Page.Home.view home
+
+                Post post ->
+                    Page.Post.view post
+
+                _ ->
+                    Page.NotFound.view
 
 
 
