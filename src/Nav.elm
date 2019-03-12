@@ -1,7 +1,9 @@
 module Nav exposing (routeParser, routeToClass, routeToName, routeToPath, routeToTitle, urlToRoute)
 
-import Model exposing (ErrorPage(..), Route(..), Slug(..))
+import Data.Route as Route exposing (ProblemPage(..), Route(..))
+import Data.Slug as Slug exposing (Slug(..))
 import Url exposing (Url)
+import Url.Builder exposing (absolute)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
 
 
@@ -12,18 +14,13 @@ routeParser =
         [ Parser.map Home top
 
         -- Posts
-        , Parser.map ReadPost (s "post" </> slugUrlParser)
+        , Parser.map Post (s "post" </> Slug.urlParser)
 
         -- Info
-        , Parser.map About (s "about")
+        -- , Parser.map About (s "about")
 
         -- ErrorPages
         ]
-
-
-slugUrlParser : Parser (Slug -> a) a
-slugUrlParser =
-    Parser.custom "SLUG" (\str -> Just (Slug str))
 
 
 toRoute : String -> Route
@@ -41,24 +38,25 @@ routeToName : Route -> String
 routeToName route =
     case route of
         Home ->
-            "Fork"
+            "Home"
 
-        About ->
-            "About"
+        -- About ->
+        --     "About"
 
-        Donate ->
-            "Donate"
+        -- Donate ->
+        --     "Donate"
 
-        ReadPost slug ->
-            "Post"
+        Post slug ->
+            "Post" ++ Slug.toString slug
+
+        Profile ->
+            "Profile"
+
+        Login ->
+            "Login"
 
         NotFound ->
             "404"
-
-        Error e ->
-            case e of
-                CorruptCache _ ->
-                    "Corrupt Cache"
 
 
 routeToTitle : Route -> String
@@ -87,6 +85,25 @@ urlToRoute url =
         |> toRoute
 
 
+routeToPath : Route -> String
+routeToPath route =
+    case route of
+        Home ->
+            absolute [] []
+
+        Post slug ->
+            absolute [ "post", Slug.toString slug ] []
+
+        Profile ->
+            absolute [ "/profile" ] []
+
+        Login ->
+            absolute [ "/login" ] []
+
+        NotFound ->
+            absolute [ "/404" ] []
+
+
 routeToClass : Route -> String
 routeToClass route =
     case route of
@@ -98,27 +115,3 @@ routeToClass route =
                 |> routeToName
                 |> String.replace " " "-"
                 |> String.toLower
-
-
-routeToPath : Route -> String
-routeToPath route =
-    case route of
-        Home ->
-            "/"
-
-        ReadPost (Slug slug) ->
-            "/post/" ++ slug
-
-        About ->
-            "/about"
-
-        Donate ->
-            "/donate"
-
-        NotFound ->
-            "/404"
-
-        Error errorPage ->
-            case errorPage of
-                CorruptCache _ ->
-                    "/error/corruptCache"

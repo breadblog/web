@@ -12,8 +12,8 @@
     "lint:js": "eslint src/**/*.js",
     "format": "npm run format:elm && npm run format:js",
     "format:elm": "npm run format:elm:src && npm run format:elm:test",
-    "format:elm:src": "elm-format src/",
-    "format:elm:test": "elm-format tests/",
+    "format:elm:src": "elm-format src/ --yes",
+    "format:elm:test": "elm-format tests/ --yes",
     "format:js": "eslint src/**/*.js --fix"
   },
   "repository": {
@@ -42,6 +42,7 @@
     "eslint-plugin-node": "^8.0.1",
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0",
+    "feather-icons": "^4.19.0",
     "file-loader": "^3.0.1",
     "highlight.js": "^9.15.6",
     "html-webpack-plugin": "^3.2.0",
