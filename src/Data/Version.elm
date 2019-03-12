@@ -3,7 +3,7 @@ module Data.Version exposing (Version, decoder, encode, error, fromString, toStr
 import Array
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
-import Parser exposing (Parser, (|.), (|=), int, symbol, end)
+import Parser exposing ((|.), (|=), Parser, end, int, symbol)
 import Parser.Advanced exposing (chompWhile, getChompedString)
 
 
@@ -16,6 +16,7 @@ type alias Internals =
     , minor : Int
     , patch : Int
     }
+
 
 
 -- Util
@@ -76,6 +77,7 @@ checkSegment str =
 
         _ ->
             Parser.problem "version segment is not an integer"
+
 
 
 -- JSON
