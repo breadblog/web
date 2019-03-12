@@ -12,8 +12,8 @@
     "lint:js": "eslint src/**/*.js",
     "format": "npm run format:elm && npm run format:js",
     "format:elm": "npm run format:elm:src && npm run format:elm:test",
-    "format:elm:src": "elm-format src/",
-    "format:elm:test": "elm-format tests/",
+    "format:elm:src": "elm-format src/ --yes",
+    "format:elm:test": "elm-format tests/ --yes",
     "format:js": "eslint src/**/*.js --fix"
   },
   "repository": {

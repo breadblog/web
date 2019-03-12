@@ -3,6 +3,8 @@ module Data.Version exposing (Version, decoder, encode, error, fromString, toStr
 import Array
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
+import Parser exposing ((|.), (|=), Parser, end, int, symbol)
+import Parser.Advanced exposing (chompWhile, getChompedString)
 
 
 type Version
@@ -39,44 +41,42 @@ toString (Version version) =
         |> String.join "."
 
 
-
--- TODO: Test this
-
-
 fromString : String -> Maybe Version
 fromString str =
-    let
-        splits =
-            String.split "." str
+    case Parser.run parser str of
+        Err _ ->
+            Nothing
 
-        parsed =
-            splits
-                |> List.map String.toInt
-                |> Array.fromList
+        Ok version ->
+            Just version
 
-        first =
-            Array.get 0 parsed
 
-        second =
-            Array.get 1 parsed
+parser : Parser Version
+parser =
+    Parser.map Version <|
+        Parser.succeed Internals
+            |= segment
+            |. symbol "."
+            |= segment
+            |. symbol "."
+            |= segment
+            |. end
 
-        third =
-            Array.get 2 parsed
 
-        numSplits =
-            List.length splits
-    in
-    case numSplits of
-        3 ->
-            case ( first, second, third ) of
-                ( Just (Just major), Just (Just minor), Just (Just patch) ) ->
-                    Just <| Version <| Internals major minor patch
+segment : Parser Int
+segment =
+    getChompedString (chompWhile Char.isDigit)
+        |> Parser.andThen checkSegment
 
-                ( _, _, _ ) ->
-                    Nothing
+
+checkSegment : String -> Parser Int
+checkSegment str =
+    case String.toInt str of
+        Just n ->
+            Parser.succeed n
 
         _ ->
-            Nothing
+            Parser.problem "version segment is not an integer"
 
 
 
