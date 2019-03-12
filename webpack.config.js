@@ -59,7 +59,6 @@ config
         .loader('elm-webpack-loader')
         .options({
           cwd: root(),
-          debug: true,
         })
         .end()
       .end()
@@ -117,6 +116,20 @@ if (build() === 'dev') {
       .filename('[name].js')
       .publicPath('/')
       .end()
+    .module
+      .rule('elm')
+        .use('elm hot')
+          .loader('elm-hot-webpack-loader')
+          .end()
+        .use('elm')
+          .loader('elm-webpack-loader')
+          .options({
+            cwd: root(),
+            debug: true,
+          })
+          .end()
+        .end()
+      .end()
     .plugin('extract css')
       .use(ExtractCssPlugin, [{
         filename: '[name].css',
@@ -133,6 +146,17 @@ if (build() === 'prod') {
       .path(dist())
       .filename('[name].[hash].js')
       .publicPath('/')
+      .end()
+    .module
+      .rule('elm')
+        .use('elm')
+          .loader('elm-webpack-loader')
+          .options({
+            cwd: root(),
+            optimize: true,
+          })
+          .end()
+        .end()
       .end()
     .plugin('extract css')
       .use(ExtractCssPlugin, [{

@@ -1,4 +1,4 @@
-module Data.Cache exposing (Cache, decoder, default, encode, init, mapTheme, theme, version)
+module Data.Cache exposing (Cache, decoder, encode, init, mapTheme, theme, version)
 
 import Data.Route exposing (ProblemPage(..))
 import Data.Theme as Theme exposing (Theme(..))
@@ -35,6 +35,10 @@ version (Cache cache) =
 theme : Cache -> Theme
 theme (Cache cache) =
     cache.theme
+
+
+
+-- TODO: Should only expose this as a message (so can only be sent to update)
 
 
 mapTheme : (Theme -> Theme) -> Cache -> Cache

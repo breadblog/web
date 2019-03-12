@@ -49,10 +49,6 @@ routeToName route =
         NotFound ->
             "404"
 
-        Problem problem ->
-            -- TODO: Replace me
-            "Problem"
-
 
 routeToTitle : Route -> String
 routeToTitle route =
@@ -97,14 +93,6 @@ routeToPath route =
 
         NotFound ->
             absolute [ "/404" ] []
-
-        Problem problem ->
-            case problem of
-                CorruptCache ->
-                    absolute [ "/error", "corruptCache" ] []
-
-                InvalidVersion ->
-                    absolute [ "/error", "invalidVersion" ] []
 
 
 routeToClass : Route -> String
