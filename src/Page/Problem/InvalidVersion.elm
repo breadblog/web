@@ -3,7 +3,6 @@
 
 module Page.Problem.InvalidVersion exposing (Model, init, view)
 
-
 import Html.Styled exposing (..)
 
 

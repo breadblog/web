@@ -16,8 +16,8 @@ import Message exposing (Msg(..))
 import Nav
 import Page.NotFound
 import Page.Post
-import Page.Problem.InvalidVersion
 import Page.Problem.CorruptCache
+import Page.Problem.InvalidVersion
 import Port
 import Style.Global
 import Style.Theme
@@ -56,6 +56,7 @@ type PageModel
     | Login
 
 
+
 -- Init
 
 
@@ -73,9 +74,10 @@ init flags url key =
 
         Err ( cache, problem ) ->
             let
-                model = defaultModel cache url key
+                model =
+                    defaultModel cache url key
             in
-                ({ model | problem = problem }, Cmd.none)
+            ( { model | problem = problem }, Cmd.none )
 
 
 defaultModel : Cache -> Url.Url -> Key -> Model
@@ -251,12 +253,12 @@ viewPage model =
                     Page.NotFound.view
 
         InvalidVersion ->
-            Page.Problem.InvalidVersion.view
-                <| Page.Problem.InvalidVersion.init
+            Page.Problem.InvalidVersion.view <|
+                Page.Problem.InvalidVersion.init
 
         CorruptCache msg ->
-            Page.Problem.CorruptCache.view
-                <| Page.Problem.CorruptCache.init msg
+            Page.Problem.CorruptCache.view <|
+                Page.Problem.CorruptCache.init msg
 
 
 

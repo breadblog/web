@@ -37,7 +37,10 @@ theme (Cache cache) =
     cache.theme
 
 
+
 -- TODO: Should only expose this as a message (so can only be sent to update)
+
+
 mapTheme : (Theme -> Theme) -> Cache -> Cache
 mapTheme fn (Cache cache) =
     Cache
