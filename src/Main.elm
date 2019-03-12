@@ -16,7 +16,8 @@ import Message exposing (Msg(..))
 import Nav
 import Page.NotFound
 import Page.Post
-import Page.Problem
+import Page.Problem.InvalidVersion
+import Page.Problem.CorruptCache
 import Port
 import Style.Global
 import Style.Theme
@@ -41,6 +42,7 @@ import Url exposing (Url)
 
 type alias Model =
     { cache : Cache
+    , problem : ProblemPage
     , session : Session
     , pageModel : PageModel
     }
@@ -52,8 +54,6 @@ type PageModel
     | Post Page.Post.Model
     | Profile
     | Login
-    | Problem ProblemPage
-
 
 
 -- Init
@@ -71,10 +71,11 @@ init flags url key =
             , Port.setCache cache
             )
 
-        Err ( cache, problemPage ) ->
-            ( defaultModel cache url key
-            , Browser.Navigation.pushUrl session.key (Nav.routeToPath (Route.Problem problemPage))
-            )
+        Err ( cache, problem ) ->
+            let
+                model = defaultModel cache url key
+            in
+                ({ model | problem = problem }, Cmd.none)
 
 
 defaultModel : Cache -> Url.Url -> Key -> Model
@@ -97,6 +98,7 @@ defaultModel cache url key =
     { cache = cache
     , session = session
     , pageModel = pageModel
+    , problem = None
     }
 
 
@@ -158,11 +160,6 @@ changeRoute route model =
 
         ( pageModel, cmd ) =
             case route of
-                Route.Problem problemPage ->
-                    ( Problem problemPage
-                    , Cmd.none
-                    )
-
                 Route.NotFound ->
                     ( NotFound
                     , Cmd.none
@@ -189,6 +186,7 @@ changeRoute route model =
     ( { session = session
       , cache = cache
       , pageModel = pageModel
+      , problem = None
       }
     , cmd
     )
@@ -243,12 +241,22 @@ viewPage model =
         theme =
             Cache.theme model.cache
     in
-    case model.pageModel of
-        Post post ->
-            Page.Post.view post
+    case model.problem of
+        None ->
+            case model.pageModel of
+                Post post ->
+                    Page.Post.view post
 
-        _ ->
-            Page.NotFound.view
+                _ ->
+                    Page.NotFound.view
+
+        InvalidVersion ->
+            Page.Problem.InvalidVersion.view
+                <| Page.Problem.InvalidVersion.init
+
+        CorruptCache msg ->
+            Page.Problem.CorruptCache.view
+                <| Page.Problem.CorruptCache.init msg
 
 
 
