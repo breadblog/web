@@ -9,9 +9,9 @@ type Route
     | Post Slug
     | Profile
     | Login
-    | Problem ProblemPage
 
 
 type ProblemPage
-    = CorruptCache
+    = None
+    | CorruptCache String
     | InvalidVersion

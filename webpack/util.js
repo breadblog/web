@@ -10,7 +10,7 @@ exports.Color = Color
 const print = (msg, color = Color.blue) => { console.log(`${color}%s\x1b[0m`, msg) }
 exports.print = print
 
-const build = () => process.env.BUILD || 'dev'
+const build = () => process.env.WEBPACK_ENV || 'dev'
 exports.build = build
 const root = (...args) => path.resolve(__dirname, '..', ...args)
 exports.root = root
