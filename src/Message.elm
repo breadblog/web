@@ -1,9 +1,9 @@
 module Message exposing (Msg(..))
 
 import Browser
-import Url exposing (Url)
-import Data.Theme exposing (Theme)
 import Data.Cache as Cache
+import Data.Theme exposing (Theme)
+import Url exposing (Url)
 
 
 type Msg

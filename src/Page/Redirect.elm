@@ -1,10 +1,9 @@
 module Page.Redirect exposing (view)
 
-
-import Html.Styled exposing (Html, main_)
-import Html.Styled.Attributes exposing (css, class)
 import Css exposing (..)
 import Data.Theme exposing (Theme)
+import Html.Styled exposing (Html, main_)
+import Html.Styled.Attributes exposing (class, css)
 import Style.Theme as Theme
 
 

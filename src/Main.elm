@@ -2,26 +2,26 @@ module Main exposing (main)
 
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
-import Html
-import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (class, css)
 import Css exposing (absolute, px)
-import Json.Decode as Decode
-import Json.Encode exposing (Value)
 import Data.Cache as Cache exposing (Cache)
 import Data.Route as Route exposing (ProblemPage(..), Route(..))
 import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme(..))
+import Html
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (class, css)
+import Json.Decode as Decode
+import Json.Encode exposing (Value)
 import Message exposing (Msg(..))
-import Page.NotFound
-import Page.Redirect
 import Page.Home
+import Page.NotFound
 import Page.Post
 import Page.Problem.CorruptCache
 import Page.Problem.InvalidVersion
+import Page.Redirect
+import Style.Font as Font
 import Style.Global
 import Style.Theme
-import Style.Font as Font
 import Url exposing (Url)
 
 
@@ -60,19 +60,20 @@ type PageModel
     | Donate
 
 
+
 -- Init
 
 
 init : Value -> Url.Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
     let
-        (cache, problem) =
+        ( cache, problem ) =
             case Cache.init flags of
                 Ok c ->
-                    (c, None)
+                    ( c, None )
 
-                Err (c, p) ->
-                    (c, p)
+                Err ( c, p ) ->
+                    ( c, p )
 
         model =
             { cache = cache
@@ -86,9 +87,9 @@ init flags url key =
 
         session =
             Session.init key
-
     in
     changeRoute route model
+
 
 
 -- Update
@@ -114,12 +115,10 @@ update wrapper model =
 
         CacheMsg msg ->
             let
-                (cache, cmd) =
+                ( cache, cmd ) =
                     Cache.update msg model.cache
-
             in
-            ({ model | cache = cache }, cmd)
-
+            ( { model | cache = cache }, cmd )
 
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )

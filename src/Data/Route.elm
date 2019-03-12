@@ -1,11 +1,10 @@
 module Data.Route exposing (ProblemPage(..), Route(..), fromUrl, toClass, toPath)
 
-
 import Data.Slug as Slug exposing (Slug)
+import Json.Decode as Decode
 import Url exposing (Url)
 import Url.Builder exposing (absolute)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
-import Json.Decode as Decode
 
 
 type Route
@@ -39,12 +38,13 @@ urlParser =
 
         -- Info
         -- , Parser.map About (s "about")
-
         -- ErrorPages
         ]
 
 
+
 -- Util
+
 
 fromUrl : Url -> Route
 fromUrl url =
@@ -78,7 +78,6 @@ toTitle route =
 
         _ ->
             titlePrefix ++ " | " ++ routeName
-
 
 
 toName : Route -> String

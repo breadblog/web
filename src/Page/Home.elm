@@ -1,13 +1,14 @@
-module Page.Home exposing (Model, Msg(..), view, init)
+module Page.Home exposing (Model, Msg(..), init, view)
 
 import Css exposing (..)
+import Data.Route as Route exposing (Route(..))
+import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import Data.Theme exposing (Theme)
-import Data.Route as Route exposing (Route(..))
 import Message
 import View.Header
+
 
 
 -- Model
@@ -27,12 +28,13 @@ init transform theme =
     )
 
 
+
 -- Message
 
 
 type Msg
     = Global Message.Msg
-    
+
 
 
 -- View

@@ -1,6 +1,5 @@
 module Page.Problem.CorruptCache exposing (Model, init, view)
 
-
 import Html.Styled exposing (..)
 import Json.Decode exposing (Error(..))
 

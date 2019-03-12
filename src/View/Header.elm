@@ -2,13 +2,13 @@ module View.Header exposing (view)
 
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
+import Data.Cache as Cache exposing (Msg(..))
+import Data.Route as Route exposing (Route(..))
+import Data.Theme exposing (Theme(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Msg(..))
-import Data.Theme exposing (Theme(..))
-import Data.Route as Route exposing (Route(..))
-import Data.Cache as Cache exposing (Msg(..))
 import Style.Font as Font
 import Style.Screen as Screen
 import Style.Theme as Theme
@@ -16,7 +16,8 @@ import Svg.Styled.Attributes
 import View.Svg as Svg
 
 
-type alias Msg = Message.Msg
+type alias Msg =
+    Message.Msg
 
 
 view : Theme -> Html Msg
