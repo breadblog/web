@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, Msg(..), init, view, fromGlobal, toGlobal)
+module Page.Profile exposing (Model, Msg(..), init, view, fromGlobal, toGlobal)
 
 import Css exposing (..)
 import Data.Route as Route exposing (Route(..))
@@ -6,7 +6,6 @@ import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import View.Header
 import Data.Cache as Cache exposing (Cache)
 import Data.Session as Session exposing (Session)
 import Message
@@ -42,11 +41,11 @@ toGlobal model =
     (model.session, model.cache)
 
 
-
 -- Message
 
 type Msg
     = NoOp
+
 
 -- View
 
@@ -58,7 +57,7 @@ view model =
             Cache.theme model.cache
     in
     div
-        [ class (Route.toClass Home) ]
-        [ View.Header.view theme
+        [ class (Route.toClass Profile) ]
+        [
         ]
 

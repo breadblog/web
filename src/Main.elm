@@ -16,6 +16,9 @@ import Message exposing (Msg(..))
 import Page.Home
 import Page.NotFound
 import Page.Post
+import Page.About
+import Page.Profile
+import Page.Donate
 import Page.Problem.CorruptCache
 import Page.Problem.InvalidVersion
 import Page.Redirect
@@ -27,39 +30,27 @@ import Url exposing (Url)
 
 
 -- Model
-{-
-   Application model
-
-   Modelling the data in this way is potentially dangerous, because it is
-   entirely possible that `model.session` and `model.pageModel.session` is different,
-   which would ideally be impossible state. Same for `model.cache` and
-   `model.pageModel.cache`.
-
-   TODO: make this impossible state impossible without
-   * Losing cache or session and having to remake/retrieve it (performance/usability cost)
-   * Requiring ALL pages to take in session and/or cache, unless this is deemed acceptable
--}
 
 
 type alias Model =
-    { cache : Cache
-    , problem : ProblemPage
-    , session : Session
+    { problem : ProblemPage
     , pageModel : PageModel
     }
 
 
 type PageModel
-    = Redirect
-    | NotFound
+    = Redirect Global
+    | NotFound Global
     | Home Page.Home.Model
     | Post Page.Post.Model
-    | Profile
-    | Login
-    | About
-    | Donate
+    | Donate Page.Donate.Model
+    | About Page.About.Model
+    | Profile Page.Profile.Model
+    -- | Login
 
 
+type alias Global
+    = (Session, Cache)
 
 -- Init
 
@@ -67,28 +58,47 @@ type PageModel
 init : Value -> Url.Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
     let
-        ( cache, problem ) =
-            case Cache.init flags of
-                Ok c ->
-                    ( c, None )
-
-                Err ( c, p ) ->
-                    ( c, p )
-
-        model =
-            { cache = cache
-            , problem = problem
-            , session = session
-            , pageModel = Redirect
-            }
-
         route =
             Route.fromUrl url
 
         session =
             Session.init key
+
+        decoding =
+            Cache.init flags
+
+        cache =
+            case decoding of
+                Ok (c, _) -> c
+
+                Err (c, _) -> c
+
+        global =
+            (session, cache)
+
+        problem =
+            case decoding of
+                Ok _ -> None
+
+                Err (_, p) -> p
+
+        (model, cmd) =
+            changeRoute route
+                { problem = None
+                , pageModel = Redirect
+                    (session, cache)
+                }
+
+        cmds =
+            case decoding of
+                Ok (_, c) ->
+                    [c, cmd]
+
+                Err _ ->
+                    [cmd]
+
     in
-    changeRoute route model
+        ( { model | problem = problem }, Cmd.batch cmds )
 
 
 
@@ -97,11 +107,15 @@ init flags url key =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update wrapper model =
+    let
+        (session, cache) =
+            toGlobal model.pageModel
+    in
     case wrapper of
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    ( model, Browser.Navigation.pushUrl model.session.key (Url.toString url) )
+                    ( model, Browser.Navigation.pushUrl session.key (Url.toString url) )
 
                 Browser.External href ->
                     ( model, Browser.Navigation.load href )
@@ -115,66 +129,93 @@ update wrapper model =
 
         CacheMsg msg ->
             let
-                ( cache, cmd ) =
-                    Cache.update msg model.cache
+                ( newCache, cmd ) =
+                    Cache.update msg cache
             in
-            ( { model | cache = cache }, cmd )
+            ( { model | pageModel = fromGlobal (session, newCache) model.pageModel }, cmd )
 
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
 changeRoute route model =
     let
-        session =
-            model.session
-
-        cache =
-            model.cache
-
-        theme =
-            Cache.theme cache
+        global =
+            toGlobal model.pageModel
 
         ( pageModel, cmd ) =
             case route of
                 Route.NotFound ->
-                    ( NotFound
-                    , Cmd.none
-                    )
+                    (NotFound global, Cmd.none)
 
                 Route.Home ->
-                    Page.Home.init Home theme
+                    Page.Home.init Home global
 
                 Route.Post slug ->
-                    Page.Post.init Post theme
-
-                Route.Profile ->
-                    ( Profile
-                    , Cmd.none
-                    )
-
-                Route.Login ->
-                    ( Login
-                    , Cmd.none
-                    )
-
-                Route.About ->
-                    ( About
-                    , Cmd.none
-                    )
+                    Page.Post.init Post global
 
                 Route.Donate ->
-                    ( Donate
-                    , Cmd.none
-                    )
+                    Page.Donate.init Donate global
+
+                Route.About ->
+                    Page.About.init About global
+
+                Route.Profile ->
+                    Page.Profile.init Profile global
     in
-    ( { session = session
-      , cache = cache
-      , pageModel = pageModel
+    ( { pageModel = pageModel
       , problem = None
       }
     , cmd
     )
 
 
+toGlobal : PageModel -> (Session, Cache)
+toGlobal page =
+    case page of
+        Home model ->
+            Page.Home.toGlobal model
+
+        Post model ->
+            Page.Post.toGlobal model
+
+        About model ->
+            Page.About.toGlobal model
+
+        Donate model ->
+            Page.Donate.toGlobal model
+
+        Profile model ->
+            Page.Profile.toGlobal model
+
+        NotFound g ->
+            g
+
+        Redirect g ->
+            g
+
+
+fromGlobal : (Session, Cache) -> PageModel -> PageModel
+fromGlobal global page =
+    case page of
+        Home model ->
+            Home <| Page.Home.fromGlobal global model
+
+        Post model ->
+            Post <| Page.Post.fromGlobal global model
+
+        About model ->
+            About <| Page.About.fromGlobal global model
+
+        Donate model ->
+            Donate <| Page.Donate.fromGlobal global model
+
+        Profile model ->
+            Profile <| Page.Profile.fromGlobal global model
+
+        NotFound _ ->
+            NotFound global
+
+        Redirect _ ->
+            Redirect global
 
 -- Subscriptions
 
@@ -198,8 +239,11 @@ view model =
 body : Model -> List (Html Msg)
 body model =
     let
+        (session, cache) =
+            toGlobal model.pageModel
+
         theme =
-            Cache.theme model.cache
+            Cache.theme cache
     in
     [ div
         [ class "app"
@@ -221,10 +265,6 @@ body model =
 
 viewPage : Model -> Html Msg
 viewPage model =
-    let
-        theme =
-            Cache.theme model.cache
-    in
     case model.problem of
         InvalidVersion ->
             Page.Problem.InvalidVersion.view <|
@@ -236,8 +276,11 @@ viewPage model =
 
         None ->
             case model.pageModel of
-                Redirect ->
-                    Page.Redirect.view theme
+                NotFound notFound ->
+                    Page.NotFound.view notFound
+
+                Redirect redirect ->
+                    Page.Redirect.view redirect
 
                 Home home ->
                     Page.Home.view home
@@ -245,9 +288,14 @@ viewPage model =
                 Post post ->
                     Page.Post.view post
 
-                _ ->
-                    Page.NotFound.view
+                Donate post ->
+                    Page.Donate.view post
 
+                About post ->
+                    Page.About.view post
+
+                Profile post ->
+                    Page.Profile.view post
 
 
 -- Program

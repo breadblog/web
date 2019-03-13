@@ -81,13 +81,20 @@ theme (Cache cache) =
 -- Util
 
 
-init : Value -> Result ( Cache, ProblemPage ) Cache
+init : Value -> Result ( Cache, ProblemPage ) (Cache, Cmd msg)
 init flags =
+    let
+        other =
+            "null"
+    in
     case Version.current of
         Just currentVersion ->
-            case Decode.decodeValue decoders flags of
+            case Decode.decodeString (decoders currentVersion) other of
                 Ok internals ->
-                    Ok <| Cache internals
+                    let
+                        cache = Cache internals
+                    in
+                    Ok ( cache, set cache )
 
                 Err err ->
                     Err ( Cache <| default currentVersion, CorruptCache err )
@@ -99,27 +106,11 @@ init flags =
 
 default : Version -> Internals
 default ver =
-    { theme = Light
+    { theme = Dark
     , version = ver
     }
 
 
-
--- TODO: Turn this into an error page
--- Nothing ->
---     Err
---         ( ProblemInfo.create
---             { title = "Cannot parse version"
---             , description =
---                 """
---                 The current version for the application is invalid
---                 If you are a user seeing this message... I am so sorry. There is no reason this should ever have occurred in production.
---                 I hope you still have a nice day, and hopefully if you check back later this will be fixed. Feel free to send an email to blog@parasrah.com and let me know about this if you want to really go the extra mile. Make sure to include a subject line of "tsk tsk" or something similar
---                 PS: If you are a developer... This is why you always use CI
---                 """
---             , action = Nothing
---             }
---         )
 -- JSON
 
 
@@ -136,10 +127,11 @@ defaultDecoder currentVersion =
     Decode.null <| default currentVersion
 
 
-decoders : Decoder Internals
-decoders =
+decoders : Version -> Decoder Internals
+decoders currentVersion =
     Decode.oneOf
-        [ decoder__A
+        [ defaultDecoder currentVersion
+        , decoder__A
         ]
 
 
