@@ -1,10 +1,10 @@
 module Data.CacheTest exposing (suite)
 
+import Data.Cache as Cache
 import Data.Version exposing (Version)
 import Expect
-import Test exposing (..)
-import Data.Cache as Cache
 import Json.Encode as Encode
+import Test exposing (..)
 
 
 suite : Test
@@ -22,7 +22,6 @@ suite =
                                     "theme": "dark"
                                 }
                                 """
-
                     in
                     case Cache.init json of
                         Ok _ ->
@@ -32,7 +31,8 @@ suite =
                             Expect.pass
             , test "succeeds with valid JSON" <|
                 \n ->
-                    let json =
+                    let
+                        json =
                             Encode.string
                                 """
                                 {
@@ -40,7 +40,6 @@ suite =
                                     "theme": "dark"
                                 }
                                 """
-
                     in
                     case Cache.init json of
                         Ok _ ->

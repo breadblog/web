@@ -12,7 +12,7 @@ type Route
     | Home
     | Post Slug
     | Profile
-    -- | Login
+      -- | Login
     | About
     | Donate
 
@@ -39,6 +39,7 @@ urlParser =
         -- Info
         , Parser.map About (s "about")
         , Parser.map Donate (s "donate")
+
         -- ErrorPages
         ]
 
@@ -101,7 +102,6 @@ toName route =
 
         -- Login ->
         --     "Login"
-
         NotFound ->
             "404"
 
@@ -136,7 +136,6 @@ toPath route =
 
         -- Login ->
         --     absolute [ "/login" ] []
-
         About ->
             absolute [ "/about" ] []
 

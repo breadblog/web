@@ -30,7 +30,6 @@ encode theme =
         |> Encode.string
 
 
-
 decoder : Decoder Theme
 decoder =
     Decode.string

@@ -1,15 +1,15 @@
-module Page.Home exposing (Model, Msg(..), init, view, fromGlobal, toGlobal)
+module Page.Home exposing (Model, Msg(..), fromGlobal, init, toGlobal, view)
 
 import Css exposing (..)
+import Data.Cache as Cache exposing (Cache)
 import Data.Route as Route exposing (Route(..))
+import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import View.Header
-import Data.Cache as Cache exposing (Cache)
-import Data.Session as Session exposing (Session)
 import Message
+import View.Header
 
 
 
@@ -22,8 +22,8 @@ type alias Model =
     }
 
 
-init : (Model -> e) -> (Session, Cache) -> ( e, Cmd msg )
-init transform (session, cache) =
+init : (Model -> e) -> ( Session, Cache ) -> ( e, Cmd msg )
+init transform ( session, cache ) =
     ( transform <|
         { session = session
         , cache = cache
@@ -32,21 +32,24 @@ init transform (session, cache) =
     )
 
 
-fromGlobal : (Session, Cache) -> Model -> Model
-fromGlobal (session, cache) model =
+fromGlobal : ( Session, Cache ) -> Model -> Model
+fromGlobal ( session, cache ) model =
     { model | cache = cache, session = session }
 
 
-toGlobal : Model -> (Session, Cache)
+toGlobal : Model -> ( Session, Cache )
 toGlobal model =
-    (model.session, model.cache)
+    ( model.session, model.cache )
 
 
 
 -- Message
 
+
 type Msg
     = NoOp
+
+
 
 -- View
 
@@ -61,4 +64,3 @@ view model =
         [ class (Route.toClass Home) ]
         [ View.Header.view theme
         ]
-

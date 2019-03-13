@@ -13,14 +13,14 @@ import Html.Styled.Attributes exposing (class, css)
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Message exposing (Msg(..))
+import Page.About
+import Page.Donate
 import Page.Home
 import Page.NotFound
 import Page.Post
-import Page.About
-import Page.Profile
-import Page.Donate
 import Page.Problem.CorruptCache
 import Page.Problem.InvalidVersion
+import Page.Profile
 import Page.Redirect
 import Style.Font as Font
 import Style.Global
@@ -46,11 +46,16 @@ type PageModel
     | Donate Page.Donate.Model
     | About Page.About.Model
     | Profile Page.Profile.Model
-    -- | Login
 
 
-type alias Global
-    = (Session, Cache)
+
+-- | Login
+
+
+type alias Global =
+    ( Session, Cache )
+
+
 
 -- Init
 
@@ -69,36 +74,40 @@ init flags url key =
 
         cache =
             case decoding of
-                Ok (c, _) -> c
+                Ok ( c, _ ) ->
+                    c
 
-                Err (c, _) -> c
+                Err ( c, _ ) ->
+                    c
 
         global =
-            (session, cache)
+            ( session, cache )
 
         problem =
             case decoding of
-                Ok _ -> None
+                Ok _ ->
+                    None
 
-                Err (_, p) -> p
+                Err ( _, p ) ->
+                    p
 
-        (model, cmd) =
+        ( model, cmd ) =
             changeRoute route
                 { problem = None
-                , pageModel = Redirect
-                    (session, cache)
+                , pageModel =
+                    Redirect
+                        ( session, cache )
                 }
 
         cmds =
             case decoding of
-                Ok (_, c) ->
-                    [c, cmd]
+                Ok ( _, c ) ->
+                    [ c, cmd ]
 
                 Err _ ->
-                    [cmd]
-
+                    [ cmd ]
     in
-        ( { model | problem = problem }, Cmd.batch cmds )
+    ( { model | problem = problem }, Cmd.batch cmds )
 
 
 
@@ -108,7 +117,7 @@ init flags url key =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update wrapper model =
     let
-        (session, cache) =
+        ( session, cache ) =
             toGlobal model.pageModel
     in
     case wrapper of
@@ -132,7 +141,7 @@ update wrapper model =
                 ( newCache, cmd ) =
                     Cache.update msg cache
             in
-            ( { model | pageModel = fromGlobal (session, newCache) model.pageModel }, cmd )
+            ( { model | pageModel = fromGlobal ( session, newCache ) model.pageModel }, cmd )
 
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
@@ -144,7 +153,7 @@ changeRoute route model =
         ( pageModel, cmd ) =
             case route of
                 Route.NotFound ->
-                    (NotFound global, Cmd.none)
+                    ( NotFound global, Cmd.none )
 
                 Route.Home ->
                     Page.Home.init Home global
@@ -168,7 +177,7 @@ changeRoute route model =
     )
 
 
-toGlobal : PageModel -> (Session, Cache)
+toGlobal : PageModel -> ( Session, Cache )
 toGlobal page =
     case page of
         Home model ->
@@ -193,7 +202,7 @@ toGlobal page =
             g
 
 
-fromGlobal : (Session, Cache) -> PageModel -> PageModel
+fromGlobal : ( Session, Cache ) -> PageModel -> PageModel
 fromGlobal global page =
     case page of
         Home model ->
@@ -217,6 +226,8 @@ fromGlobal global page =
         Redirect _ ->
             Redirect global
 
+
+
 -- Subscriptions
 
 
@@ -239,7 +250,7 @@ view model =
 body : Model -> List (Html Msg)
 body model =
     let
-        (session, cache) =
+        ( session, cache ) =
             toGlobal model.pageModel
 
         theme =
@@ -296,6 +307,7 @@ viewPage model =
 
                 Profile post ->
                     Page.Profile.view post
+
 
 
 -- Program

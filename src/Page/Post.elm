@@ -1,4 +1,4 @@
-module Page.Post exposing (Model, init, view, fromGlobal, toGlobal)
+module Page.Post exposing (Model, fromGlobal, init, toGlobal, view)
 
 import Data.Cache as Cache exposing (Cache)
 import Data.Post exposing (Post)
@@ -20,8 +20,8 @@ type alias Model =
     }
 
 
-init : (Model -> e) -> (Session, Cache) -> ( e, Cmd msg )
-init transform (session, cache) =
+init : (Model -> e) -> ( Session, Cache ) -> ( e, Cmd msg )
+init transform ( session, cache ) =
     ( transform <|
         { session = session
         , cache = cache
@@ -30,13 +30,14 @@ init transform (session, cache) =
     )
 
 
-fromGlobal : (Session, Cache) -> Model -> Model
-fromGlobal (session, cache) model =
+fromGlobal : ( Session, Cache ) -> Model -> Model
+fromGlobal ( session, cache ) model =
     { model | cache = cache, session = session }
 
-toGlobal : Model -> (Session, Cache)
+
+toGlobal : Model -> ( Session, Cache )
 toGlobal model =
-    (model.session, model.cache)
+    ( model.session, model.cache )
 
 
 view : Model -> Html Msg

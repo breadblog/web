@@ -4,7 +4,7 @@ import Data.Route exposing (ProblemPage(..))
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
 import Json.Decode as Decode exposing (Decoder, Error(..))
-import Json.Decode.Pipeline exposing (required, optional)
+import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import Version
 
@@ -20,7 +20,8 @@ type alias Internals =
 
 
 type alias CacheFlags =
-    { cache: Internals }
+    { cache : Internals }
+
 
 
 -- Message
@@ -84,14 +85,15 @@ theme (Cache cache) =
 -- Util
 
 
-init : Value -> Result ( Cache, ProblemPage ) (Cache, Cmd msg)
+init : Value -> Result ( Cache, ProblemPage ) ( Cache, Cmd msg )
 init flags =
     case Version.current of
         Just currentVersion ->
             case Decode.decodeValue (flagsDecoder currentVersion) flags of
                 Ok internals ->
                     let
-                        cache = Cache internals
+                        cache =
+                            Cache internals
                     in
                     Ok ( cache, set cache )
 
@@ -108,6 +110,7 @@ default ver =
     { theme = Dark
     , version = ver
     }
+
 
 
 -- JSON
