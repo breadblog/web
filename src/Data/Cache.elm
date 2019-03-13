@@ -4,7 +4,7 @@ import Data.Route exposing (ProblemPage(..))
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
 import Json.Decode as Decode exposing (Decoder, Error(..))
-import Json.Decode.Pipeline exposing (required)
+import Json.Decode.Pipeline exposing (required, optional)
 import Json.Encode as Encode exposing (Value)
 import Version
 
@@ -18,6 +18,9 @@ type alias Internals =
     , theme : Theme
     }
 
+
+type alias CacheFlags =
+    { cache: Internals }
 
 
 -- Message
@@ -83,13 +86,9 @@ theme (Cache cache) =
 
 init : Value -> Result ( Cache, ProblemPage ) (Cache, Cmd msg)
 init flags =
-    let
-        other =
-            "null"
-    in
     case Version.current of
         Just currentVersion ->
-            case Decode.decodeString (decoders currentVersion) other of
+            case Decode.decodeValue (flagsDecoder currentVersion) flags of
                 Ok internals ->
                     let
                         cache = Cache internals
@@ -114,43 +113,23 @@ default ver =
 -- JSON
 
 
+flagsDecoder : Version -> Decoder Internals
+flagsDecoder currentVersion =
+    Decode.succeed CacheFlags
+        |> optional "cache" decoder (default currentVersion)
+        |> Decode.map .cache
+
+
+decoder : Decoder Internals
+decoder =
+    Decode.succeed Internals
+        |> required "version" Data.Version.decoder
+        |> required "theme" Theme.decoder
+
+
 encode : Cache -> Value
 encode (Cache cache) =
     Encode.object
         [ ( "version", Data.Version.encode cache.version )
         , ( "theme", Theme.encode cache.theme )
         ]
-
-
-defaultDecoder : Version -> Decoder Internals
-defaultDecoder currentVersion =
-    Decode.null <| default currentVersion
-
-
-decoders : Version -> Decoder Internals
-decoders currentVersion =
-    Decode.oneOf
-        [ defaultDecoder currentVersion
-        , decoder__A
-        ]
-
-
-decoder__A : Decoder Internals
-decoder__A =
-    Decode.succeed Internals
-        |> required "version" Data.Version.decoder
-        |> required "theme" Theme.decoder
-
-
-
--- Migrations
-{-
-   How to perform migrations?
-
-   * Separate branch to start working on this
-   * Start by getting the version
-   * Then we know what parser to use
-   * We then run it through all the parsers previous
-
-   Consider using solution in JSON.Decode to try multiple decoders?
--}
