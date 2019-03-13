@@ -15,13 +15,14 @@ suite =
                 \n ->
                     let
                         json =
-                            Encode.string
-                                """
-                                {
-                                    "version": 29,
-                                    "theme": "dark"
-                                }
-                                """
+                            Encode.object
+                                [ ( "cache"
+                                  , Encode.object
+                                        [ ( "version", Encode.int 29 )
+                                        , ( "theme", Encode.string "light" )
+                                        ]
+                                  )
+                                ]
                     in
                     case Cache.init json of
                         Ok _ ->
@@ -33,13 +34,14 @@ suite =
                 \n ->
                     let
                         json =
-                            Encode.string
-                                """
-                                {
-                                    "version": "1.2.4",
-                                    "theme": "dark"
-                                }
-                                """
+                            Encode.object
+                                [ ( "cache"
+                                  , Encode.object
+                                        [ ( "version", Encode.string "1.2.3" )
+                                        , ( "theme", Encode.string "dark" )
+                                        ]
+                                  )
+                                ]
                     in
                     case Cache.init json of
                         Ok _ ->

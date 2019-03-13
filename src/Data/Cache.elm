@@ -4,7 +4,7 @@ import Data.Route exposing (ProblemPage(..))
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
 import Json.Decode as Decode exposing (Decoder, Error(..))
-import Json.Decode.Pipeline exposing (optional, required)
+import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
 import Version
 
@@ -119,7 +119,7 @@ default ver =
 flagsDecoder : Version -> Decoder Internals
 flagsDecoder currentVersion =
     Decode.succeed CacheFlags
-        |> optional "cache" decoder (default currentVersion)
+        |> required "cache" (Decode.oneOf [ decoder, defaultDecoder currentVersion ])
         |> Decode.map .cache
 
 
@@ -128,6 +128,11 @@ decoder =
     Decode.succeed Internals
         |> required "version" Data.Version.decoder
         |> required "theme" Theme.decoder
+
+
+defaultDecoder : Version -> Decoder Internals
+defaultDecoder currentVersion =
+    Decode.null (default currentVersion)
 
 
 encode : Cache -> Value

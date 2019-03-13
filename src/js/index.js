@@ -14,7 +14,9 @@ const flags = (function () {
     return JSON.parse(localStorage.getItem('elm-cache'))
   }
 
-  return getCache()
+  return {
+    cache: getCache(),
+  }
 })()
 
 // -- Init
