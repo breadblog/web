@@ -30,10 +30,6 @@ encode theme =
         |> Encode.string
 
 
-
--- TODO: How to handle fail case?
-
-
 decoder : Decoder Theme
 decoder =
     Decode.string

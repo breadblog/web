@@ -1,9 +1,9 @@
-module Data.Cache exposing (Cache, decoder, encode, init, mapTheme, theme, version)
+port module Data.Cache exposing (Cache, Msg(..), init, theme, update, version)
 
 import Data.Route exposing (ProblemPage(..))
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode as Decode exposing (Decoder, Error(..))
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
 import Version
@@ -19,6 +19,50 @@ type alias Internals =
     }
 
 
+type alias CacheFlags =
+    { cache : Internals }
+
+
+
+-- Message
+
+
+type Msg
+    = SetTheme Theme
+
+
+
+-- Update
+
+
+update : Msg -> Cache -> ( Cache, Cmd msg )
+update msg (Cache oldCache) =
+    let
+        internals =
+            case msg of
+                SetTheme newTheme ->
+                    { oldCache | theme = newTheme }
+
+        newCache =
+            Cache internals
+    in
+    ( newCache, set newCache )
+
+
+
+-- Ports
+
+
+port setCache : Value -> Cmd msg
+
+
+set : Cache -> Cmd msg
+set cache =
+    cache
+        |> encode
+        |> setCache
+
+
 
 -- READONLY
 
@@ -29,7 +73,7 @@ version (Cache cache) =
 
 
 
--- READWRITE
+-- READONLY
 
 
 theme : Cache -> Theme
@@ -38,66 +82,57 @@ theme (Cache cache) =
 
 
 
--- TODO: Should only expose this as a message (so can only be sent to update)
-
-
-mapTheme : (Theme -> Theme) -> Cache -> Cache
-mapTheme fn (Cache cache) =
-    Cache
-        { cache | theme = fn cache.theme }
-
-
-
 -- Util
 
 
-init : Value -> Result ( Cache, ProblemPage ) Cache
+init : Value -> Result ( Cache, ProblemPage ) ( Cache, Cmd msg )
 init flags =
-    case Decode.decodeValue decoder flags of
-        Ok cache ->
-            Ok cache
-
-        Err _ ->
-            default
-
-
-default : Result ( Cache, ProblemPage ) Cache
-default =
     case Version.current of
-        Just v ->
-            Ok <|
-                Cache <|
-                    { version = v
-                    , theme = Dark
-                    }
+        Just currentVersion ->
+            case Decode.decodeValue (flagsDecoder currentVersion) flags of
+                Ok internals ->
+                    let
+                        cache =
+                            Cache internals
+                    in
+                    Ok ( cache, set cache )
+
+                Err err ->
+                    Err ( Cache <| default currentVersion, CorruptCache err )
 
         Nothing ->
-            Err
-                ( Cache
-                    { version = Data.Version.error
-                    , theme = Dark
-                    }
-                , InvalidVersion
-                )
+            Err <|
+                ( Cache <| default Data.Version.error, InvalidVersion )
+
+
+default : Version -> Internals
+default ver =
+    { theme = Dark
+    , version = ver
+    }
 
 
 
--- TODO: Turn this into an error page
--- Nothing ->
---     Err
---         ( ProblemInfo.create
---             { title = "Cannot parse version"
---             , description =
---                 """
---                 The current version for the application is invalid
---                 If you are a user seeing this message... I am so sorry. There is no reason this should ever have occurred in production.
---                 I hope you still have a nice day, and hopefully if you check back later this will be fixed. Feel free to send an email to blog@parasrah.com and let me know about this if you want to really go the extra mile. Make sure to include a subject line of "tsk tsk" or something similar
---                 PS: If you are a developer... This is why you always use CI
---                 """
---             , action = Nothing
---             }
---         )
 -- JSON
+
+
+flagsDecoder : Version -> Decoder Internals
+flagsDecoder currentVersion =
+    Decode.succeed CacheFlags
+        |> required "cache" (Decode.oneOf [ decoder, defaultDecoder currentVersion ])
+        |> Decode.map .cache
+
+
+decoder : Decoder Internals
+decoder =
+    Decode.succeed Internals
+        |> required "version" Data.Version.decoder
+        |> required "theme" Theme.decoder
+
+
+defaultDecoder : Version -> Decoder Internals
+defaultDecoder currentVersion =
+    Decode.null (default currentVersion)
 
 
 encode : Cache -> Value
@@ -106,25 +141,3 @@ encode (Cache cache) =
         [ ( "version", Data.Version.encode cache.version )
         , ( "theme", Theme.encode cache.theme )
         ]
-
-
-decoder : Decoder Cache
-decoder =
-    Decode.succeed Internals
-        |> required "version" Data.Version.decoder
-        |> required "theme" Theme.decoder
-        |> Decode.map Cache
-
-
-
--- Migrations
-{-
-   How to perform migrations?
-
-   * Separate branch to start working on this
-   * Start by getting the version
-   * Then we know what parser to use
-   * We then run it through all the parsers previous
-
-   Consider using solution in JSON.Decode to try multiple decoders?
--}

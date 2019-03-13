@@ -3,6 +3,8 @@ import 'highlight.js/styles/gruvbox-dark'
 import { Elm } from '@main'
 import highlight from '@js/highlight'
 import '@font/firacode'
+import '@font/indieflower'
+import '@font/montserrat'
 
 const { localStorage } = window
 
@@ -25,7 +27,7 @@ const app = Elm.Main.init({
 
 // -- Ports
 ;(function () {
-  app.ports.cacheSet.subscribe(function (data) {
+  app.ports.setCache.subscribe(function (data) {
     localStorage.setItem('elm-cache', JSON.stringify(data))
   })
 })()

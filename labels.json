@@ -1,0 +1,22 @@
+[
+  {
+    "name": "bug",
+    "color": "#d73a4a"
+  },
+  {
+    "name": "feature",
+    "color": "#B8B7FF"
+  },
+  {
+    "name": "major",
+    "color": "#E50000"
+  },
+  {
+    "name": "performance",
+    "color": "#FFEC00"
+  },
+  {
+    "name": "test",
+    "color": "#FF9F3A"
+  }
+]

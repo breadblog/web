@@ -1,4 +1,4 @@
-module ValidVersion exposing (suite)
+module VersionTest exposing (suite)
 
 import Data.Version exposing (Version)
 import Expect

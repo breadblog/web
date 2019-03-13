@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, Msg(..), fromGlobal, init, toGlobal, view)
+module Page.About exposing (Model, Msg(..), fromGlobal, init, toGlobal, view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
@@ -9,7 +9,6 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message
-import View.Header
 
 
 
@@ -61,6 +60,5 @@ view model =
             Cache.theme model.cache
     in
     div
-        [ class (Route.toClass Home) ]
-        [ View.Header.view theme
-        ]
+        [ class (Route.toClass About) ]
+        []

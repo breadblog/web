@@ -1,4 +1,4 @@
-module Page.Post exposing (Model, init, view)
+module Page.Post exposing (Model, fromGlobal, init, toGlobal, view)
 
 import Data.Cache as Cache exposing (Cache)
 import Data.Post exposing (Post)
@@ -15,34 +15,43 @@ import View.Markdown as Markdown
 
 
 type alias Model =
-    { post : Maybe Post
-    , theme : Theme
+    { cache : Cache
+    , session : Session
     }
 
 
-init : (Model -> e) -> Theme -> ( e, Cmd Msg )
-init transform theme =
-    -- TODO: How are these formatted?
+init : (Model -> e) -> ( Session, Cache ) -> ( e, Cmd msg )
+init transform ( session, cache ) =
     ( transform <|
-        { post = Nothing
-        , theme = theme
+        { session = session
+        , cache = cache
         }
     , Cmd.none
     )
 
 
+fromGlobal : ( Session, Cache ) -> Model -> Model
+fromGlobal ( session, cache ) model =
+    { model | cache = cache, session = session }
+
+
+toGlobal : Model -> ( Session, Cache )
+toGlobal model =
+    ( model.session, model.cache )
+
+
 view : Model -> Html Msg
 view model =
     let
+        theme =
+            Cache.theme model.cache
+
         post =
             { title = "My Post"
             , author = "Parasrah"
             , date = Time.millisToPosix 1550810346641
             , content = content
             }
-
-        theme =
-            model.theme
 
         postStyle =
             Style.Post.style theme
