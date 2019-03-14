@@ -3,7 +3,7 @@ module Data.Route exposing (ProblemPage(..), Route(..), fromUrl, toClass, toPath
 import Data.Slug as Slug exposing (Slug)
 import Json.Decode as Decode
 import Url exposing (Url)
-import Url.Builder exposing (absolute)
+import Url.Builder exposing (relative)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
 
 
@@ -126,21 +126,21 @@ toPath : Route -> String
 toPath route =
     case route of
         Home ->
-            absolute [] []
+            relative [] []
 
         Post slug ->
-            absolute [ "post", Slug.toString slug ] []
+            relative [ "post", Slug.toString slug ] []
 
         Profile ->
-            absolute [ "/profile" ] []
+            relative [ "/profile" ] []
 
         -- Login ->
-        --     absolute [ "/login" ] []
+        --     relative [ "/login" ] []
         About ->
-            absolute [ "/about" ] []
+            relative [ "/about" ] []
 
         Donate ->
-            absolute [ "/donate" ] []
+            relative [ "/donate" ] []
 
         NotFound ->
-            absolute [ "/404" ] []
+            relative [ "/404" ] []

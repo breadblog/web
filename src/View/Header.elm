@@ -2,6 +2,7 @@ module View.Header exposing (view)
 
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
+import Css.Transitions as Transitions exposing (transition)
 import Data.Cache as Cache exposing (Msg(..))
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme(..))
@@ -258,9 +259,18 @@ navLink theme name route =
         [ a
             [ css
                 [ textDecoration none
+                , display block
                 , color (Theme.secondaryFont theme)
                 , fontSize (rem 1.5)
                 , fontWeight (int 300)
+                , transition
+                    [ Transitions.transform3 250 0 Transitions.ease
+                    , Transitions.color3 250 0 Transitions.ease
+                    ]
+                , hover
+                    [ color (Theme.primaryFont theme)
+                    , transform <| scale 1.05
+                    ]
                 ]
             , href (Route.toPath route)
             ]
