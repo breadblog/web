@@ -1,6 +1,8 @@
 module Version exposing (current)
 
+import Data.Version exposing (Version)
 
-current : String
+
+current : Maybe Version
 current =
-    "0.0.2"
+    Data.Version.fromString "0.0.4"

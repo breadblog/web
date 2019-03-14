@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, Msg(..), fromGlobal, init, toGlobal, view)
+module Page.Donate exposing (Model, Msg(..), fromGlobal, init, toGlobal, view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
@@ -9,8 +9,6 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message
-import View.Header
-import View.Footer
 
 
 
@@ -60,30 +58,7 @@ view model =
     let
         theme =
             Cache.theme model.cache
-
-        version =
-            Cache.version model.cache
     in
     div
-        [ class (Route.toClass Home)
-        , css
-            [ displayFlex
-            , flexDirection column
-            , Css.height (pct 100)
-            ]
-        ]
-        [ View.Header.view theme
-        , main_
-            [
-                css
-                    [ flexGrow (num 1)
-                    ]
-            ]
-            [
-                text "hello"
-            ]
-        , View.Footer.view <|
-            { theme = theme
-            , version = version
-            }
-        ]
+        [ class (Route.toClass Donate) ]
+        []

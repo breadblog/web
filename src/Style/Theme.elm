@@ -1,17 +1,11 @@
-module Style.Theme exposing (Themed, accent, background, primary, primaryFont, secondary, secondaryFont)
+module Style.Theme exposing (accent, background, primary, primaryFont, secondary, secondaryFont)
 
 import Css exposing (..)
-import Model exposing (Model, Theme(..))
+import Data.Theme exposing (Theme(..))
 
 
-type alias Themed a =
-    { a
-        | theme : Theme
-    }
-
-
-background : Themed a -> Color
-background { theme } =
+background : Theme -> Color
+background theme =
     case theme of
         Dark ->
             hex "303030"
@@ -20,8 +14,8 @@ background { theme } =
             rgb 255 255 255
 
 
-primary : Themed a -> Color
-primary { theme } =
+primary : Theme -> Color
+primary theme =
     case theme of
         Dark ->
             hex "212121"
@@ -30,8 +24,8 @@ primary { theme } =
             hex "fff"
 
 
-secondary : Themed a -> Color
-secondary { theme } =
+secondary : Theme -> Color
+secondary theme =
     case theme of
         Dark ->
             hex "302A2A"
@@ -40,8 +34,8 @@ secondary { theme } =
             hex ""
 
 
-accent : Themed a -> Color
-accent { theme } =
+accent : Theme -> Color
+accent theme =
     case theme of
         Dark ->
             hex "424242"
@@ -50,8 +44,8 @@ accent { theme } =
             hex ""
 
 
-primaryFont : Themed a -> Color
-primaryFont { theme } =
+primaryFont : Theme -> Color
+primaryFont theme =
     case theme of
         Dark ->
             rgba 255 255 255 0.85
@@ -60,8 +54,8 @@ primaryFont { theme } =
             rgba 0 0 0 1.0
 
 
-secondaryFont : Themed a -> Color
-secondaryFont { theme } =
+secondaryFont : Theme -> Color
+secondaryFont theme =
     case theme of
         Dark ->
             rgba 255 255 255 0.7

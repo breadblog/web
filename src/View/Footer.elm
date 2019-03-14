@@ -3,11 +3,17 @@ module View.Footer exposing (view)
 import Css exposing (..)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
-import Model exposing (Model, Route(..))
 import Message exposing (Msg)
+import Data.Theme exposing (Theme)
+import Data.Version exposing (Version)
 import Style.Theme as Theme
 import View.Svg as Svg
 import Svg.Styled.Attributes as SvgAttr
+
+type alias Model =
+    { theme : Theme
+    , version : Version
+    }
 
 view : Model -> Html Msg
 view model =
@@ -19,7 +25,7 @@ view model =
             , justifyContent spaceBetween
             , Css.height (px 60)
             , Css.width (pct 100)
-            , backgroundColor (Theme.primary model.cache)
+            , backgroundColor (Theme.primary model.theme)
             ]
         ]
         [
@@ -35,7 +41,7 @@ footerLeft model =
             ]
         ]
         [
-            text model.cache.version
+            text <| Data.Version.toString model.version
         ]
 
 footerRight : Model -> Html Msg

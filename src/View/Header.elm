@@ -2,11 +2,13 @@ module View.Header exposing (view)
 
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
+import Data.Cache as Cache exposing (Msg(..))
+import Data.Route as Route exposing (Route(..))
+import Data.Theme exposing (Theme(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
-import Message exposing (Msg)
-import Model exposing (Model, Route(..))
-import Nav exposing (routeToPath)
+import Html.Styled.Events exposing (onClick)
+import Message exposing (Msg(..))
 import Style.Font as Font
 import Style.Screen as Screen
 import Style.Theme as Theme
@@ -14,8 +16,12 @@ import Svg.Styled.Attributes
 import View.Svg as Svg
 
 
-view : Model -> Html Msg
-view model =
+type alias Msg =
+    Message.Msg
+
+
+view : Theme -> Html Msg
+view theme =
     header
         [ css
             [ displayFlex
@@ -23,12 +29,12 @@ view model =
             , alignItems center
             , Css.height (px 60)
             , Css.width (pct 100)
-            , backgroundColor (Theme.primary model.cache)
+            , backgroundColor (Theme.primary theme)
             ]
         ]
-        [ headerLeft model
-        , searchBar model
-        , headerRight model
+        [ headerLeft theme
+        , searchBar theme
+        , headerRight theme
         ]
 
 
@@ -36,15 +42,15 @@ view model =
 -- Left Side
 
 
-headerLeft : Model -> Html Msg
-headerLeft model =
+headerLeft : Theme -> Html Msg
+headerLeft theme =
     div
         [ css
             [ headerSideStyle
             ]
         ]
         [ logo
-        , filters model
+        , filters theme
         , spacer <|
             List.map
                 (\f -> f [ display none ])
@@ -65,8 +71,8 @@ logo =
         ]
 
 
-filters : Model -> Html Msg
-filters model =
+filters : Theme -> Html Msg
+filters theme =
     div
         [ class "filters"
         , css
@@ -74,8 +80,8 @@ filters model =
             , flexDirection row
             ]
         ]
-        [ dropdown model "tags"
-        , dropdown model "author"
+        [ dropdown theme "tags"
+        , dropdown theme "author"
         ]
 
 
@@ -83,8 +89,8 @@ filters model =
 -- Search Bar
 
 
-searchBar : Model -> Html Msg
-searchBar model =
+searchBar : Theme -> Html Msg
+searchBar theme =
     div
         [ class "search"
         , css
@@ -105,8 +111,8 @@ searchBar model =
                 [ flexGrow (num 1)
                 , borderWidth (px 0)
                 , outline none
-                , backgroundColor (Theme.accent model.cache)
-                , color (Theme.secondaryFont model.cache)
+                , backgroundColor (Theme.accent theme)
+                , color (Theme.secondaryFont theme)
                 , paddingLeft (px 11)
                 , fontSize (rem 1)
                 , fontFamilies Font.montserrat
@@ -121,14 +127,14 @@ searchBar model =
                 , Css.width (px 18)
                 , alignSelf center
                 , marginRight (px 8)
-                , Css.color (Theme.secondaryFont model.cache)
+                , Css.color (Theme.secondaryFont theme)
                 ]
             ]
         ]
 
 
-searchResults : Model -> Html Msg
-searchResults model =
+searchResults : Theme -> Html Msg
+searchResults theme =
     text ""
 
 
@@ -141,21 +147,21 @@ searchOverlay =
 -- Right Side
 
 
-headerRight : Model -> Html Msg
-headerRight model =
+headerRight : Theme -> Html Msg
+headerRight theme =
     div
         [ css
             [ headerSideStyle
             ]
         ]
         [ spacer []
-        , menu model
-        , profile model
+        , menu theme
+        , profile theme
         ]
 
 
-menu : Model -> Html Msg
-menu model =
+menu : Theme -> Html Msg
+menu theme =
     div
         [ css
             [ displayFlex
@@ -164,14 +170,14 @@ menu model =
             , alignItems center
             ]
         ]
-        [ dropdown model "theme"
-        , navLink model "about" About
-        , navLink model "donate" Donate
+        [ dropdown theme "theme"
+        , navLink theme "about" About
+        , navLink theme "donate" Donate
         ]
 
 
-profile : Model -> Html Msg
-profile model =
+profile : Theme -> Html Msg
+profile theme =
     let
         iconSize =
             28
@@ -190,7 +196,7 @@ profile model =
         ]
         [ Svg.user
             [ Svg.Styled.Attributes.css
-                [ Css.color (Theme.secondaryFont model.cache)
+                [ Css.color (Theme.secondaryFont theme)
                 , position relative
                 , top (px 3)
                 , Css.width (px iconSize)
@@ -203,7 +209,7 @@ profile model =
             ]
         , Svg.chevronDown
             [ Svg.Styled.Attributes.css
-                [ Css.color (Theme.secondaryFont model.cache)
+                [ Css.color (Theme.secondaryFont theme)
                 , Css.height (px chevronSize)
                 , Css.width (px chevronSize)
                 , alignSelf center
@@ -241,8 +247,8 @@ spacer styles =
         []
 
 
-navLink : Model -> String -> Route -> Html Msg
-navLink model name route =
+navLink : Theme -> String -> Route -> Html Msg
+navLink theme name route =
     div
         [ class "nav-link"
         , css
@@ -252,18 +258,18 @@ navLink model name route =
         [ a
             [ css
                 [ textDecoration none
-                , color (Theme.secondaryFont model.cache)
+                , color (Theme.secondaryFont theme)
                 , fontSize (rem 1.5)
                 , fontWeight (int 300)
                 ]
-            , href (routeToPath route)
+            , href (Route.toPath route)
             ]
             [ text name ]
         ]
 
 
-dropdown : Model -> String -> Html Msg
-dropdown model name =
+dropdown : Theme -> String -> Html Msg
+dropdown theme name =
     div
         [ class "dropdown"
         , css
@@ -278,13 +284,13 @@ dropdown model name =
             [ css
                 [ fontWeight (int 300)
                 , fontSize (rem 1.5)
-                , color (Theme.secondaryFont model.cache)
+                , color (Theme.secondaryFont theme)
                 ]
             ]
             [ text name ]
         , Svg.chevronDown
             [ Svg.Styled.Attributes.css
-                [ Css.color (Theme.secondaryFont model.cache)
+                [ Css.color (Theme.secondaryFont theme)
                 , position relative
                 , top (px 3)
                 , Css.width (px 20)

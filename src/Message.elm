@@ -1,12 +1,12 @@
 module Message exposing (Msg(..))
 
 import Browser
-import Model exposing (Cache, Route)
-import Url
+import Data.Cache as Cache
+import Data.Theme exposing (Theme)
+import Url exposing (Url)
 
 
 type Msg
     = LinkClicked Browser.UrlRequest
-    | UrlChanged Url.Url
-    | ToggleTheme
-    | NoOp
+    | UrlChanged Url
+    | CacheMsg Cache.Msg
