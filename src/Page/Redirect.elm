@@ -6,7 +6,7 @@ import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (Html, main_)
 import Html.Styled.Attributes exposing (class, css)
-import Style.Theme as Theme
+import Style.Color as Color
 
 
 
@@ -21,7 +21,7 @@ view ( session, cache ) =
     in
     main_
         [ css
-            [ backgroundColor <| Theme.background theme
+            [ backgroundColor <| Color.background theme
             , height <| pct 100
             , width <| pct 100
             ]

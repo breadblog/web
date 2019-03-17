@@ -1,4 +1,4 @@
-module Style.Theme exposing (accent, background, primary, primaryFont, secondary, secondaryFont)
+module Style.Color exposing (accent, background, primary, primaryFont, secondary, secondaryFont, dropdown, shade)
 
 import Css exposing (..)
 import Data.Theme exposing (Theme(..))
@@ -44,6 +44,16 @@ accent theme =
             hex ""
 
 
+dropdown : Theme -> Color
+dropdown theme =
+    case theme of
+        Dark ->
+            hex "111111"
+
+        Light ->
+            hex "fff"
+
+
 primaryFont : Theme -> Color
 primaryFont theme =
     case theme of
@@ -62,3 +72,13 @@ secondaryFont theme =
 
         Light ->
             rgba 0 0 0 1.0
+
+
+shade : Theme -> Color
+shade theme =
+    case theme of
+        Dark ->
+            hex "000"
+
+        Light ->
+            hex "fff"

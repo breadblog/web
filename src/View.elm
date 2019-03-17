@@ -13,7 +13,7 @@ import Page.Home
 import Page.NotFound
 import Style.Font as Font
 import Style.Global
-import Style.Theme as Theme
+import Style.Color as Color
 
 
 view : Model -> Document Msg
@@ -33,8 +33,8 @@ body model =
             , bottom (px 0)
             , left (px 0)
             , right (px 0)
-            , backgroundColor (Theme.background model.cache)
-            , color (Theme.primaryFont model.cache)
+            , backgroundColor (Color.background model.cache)
+            , color (Color.primaryFont model.cache)
             , fontFamilies Font.montserrat
             ]
         ]

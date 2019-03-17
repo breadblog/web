@@ -10,3 +10,4 @@ type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url
     | CacheMsg Cache.Msg
+    | NoOp
