@@ -1,4 +1,4 @@
-module View.Svg exposing (attribute, chevronDown, chevronLeft, chevronRight, chevronUp, github, linkedin, search, user, xSquare, checkSquare, checkCircle, xCircle)
+module View.Svg exposing (attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, github, linkedin, search, user, xCircle, xSquare)
 
 import Svg.Styled as Svg exposing (..)
 import Svg.Styled.Attributes as Attributes exposing (..)

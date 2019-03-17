@@ -1,13 +1,12 @@
-module Data.Tag exposing (Tag, decoder, encode, name, value, mapValue, init)
+module Data.Tag exposing (Tag, decoder, encode, init, mapValue, name, value)
 
-
-import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
+import Json.Encode as Encode exposing (Value)
 
 
-type Tag =
-    Tag Internals
+type Tag
+    = Tag Internals
 
 
 type alias Internals =
@@ -16,7 +15,10 @@ type alias Internals =
     }
 
 
+
 -- TODO: Remove
+
+
 init : String -> Tag
 init name_ =
     Tag
@@ -25,15 +27,15 @@ init name_ =
         }
 
 
+
 -- Accessors --
-
-
 -- name
 
 
 name : Tag -> String
 name (Tag internals) =
     internals.name
+
 
 
 -- value
@@ -49,7 +51,9 @@ mapValue transform (Tag internals) =
     Tag { internals | value = transform internals.value }
 
 
+
 -- JSON --
+
 
 decoder : Decoder Tag
 decoder =

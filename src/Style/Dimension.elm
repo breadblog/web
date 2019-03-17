@@ -1,5 +1,4 @@
-module Style.Dimension exposing (..)
-
+module Style.Dimension exposing (dropdownHeight, headerHeight)
 
 -- Header
 
@@ -7,7 +6,6 @@ module Style.Dimension exposing (..)
 headerHeight : number
 headerHeight =
     60
-
 
 
 dropdownHeight : number

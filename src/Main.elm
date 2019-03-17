@@ -22,9 +22,9 @@ import Page.Problem.CorruptCache
 import Page.Problem.InvalidVersion
 import Page.Profile
 import Page.Redirect
+import Style.Color
 import Style.Font as Font
 import Style.Global
-import Style.Color
 import Url exposing (Url)
 
 

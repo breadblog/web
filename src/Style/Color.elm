@@ -1,4 +1,4 @@
-module Style.Color exposing (accent, background, primary, primaryFont, secondary, secondaryFont, dropdown, highContrast, tertiaryFont, danger)
+module Style.Color exposing (accent, background, danger, dropdown, highContrast, primary, primaryFont, secondary, secondaryFont, tertiaryFont)
 
 import Css exposing (..)
 import Data.Theme exposing (Theme(..))
@@ -82,7 +82,6 @@ tertiaryFont theme =
 
         Light ->
             rgba 0 0 0 0.5
-
 
 
 highContrast : Theme -> Color

@@ -3,25 +3,26 @@ module View.Header exposing (Model, view)
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
 import Css.Transitions as Transitions exposing (transition)
+import Data.Author as Author exposing (Author)
 import Data.Cache as Cache exposing (Msg(..))
 import Data.Route as Route exposing (Route(..))
-import Data.Theme as Theme exposing (Theme(..))
 import Data.Tag as Tag exposing (Tag)
-import Data.Author as Author exposing (Author)
+import Data.Theme as Theme exposing (Theme(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Msg(..))
-import Svg.Styled.Attributes
-import View.Svg as Svg
-import Style.Font as Font
-import Style.Screen as Screen
 import Style.Color as Color
 import Style.Dimension as Dimension
+import Style.Font as Font
+import Style.Screen as Screen
 import Style.Shadow as Shadow
+import Svg.Styled.Attributes
+import View.Svg as Svg
 
 
-type alias Msg = Message.Msg
+type alias Msg =
+    Message.Msg
 
 
 type alias Model =
@@ -36,14 +37,13 @@ view model =
     let
         theme =
             model.theme
-
     in
     header
         [ css
             [ displayFlex
             , flexDirection row
             , alignItems center
-            , Css.height (px Dimension.headerHeight) 
+            , Css.height (px Dimension.headerHeight)
             , Css.width (pct 100)
             , backgroundColor (Color.primary theme)
             , Shadow.dp6
@@ -64,6 +64,7 @@ view model =
         , profile theme
         , endSpacer
         ]
+
 
 
 -- Logo
@@ -89,6 +90,7 @@ logo theme =
         ]
 
 
+
 -- Tags
 
 
@@ -96,6 +98,7 @@ tagsContent : Theme -> List Tag -> List (Html Msg)
 tagsContent theme =
     List.map
         (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.value t) (CacheMsg <| ToggleTag t))
+
 
 
 -- Authors
@@ -155,6 +158,7 @@ searchBar theme =
         ]
 
 
+
 -- Themes
 
 
@@ -163,6 +167,7 @@ themeContent theme =
     List.map
         (\t -> dropdownItem theme (Theme.toString t) (t == theme) (CacheMsg <| SetTheme t))
         Theme.all
+
 
 
 -- Profile
@@ -209,6 +214,7 @@ profile theme =
                 ]
             ]
         ]
+
 
 
 -- Util
@@ -295,6 +301,7 @@ dropdownItem theme name selected msg =
                         ]
                     ]
                     []
+
             else
                 text ""
     in

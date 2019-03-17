@@ -3,8 +3,8 @@ module Style.Global exposing (style)
 import Css exposing (..)
 import Css.Animations as Animations exposing (..)
 import Css.Global as Global exposing (..)
-import Html.Styled exposing (Html)
 import Data.Theme exposing (Theme)
+import Html.Styled exposing (Html)
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Style.Shadow as Shadow

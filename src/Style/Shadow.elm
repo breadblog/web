@@ -1,10 +1,12 @@
-module Style.Shadow exposing (dp1, dp2, dp3, dp4, dp6, dp8, dp9, dp12, dp16, dp24)
-
+module Style.Shadow exposing (dp1, dp12, dp16, dp2, dp24, dp3, dp4, dp6, dp8, dp9)
 
 import Css exposing (..)
 
 
+
 -- /* Shadow 1dp */
+
+
 dp1 : Style
 dp1 =
     Css.batch
@@ -13,7 +15,11 @@ dp1 =
         , boxShadow5 (px 0) (px 1) (px 3) (px 0) color3
         ]
 
+
+
 -- /* Shadow 2dp */
+
+
 dp2 : Style
 dp2 =
     Css.batch
@@ -22,7 +28,11 @@ dp2 =
         , boxShadow5 (px 0) (px 1) (px 5) (px 0) color3
         ]
 
+
+
 -- /* Shadow 3dp */
+
+
 dp3 : Style
 dp3 =
     Css.batch
@@ -31,7 +41,11 @@ dp3 =
         , boxShadow5 (px 0) (px 1) (px 8) (px 0) color3
         ]
 
+
+
 -- /* Shadow 4dp */
+
+
 dp4 : Style
 dp4 =
     Css.batch
@@ -40,7 +54,11 @@ dp4 =
         , boxShadow5 (px 0) (px 2) (px 4) (px -1) color3
         ]
 
+
+
 -- /* Shadow 6dp */
+
+
 dp6 : Style
 dp6 =
     Css.batch
@@ -49,7 +67,11 @@ dp6 =
         , boxShadow5 (px 0) (px 3) (px 5) (px -1) color3
         ]
 
+
+
 -- /* Shadow 8dp */
+
+
 dp8 : Style
 dp8 =
     Css.batch
@@ -58,7 +80,11 @@ dp8 =
         , boxShadow5 (px 0) (px 5) (px 5) (px -3) color3
         ]
 
+
+
 -- /* Shadow 9dp */
+
+
 dp9 : Style
 dp9 =
     Css.batch
@@ -67,7 +93,11 @@ dp9 =
         , boxShadow5 (px 0) (px 5) (px 6) (px -3) color3
         ]
 
+
+
 -- /* Shadow 12dp */
+
+
 dp12 : Style
 dp12 =
     Css.batch
@@ -76,7 +106,11 @@ dp12 =
         , boxShadow5 (px 0) (px 7) (px 8) (px -4) color3
         ]
 
+
+
 -- /* Shadow 16dp */
+
+
 dp16 : Style
 dp16 =
     Css.batch
@@ -85,7 +119,11 @@ dp16 =
         , boxShadow5 (px 0) (px 8) (px 10) (px -5) color3
         ]
 
+
+
 -- /* Shadow 24dp */
+
+
 dp24 : Style
 dp24 =
     Css.batch
@@ -93,6 +131,7 @@ dp24 =
         , boxShadow5 (px 0) (px 9) (px 46) (px 8) color2
         , boxShadow5 (px 0) (px 11) (px 15) (px -7) color3
         ]
+
 
 color1 : Color
 color1 =
@@ -103,6 +142,7 @@ color2 : Color
 color2 =
     rgba 0 0 0 0.12
 
+
 color3 : Color
 color3 =
-    rgba 0 0 0 0.20
+    rgba 0 0 0 0.2

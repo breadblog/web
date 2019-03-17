@@ -1,16 +1,16 @@
-module Data.Author exposing (Author, encode, decoder, init, name, mapValue, value)
+module Data.Author exposing (Author, decoder, encode, init, mapValue, name, value)
 
-
-import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
+import Json.Encode as Encode exposing (Value)
+
 
 
 -- Model --
 
 
-type Author =
-    Author Internals
+type Author
+    = Author Internals
 
 
 type alias Internals =
@@ -19,21 +19,24 @@ type alias Internals =
     }
 
 
+
 -- TODO: remove this
+
+
 init : String -> Author
 init name_ =
     Author { name = name_, value = True }
 
 
+
 -- Accessors --
-
-
 -- name
 
 
 name : Author -> String
 name (Author internals) =
     internals.name
+
 
 
 -- value
@@ -47,6 +50,7 @@ mapValue transform (Author internals) =
 value : Author -> Bool
 value (Author internals) =
     internals.value
+
 
 
 -- JSON --

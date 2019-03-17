@@ -1,12 +1,12 @@
-port module Data.Cache exposing (Cache, Msg(..), init, theme, update, version, tags, authors)
+port module Data.Cache exposing (Cache, Msg(..), authors, init, tags, theme, update, version)
 
+import Data.Author as Author exposing (Author)
 import Data.Route exposing (ProblemPage(..))
+import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
-import Data.Author as Author exposing (Author)
-import Data.Tag as Tag exposing (Tag)
 import Json.Decode as Decode exposing (Decoder, Error(..))
-import Json.Decode.Pipeline exposing (required, optional)
+import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import Version
 
@@ -44,7 +44,7 @@ type Msg
 update : Msg -> Cache -> ( Cache, Cmd msg )
 update msg (Cache oldCache) =
     let
-        (internals, cmd) =
+        ( internals, cmd ) =
             case msg of
                 SetTheme newTheme ->
                     ( { oldCache | theme = newTheme }
@@ -52,12 +52,12 @@ update msg (Cache oldCache) =
                     )
 
                 ToggleTag tag ->
-                    ( { oldCache | tags = (toggleTagList tag oldCache.tags) }
+                    ( { oldCache | tags = toggleTagList tag oldCache.tags }
                     , Cmd.none
                     )
 
                 ToggleAuthor author ->
-                    ( { oldCache | authors = (toggleAuthorList author oldCache.authors) }
+                    ( { oldCache | authors = toggleAuthorList author oldCache.authors }
                     , Cmd.none
                     )
 
@@ -82,6 +82,7 @@ toggleTagList tag =
         (\t ->
             if t == tag then
                 toggled
+
             else
                 t
         )
@@ -92,15 +93,16 @@ toggleAuthorList author =
     let
         toggled =
             Author.mapValue not author
-
     in
     List.map
         (\a ->
             if a == author then
                 toggled
+
             else
                 a
         )
+
 
 
 -- Ports
@@ -118,8 +120,6 @@ set cache =
 
 
 -- Accessors --
-
-
 -- version
 
 
@@ -137,12 +137,14 @@ theme (Cache cache) =
     cache.theme
 
 
+
 -- tags
 
 
 tags : Cache -> List Tag
 tags (Cache cache) =
     cache.tags
+
 
 
 -- authors
@@ -202,7 +204,8 @@ decoder =
     Decode.succeed Internals
         |> required "version" Data.Version.decoder
         |> required "theme" Theme.decoder
-        |> optional "tags" (Decode.list Tag.decoder)
+        |> optional "tags"
+            (Decode.list Tag.decoder)
             [ Tag.init "elm"
             , Tag.init "rust"
             , Tag.init "dev"
@@ -211,7 +214,8 @@ decoder =
             , Tag.init "travel"
             , Tag.init "philosophy"
             ]
-        |> optional "authors" (Decode.list Author.decoder)
+        |> optional "authors"
+            (Decode.list Author.decoder)
             [ Author.init "Parasrah"
             , Author.init "Qnbst"
             ]

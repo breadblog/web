@@ -11,9 +11,9 @@ import Model exposing (Model, Route(..))
 import Page.DarkPost
 import Page.Home
 import Page.NotFound
+import Style.Color as Color
 import Style.Font as Font
 import Style.Global
-import Style.Color as Color
 
 
 view : Model -> Document Msg

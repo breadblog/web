@@ -50,6 +50,7 @@ type Msg
     = NoOp
 
 
+
 -- View
 
 
@@ -58,8 +59,10 @@ view model =
     let
         theme =
             Cache.theme model.cache
+
         tags =
             Cache.tags model.cache
+
         authors =
             Cache.authors model.cache
     in
