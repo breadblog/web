@@ -1,11 +1,13 @@
-module View.Header exposing (view)
+module View.Header exposing (Model, view)
 
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
 import Css.Transitions as Transitions exposing (transition)
 import Data.Cache as Cache exposing (Msg(..))
 import Data.Route as Route exposing (Route(..))
-import Data.Theme exposing (Theme(..))
+import Data.Theme as Theme exposing (Theme(..))
+import Data.Tag as Tag exposing (Tag)
+import Data.Author as Author exposing (Author)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events exposing (onClick)
@@ -22,8 +24,20 @@ import Style.Shadow as Shadow
 type alias Msg = Message.Msg
 
 
-view : Theme -> Html Msg
-view theme =
+type alias Model =
+    { theme : Theme
+    , authors : List Author
+    , tags : List Tag
+    }
+
+
+view : Model -> Html Msg
+view model =
+    let
+        theme =
+            model.theme
+
+    in
     header
         [ css
             [ displayFlex
@@ -38,12 +52,12 @@ view theme =
         [ endSpacer
         , logo theme
         , spacer
-        , dropdown theme "tags"
-        , dropdown theme "author"
+        , dropdown theme "tags" <| tagsContent theme model.tags
+        , dropdown theme "author" <| authorsContent theme model.authors
         , spacer
         , searchBar theme
         , spacer
-        , dropdown theme "theme"
+        , dropdown theme "theme" <| themeContent theme
         , navLink theme "about" About
         , navLink theme "donate" Donate
         , spacer
@@ -73,6 +87,25 @@ logo theme =
             [ text "Bits n' Bites"
             ]
         ]
+
+
+-- Tags
+
+
+tagsContent : Theme -> List Tag -> List (Html Msg)
+tagsContent theme =
+    List.map
+        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.value t) (CacheMsg <| ToggleTag t))
+
+
+-- Authors
+
+
+authorsContent : Theme -> List Author -> List (Html Msg)
+authorsContent theme =
+    List.map
+        (\a -> checkboxDropdownItem (Author.name a) theme (Author.value a) (CacheMsg <| ToggleAuthor a))
+
 
 
 -- Search Bar
@@ -120,6 +153,17 @@ searchBar theme =
                 ]
             ]
         ]
+
+
+-- Themes
+
+
+themeContent : Theme -> List (Html Msg)
+themeContent theme =
+    List.map
+        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (CacheMsg <| SetTheme t))
+        Theme.all
+
 
 -- Profile
 
@@ -170,10 +214,8 @@ profile theme =
 -- Util
 
 
--- TODO: When a dropdown is clicked, it should retain its "hover" status
--- TODO: Consider moving "hover" status out of Style.Global since onClick and onMouseOver will share effect
-dropdown : Theme -> String -> Html Msg
-dropdown theme name =
+dropdown : Theme -> String -> List (Html Msg) -> Html Msg
+dropdown theme name content =
     div
         [ class "dropdown"
         , css
@@ -182,7 +224,7 @@ dropdown theme name =
             , Css.height (pct 100)
             , alignItems center
             , spacing Right
-            , padding2 (px 0) (px 5)
+            , padding2 (px 0) (px 10)
             , hover
                 [ cursor pointer
                 ]
@@ -230,30 +272,57 @@ dropdown theme name =
                 , flexDirection column
                 , animationDuration <| ms 700
                 , fontSize <| rem 1.1
-                , Css.width <| px 200
+                , overflowY auto
+                , overflowX Css.hidden
                 ]
             ]
-            [ checkboxDropdownItem "Development" theme True NoOp
-            , dropdownItem "second"
-            , dropdownItem "third"
-            , dropdownItem "fourth"
-            ]
+            content
         ]
 
 
-dropdownItem : String -> Html msg
-dropdownItem name =
+dropdownItem : Theme -> String -> Bool -> Msg -> Html Msg
+dropdownItem theme name selected msg =
+    let
+        underline =
+            if selected then
+                div
+                    [ css
+                        [ Css.height <| px 2
+                        , backgroundColor <| Color.secondaryFont theme
+                        , marginTop <| px 1
+                        , displayFlex
+                        , flex2 (num 0) (num 0)
+                        ]
+                    ]
+                    []
+            else
+                text ""
+    in
     div
         [ class "dropdown-item"
         , css
-            [ paddingLeft <| px 10
-            , Css.height <| px 40
+            [ paddingLeft <| px 20
+            , Css.height <| px 50
             , displayFlex
             , alignItems center
             , flexGrow <| num 0
+            , minWidth <| px 160
+            , hover
+                [ backgroundColor <| Color.highContrast theme ]
+            , transition
+                [ Transitions.backgroundColor 100 ]
             ]
+        , onClick msg
         ]
-        [ text name
+        [ div
+            [ css
+                [ displayFlex
+                , flexDirection column
+                ]
+            ]
+            [ text name
+            , underline
+            ]
         ]
 
 
@@ -263,37 +332,60 @@ checkboxDropdownItem name theme value msg =
         [ class "dropdown-item"
         , css
             [ paddingLeft <| px 10
-            , Css.height <| px 40
+            , Css.height <| px 50
             , displayFlex
+            , flex2 (num 0) (num 0)
             , alignItems center
             , justifyContent spaceBetween
+            , transition
+                [ Transitions.backgroundColor 100 ]
+            , hover
+                [ backgroundColor <| Color.highContrast theme
+                ]
             ]
+        , onClick msg
         ]
-        [ text name
-        , checkbox True theme
+        [ span
+            [ css
+                [ marginRight <| px 30
+                ]
+            ]
+            [ text name ]
+        , checkbox value theme
         ]
 
 
--- TODO: Make styling not suck
 checkbox : Bool -> Theme -> Html msg
 checkbox value theme =
-    div
-        [ css
-            [ Css.height <| px 20
-            , Css.width <| px 20
-            , borderWidth <| px 2
-            , borderStyle solid
-            , borderColor <| Color.secondary theme
-            , backgroundColor <| Color.primary theme
-            , marginRight <| px 10
-            ]
-        ]
-        []
+    let
+        style =
+            batch
+                [ Css.height <| px 25
+                , Css.width <| px 25
+                , marginRight <| px 10
+                ]
+    in
+    case value of
+        True ->
+            Svg.checkCircle
+                [ Svg.Styled.Attributes.css
+                    [ style
+                    , color <| Color.secondaryFont theme
+                    ]
+                ]
+
+        False ->
+            Svg.xCircle
+                [ Svg.Styled.Attributes.css
+                    [ style
+                    , color <| Color.danger theme
+                    ]
+                ]
 
 
 linkTransitionTime : Float
 linkTransitionTime =
-    250
+    100
 
 
 linkTransitionStyle =

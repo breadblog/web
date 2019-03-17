@@ -50,7 +50,6 @@ type Msg
     = NoOp
 
 
-
 -- View
 
 
@@ -59,8 +58,13 @@ view model =
     let
         theme =
             Cache.theme model.cache
+        tags =
+            Cache.tags model.cache
+        authors =
+            Cache.authors model.cache
     in
     div
         [ class (Route.toClass Home) ]
-        [ View.Header.view theme
+        [ View.Header.view <|
+            View.Header.Model theme authors tags
         ]
