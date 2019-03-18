@@ -9,7 +9,7 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message
-import View.Header
+import View.Header as Header
 
 
 
@@ -19,6 +19,7 @@ import View.Header
 type alias Model =
     { cache : Cache
     , session : Session
+    , header : Header.Model
     }
 
 
@@ -27,6 +28,7 @@ init transform ( session, cache ) =
     ( transform <|
         { session = session
         , cache = cache
+        , header = Header.init
         }
     , Cmd.none
     )
@@ -43,15 +45,24 @@ toGlobal model =
 
 
 
--- Message
+-- Message --
 
 
 type Msg
-    = NoOp
+    = Header Header.Msg
 
 
+-- Update --
 
--- View
+
+update : Msg -> Model -> ( Model, Cmd GMsg )
+update msg model =
+    case msg of
+        Header msg ->
+            Header.update (\h -> { model | header = h }) msg model.header
+
+
+-- View --
 
 
 view : Model -> Html Message.Msg
@@ -68,6 +79,5 @@ view model =
     in
     div
         [ class (Route.toClass Home) ]
-        [ View.Header.view <|
-            View.Header.Model theme authors tags
+        [ Header.view theme authors tags model.header
         ]

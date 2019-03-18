@@ -49,7 +49,16 @@ type PageModel
 
 
 
--- | Login
+-- Message --
+
+
+type Msg
+    = Global Message.Msg
+    | HomeMsg Page.Home.Msg
+
+
+
+-- Login
 
 
 type alias Global =
@@ -120,8 +129,8 @@ update wrapper model =
         ( session, cache ) =
             toGlobal model.pageModel
     in
-    case wrapper of
-        LinkClicked urlRequest ->
+    case (model.pageModel, wrapper) of
+        (_, LinkClicked urlRequest) ->
             case urlRequest of
                 Browser.Internal url ->
                     ( model, Browser.Navigation.pushUrl session.key (Url.toString url) )
@@ -129,21 +138,31 @@ update wrapper model =
                 Browser.External href ->
                     ( model, Browser.Navigation.load href )
 
-        UrlChanged url ->
+        (_, UrlChanged url) ->
             let
                 route =
                     Route.fromUrl url
             in
             changeRoute route model
 
-        CacheMsg msg ->
+        (_, CacheMsg msg) ->
             let
                 ( newCache, cmd ) =
                     Cache.update msg cache
             in
             ( { model | pageModel = fromGlobal ( session, newCache ) model.pageModel }, cmd )
 
-        NoOp ->
+        (_, NoOp) ->
+            ( model, Cmd.none )
+
+        -- Page Specific
+
+        (Home home, View.Home.Msg msg) ->
+            View.Home.update msg home
+
+        
+        (_, _) ->
+            -- TODO: Some form of error handling!!
             ( model, Cmd.none )
 
 
