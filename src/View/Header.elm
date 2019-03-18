@@ -1,18 +1,22 @@
-module View.Header exposing (view)
+module View.Header exposing (Model, view)
 
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
 import Css.Transitions as Transitions exposing (transition)
+import Data.Author as Author exposing (Author)
 import Data.Cache as Cache exposing (Msg(..))
 import Data.Route as Route exposing (Route(..))
-import Data.Theme exposing (Theme(..))
+import Data.Tag as Tag exposing (Tag)
+import Data.Theme as Theme exposing (Theme(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Msg(..))
+import Style.Color as Color
+import Style.Dimension as Dimension
 import Style.Font as Font
 import Style.Screen as Screen
-import Style.Theme as Theme
+import Style.Shadow as Shadow
 import Svg.Styled.Attributes
 import View.Svg as Svg
 
@@ -21,69 +25,89 @@ type alias Msg =
     Message.Msg
 
 
-view : Theme -> Html Msg
-view theme =
+type alias Model =
+    { theme : Theme
+    , authors : List Author
+    , tags : List Tag
+    }
+
+
+view : Model -> Html Msg
+view model =
+    let
+        theme =
+            model.theme
+    in
     header
         [ css
             [ displayFlex
             , flexDirection row
             , alignItems center
-            , Css.height (px 60)
+            , Css.height (px Dimension.headerHeight)
             , Css.width (pct 100)
-            , backgroundColor (Theme.primary theme)
+            , backgroundColor (Color.primary theme)
+            , Shadow.dp6
             ]
         ]
-        [ headerLeft theme
+        [ endSpacer
+        , logo theme
+        , spacer
+        , dropdown theme "tags" <| tagsContent theme model.tags
+        , dropdown theme "author" <| authorsContent theme model.authors
+        , spacer
         , searchBar theme
-        , headerRight theme
+        , spacer
+        , dropdown theme "theme" <| themeContent theme
+        , navLink theme "about" About
+        , navLink theme "donate" Donate
+        , spacer
+        , profile theme
+        , endSpacer
         ]
 
 
 
--- Left Side
+-- Logo
 
 
-headerLeft : Theme -> Html Msg
-headerLeft theme =
-    div
-        [ css
-            [ headerSideStyle
-            ]
-        ]
-        [ logo
-        , filters theme
-        , spacer <|
-            List.map
-                (\f -> f [ display none ])
-                [ Screen.medScreen, Screen.smallScreen, Screen.phoneScreen ]
-        ]
-
-
-logo : Html Msg
-logo =
+logo : Theme -> Html Msg
+logo theme =
     h1
-        [ css
-            [ fontFamilies Font.indieFlower
-            , fontWeight normal
-            , marginLeft (px edgeMargin)
+        []
+        [ a
+            [ css
+                [ fontFamilies Font.indieFlower
+                , fontWeight normal
+                , margin (px 0)
+                , cursor pointer
+                , textDecoration none
+                , color <| Color.primaryFont theme
+                ]
+            , href <| Route.toPath Home
             ]
-        ]
-        [ text "Bits n' Bites"
+            [ text "Bits n' Bites"
+            ]
         ]
 
 
-filters : Theme -> Html Msg
-filters theme =
-    div
-        [ class "filters"
-        , css
-            [ displayFlex
-            , flexDirection row
-            ]
-        ]
-        [ dropdown theme "tags"
-        , dropdown theme "author"
-        ]
+
+-- Tags
+
+
+tagsContent : Theme -> List Tag -> List (Html Msg)
+tagsContent theme =
+    List.map
+        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.value t) (CacheMsg <| ToggleTag t))
+
+
+
+-- Authors
+
+
+authorsContent : Theme -> List Author -> List (Html Msg)
+authorsContent theme =
+    List.map
+        (\a -> checkboxDropdownItem (Author.name a) theme (Author.value a) (CacheMsg <| ToggleAuthor a))
 
 
 
@@ -102,7 +126,7 @@ searchBar theme =
             , Css.width (px 260)
             , List.map
                 (\f -> f [ display none ])
-                [ Screen.medScreen, Screen.smallScreen, Screen.phoneScreen ]
+                [ Screen.med, Screen.small, Screen.phone ]
                 |> batch
             ]
         ]
@@ -112,8 +136,8 @@ searchBar theme =
                 [ flexGrow (num 1)
                 , borderWidth (px 0)
                 , outline none
-                , backgroundColor (Theme.accent theme)
-                , color (Theme.secondaryFont theme)
+                , backgroundColor (Color.accent theme)
+                , color (Color.secondaryFont theme)
                 , paddingLeft (px 11)
                 , fontSize (rem 1)
                 , fontFamilies Font.montserrat
@@ -128,53 +152,25 @@ searchBar theme =
                 , Css.width (px 18)
                 , alignSelf center
                 , marginRight (px 8)
-                , Css.color (Theme.secondaryFont theme)
+                , Css.color (Color.secondaryFont theme)
                 ]
             ]
         ]
 
 
-searchResults : Theme -> Html Msg
-searchResults theme =
-    text ""
+
+-- Themes
 
 
-searchOverlay : Html Msg
-searchOverlay =
-    text ""
+themeContent : Theme -> List (Html Msg)
+themeContent theme =
+    List.map
+        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (CacheMsg <| SetTheme t))
+        Theme.all
 
 
 
--- Right Side
-
-
-headerRight : Theme -> Html Msg
-headerRight theme =
-    div
-        [ css
-            [ headerSideStyle
-            ]
-        ]
-        [ spacer []
-        , menu theme
-        , profile theme
-        ]
-
-
-menu : Theme -> Html Msg
-menu theme =
-    div
-        [ css
-            [ displayFlex
-            , flexDirection row
-            , Css.height (pct 100)
-            , alignItems center
-            ]
-        ]
-        [ dropdown theme "theme"
-        , navLink theme "about" About
-        , navLink theme "donate" Donate
-        ]
+-- Profile
 
 
 profile : Theme -> Html Msg
@@ -192,12 +188,11 @@ profile theme =
             [ Css.height (pct 100)
             , displayFlex
             , flexDirection row
-            , marginRight (px edgeMargin)
             ]
         ]
         [ Svg.user
             [ Svg.Styled.Attributes.css
-                [ Css.color (Theme.secondaryFont theme)
+                [ Css.color (Color.secondaryFont theme)
                 , position relative
                 , top (px 3)
                 , Css.width (px iconSize)
@@ -210,7 +205,7 @@ profile theme =
             ]
         , Svg.chevronDown
             [ Svg.Styled.Attributes.css
-                [ Css.color (Theme.secondaryFont theme)
+                [ Css.color (Color.secondaryFont theme)
                 , Css.height (px chevronSize)
                 , Css.width (px chevronSize)
                 , alignSelf center
@@ -222,28 +217,235 @@ profile theme =
 
 
 
--- Common
+-- Util
 
 
-headerSideStyle : Style
-headerSideStyle =
-    batch
-        [ flexGrow (num 1)
-        , Css.width (px 0)
-        , Css.height (pct 100)
-        , flexBasis auto
-        , displayFlex
-        , flexDirection row
-        , justifyContent spaceBetween
-        , alignItems center
+dropdown : Theme -> String -> List (Html Msg) -> Html Msg
+dropdown theme name content =
+    div
+        [ class "dropdown"
+        , css
+            [ position relative
+            , displayFlex
+            , Css.height (pct 100)
+            , alignItems center
+            , spacing Right
+            , padding2 (px 0) (px 10)
+            , hover
+                [ cursor pointer
+                ]
+            ]
+        ]
+        [ h2
+            [ class "dropdown-el"
+            , css
+                [ fontWeight (int 300)
+                , fontSize (rem 1.5)
+                , color <| Color.secondaryFont theme
+                , hover
+                    [ color <| Color.primaryFont theme ]
+                , transition
+                    [ Transitions.color3 linkTransitionTime 0 linkTransitionStyle ]
+                ]
+            ]
+            [ text name ]
+        , Svg.chevronDown
+            [ Svg.Styled.Attributes.class "dropdown-el"
+            , Svg.Styled.Attributes.css
+                [ Css.color (Color.secondaryFont theme)
+                , position relative
+                , top (px 3)
+                , Css.width (px 20)
+                , Css.height (px 20)
+                , alignSelf center
+                , right (px 0)
+                , marginLeft (px 10)
+                , transition
+                    [ Transitions.color3 linkTransitionTime 0 linkTransitionStyle ]
+                ]
+            ]
+        , div
+            [ class "dropdown-contents"
+            , css
+                [ position absolute
+                , top <| px Dimension.headerHeight
+                , left <| px 0
+                , backgroundColor <| Color.dropdown theme
+                , minWidth <| pct 100
+                , maxHeight <| px 0
+                , overflow Css.hidden
+                , displayFlex
+                , flexDirection column
+                , animationDuration <| ms 700
+                , fontSize <| rem 1.1
+                , overflowY auto
+                , overflowX Css.hidden
+                ]
+            ]
+            content
         ]
 
 
-spacer : List Style -> Html Msg
-spacer styles =
+dropdownItem : Theme -> String -> Bool -> Msg -> Html Msg
+dropdownItem theme name selected msg =
+    let
+        underline =
+            if selected then
+                div
+                    [ css
+                        [ Css.height <| px 2
+                        , backgroundColor <| Color.secondaryFont theme
+                        , marginTop <| px 1
+                        , displayFlex
+                        , flex2 (num 0) (num 0)
+                        ]
+                    ]
+                    []
+
+            else
+                text ""
+    in
     div
-        [ class "spacer"
-        , css styles
+        [ class "dropdown-item"
+        , css
+            [ paddingLeft <| px 20
+            , Css.height <| px 50
+            , displayFlex
+            , alignItems center
+            , flexGrow <| num 0
+            , minWidth <| px 160
+            , hover
+                [ backgroundColor <| Color.highContrast theme ]
+            , transition
+                [ Transitions.backgroundColor 100 ]
+            ]
+        , onClick msg
+        ]
+        [ div
+            [ css
+                [ displayFlex
+                , flexDirection column
+                ]
+            ]
+            [ text name
+            , underline
+            ]
+        ]
+
+
+checkboxDropdownItem : String -> Theme -> Bool -> Msg -> Html Msg
+checkboxDropdownItem name theme value msg =
+    div
+        [ class "dropdown-item"
+        , css
+            [ paddingLeft <| px 10
+            , Css.height <| px 50
+            , displayFlex
+            , flex2 (num 0) (num 0)
+            , alignItems center
+            , justifyContent spaceBetween
+            , transition
+                [ Transitions.backgroundColor 100 ]
+            , hover
+                [ backgroundColor <| Color.highContrast theme
+                ]
+            ]
+        , onClick msg
+        ]
+        [ span
+            [ css
+                [ marginRight <| px 30
+                ]
+            ]
+            [ text name ]
+        , checkbox value theme
+        ]
+
+
+checkbox : Bool -> Theme -> Html msg
+checkbox value theme =
+    let
+        style =
+            batch
+                [ Css.height <| px 25
+                , Css.width <| px 25
+                , marginRight <| px 10
+                ]
+    in
+    case value of
+        True ->
+            Svg.checkCircle
+                [ Svg.Styled.Attributes.css
+                    [ style
+                    , color <| Color.secondaryFont theme
+                    ]
+                ]
+
+        False ->
+            Svg.xCircle
+                [ Svg.Styled.Attributes.css
+                    [ style
+                    , color <| Color.danger theme
+                    ]
+                ]
+
+
+linkTransitionTime : Float
+linkTransitionTime =
+    100
+
+
+linkTransitionStyle =
+    Transitions.ease
+
+
+type Side
+    = Right
+    | Left
+
+
+spacing : Side -> Style
+spacing side =
+    let
+        marginStyle =
+            case side of
+                Left ->
+                    marginLeft
+
+                Right ->
+                    marginRight
+    in
+    batch
+        [ Screen.small [ marginStyle (px 10) ]
+        , Screen.med [ marginStyle (px 15) ]
+        , Screen.base [ marginStyle (px 20) ]
+        , Screen.large [ marginStyle (px 25) ]
+        , Screen.highRes [ marginStyle (px 40) ]
+        ]
+
+
+spacer : Html msg
+spacer =
+    div
+        [ css
+            [ flexGrow <| num 1
+            , Screen.phone
+                [ flexGrow <| num 0 ]
+            ]
+        , class "spacer between"
+        ]
+        []
+
+
+endSpacer : Html msg
+endSpacer =
+    div
+        [ css
+            [ Css.width <| px 25
+            , Screen.phone
+                [ Css.width <| px 0 ]
+            ]
+        , class "spacer end"
         ]
         []
 
@@ -260,16 +462,16 @@ navLink theme name route =
             [ css
                 [ textDecoration none
                 , display block
-                , color (Theme.secondaryFont theme)
+                , color (Color.secondaryFont theme)
                 , fontSize (rem 1.5)
                 , fontWeight (int 300)
                 , transition
-                    [ Transitions.transform3 250 0 Transitions.ease
-                    , Transitions.color3 250 0 Transitions.ease
+                    [ Transitions.transform3 linkTransitionTime 0 linkTransitionStyle
+                    , Transitions.color3 linkTransitionTime 0 linkTransitionStyle
                     ]
                 , hover
-                    [ color (Theme.primaryFont theme)
-                    , transform <| scale 1.05
+                    [ color (Color.primaryFont theme)
+                    , transform <| scale 1.02
                     ]
                 ]
             , href (Route.toPath route)
@@ -278,66 +480,11 @@ navLink theme name route =
         ]
 
 
-dropdown : Theme -> String -> Html Msg
-dropdown theme name =
-    div
-        [ class "dropdown"
-        , css
-            [ position relative
-            , displayFlex
-            , Css.height (pct 100)
-            , alignItems center
-            , spacing Right
-            ]
-        ]
-        [ h2
-            [ css
-                [ fontWeight (int 300)
-                , fontSize (rem 1.5)
-                , color (Theme.secondaryFont theme)
-                ]
-            ]
-            [ text name ]
-        , Svg.chevronDown
-            [ Svg.Styled.Attributes.css
-                [ Css.color (Theme.secondaryFont theme)
-                , position relative
-                , top (px 3)
-                , Css.width (px 20)
-                , Css.height (px 20)
-                , alignSelf center
-                , right (px 0)
-                , marginLeft (px 10)
-                ]
-            ]
-        ]
+searchResults : Theme -> Html Msg
+searchResults theme =
+    text ""
 
 
-edgeMargin : Float
-edgeMargin =
-    25
-
-
-type Side
-    = Right
-    | Left
-
-
-spacing : Side -> Style
-spacing side =
-    let
-        spaceStyle =
-            case side of
-                Left ->
-                    marginLeft
-
-                Right ->
-                    marginRight
-    in
-    batch
-        [ Screen.smallScreen [ spaceStyle (px 15) ]
-        , Screen.medScreen [ spaceStyle (px 20) ]
-        , Screen.baseScreen [ spaceStyle (px 25) ]
-        , Screen.largeScreen [ spaceStyle (px 30) ]
-        , Screen.highResScreen [ spaceStyle (px 45) ]
-        ]
+searchOverlay : Html Msg
+searchOverlay =
+    text ""

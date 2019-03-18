@@ -22,9 +22,9 @@ import Page.Problem.CorruptCache
 import Page.Problem.InvalidVersion
 import Page.Profile
 import Page.Redirect
+import Style.Color
 import Style.Font as Font
 import Style.Global
-import Style.Theme
 import Url exposing (Url)
 
 
@@ -143,6 +143,9 @@ update wrapper model =
             in
             ( { model | pageModel = fromGlobal ( session, newCache ) model.pageModel }, cmd )
 
+        NoOp ->
+            ( model, Cmd.none )
+
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
 changeRoute route model =
@@ -259,18 +262,16 @@ body model =
     [ div
         [ class "app"
         , css
-            [ Css.position absolute
-            , Css.top (px 0)
-            , Css.bottom (px 0)
-            , Css.left (px 0)
-            , Css.right (px 0)
-            , Css.backgroundColor (Style.Theme.background theme)
-            , Css.color (Style.Theme.primaryFont theme)
+            [ Css.position Css.relative
+            , Css.height <| Css.pct 100
+            , Css.width <| Css.pct 100
+            , Css.backgroundColor (Style.Color.background theme)
+            , Css.color (Style.Color.primaryFont theme)
             , Css.fontFamilies Font.montserrat
             ]
         ]
         [ viewPage model ]
-    , Style.Global.style
+    , Style.Global.style theme
     ]
 
 
