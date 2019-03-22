@@ -1,6 +1,7 @@
-module Message exposing (Msg(..))
+module Message exposing (Msg(..), Compound(..), map)
 
 import Browser
+import Html.Styled exposing (Html)
 import Data.Cache as Cache
 import Data.Theme exposing (Theme)
 import Url exposing (Url)
@@ -20,3 +21,18 @@ type Msg
     | UrlChanged Url
     | CacheMsg Cache.Msg
     | NoOp
+
+
+type Compound e
+    = Global Msg
+    | Mod e
+
+
+map : (a -> b) -> (Compound a) -> (Compound b)
+map transform compound =
+    case compound of
+        Global msg ->
+            Global msg
+
+        Mod a ->
+            Mod <| transform a

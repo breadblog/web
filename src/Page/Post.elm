@@ -1,14 +1,15 @@
-module Page.Post exposing (Model, fromGlobal, init, toGlobal, view)
+module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, view, update)
 
 import Data.Cache as Cache exposing (Cache)
 import Data.Post exposing (Post)
 import Data.Session exposing (Session)
 import Data.Theme exposing (Theme)
+import Data.General as General exposing (General)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
-import Message exposing (Msg)
+import Message exposing (Msg(..), Compound(..))
 import Style.Post
 import Time
 import View.Markdown as Markdown
@@ -20,27 +21,45 @@ type alias Model =
     }
 
 
-init : (Model -> e) -> ( Session, Cache ) -> ( e, Cmd msg )
-init transform ( session, cache ) =
+init : (Model -> e) -> General -> ( e, Cmd msg )
+init transform general =
     ( transform <|
-        { session = session
-        , cache = cache
+        { session = General.session general
+        , cache = General.cache general
         }
     , Cmd.none
     )
 
 
-fromGlobal : ( Session, Cache ) -> Model -> Model
-fromGlobal ( session, cache ) model =
-    { model | cache = cache, session = session }
+fromGeneral : General -> Model -> Model
+fromGeneral general model =
+    { model | cache = General.cache general, session = General.session general }
 
 
-toGlobal : Model -> ( Session, Cache )
-toGlobal model =
-    ( model.session, model.cache )
+toGeneral : Model -> General
+toGeneral model =
+    General.init model.session model.cache
 
 
-view : Model -> Html Msg
+-- Message --
+
+
+type Msg
+    = NoOp
+
+
+-- Update --
+
+
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+    ( model, Cmd.none )
+
+
+-- View --
+
+
+view : Model -> Html (Compound Msg)
 view model =
     let
         theme =

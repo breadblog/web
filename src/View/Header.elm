@@ -11,7 +11,7 @@ import Data.Theme as Theme exposing (Theme(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events exposing (onClick)
-import Message exposing (Msg(..))
+import Message exposing (Msg(..), Compound(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Style.Font as Font
@@ -38,9 +38,6 @@ init =
 -- Message --
 
 
-type alias GMsg = Message.Msg
-
-
 type Msg
     = FocusSearch Bool
 
@@ -48,15 +45,15 @@ type Msg
 -- Update --
 
 
-update : (Model -> e) -> Msg -> Model -> ( e, Cmd GMsg )
-update transform msg model =
-    ( transform model, Cmd.none )
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    ( model, Cmd.none )
 
 
 -- View --
 
 
-view : Theme -> List Author -> List Tag -> Model -> Html GMsg
+view : Theme -> List Author -> List Tag -> Model -> Html (Compound Msg)
 view theme authors tags model =
     header
         [ css
@@ -90,7 +87,7 @@ view theme authors tags model =
 -- Logo
 
 
-logo : Theme -> Html GMsg
+logo : Theme -> Html msg
 logo theme =
     h1
         []
@@ -114,27 +111,27 @@ logo theme =
 -- Tags
 
 
-tagsContent : Theme -> List Tag -> List (Html GMsg)
+tagsContent : Theme -> List Tag -> List (Html (Compound Msg))
 tagsContent theme =
     List.map
-        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.value t) (CacheMsg <| ToggleTag t))
+        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.value t) (Global <| CacheMsg <| ToggleTag t))
 
 
 
 -- Authors
 
 
-authorsContent : Theme -> List Author -> List (Html GMsg)
+authorsContent : Theme -> List Author -> List (Html (Compound Msg))
 authorsContent theme =
     List.map
-        (\a -> checkboxDropdownItem (Author.name a) theme (Author.value a) (CacheMsg <| ToggleAuthor a))
+        (\a -> checkboxDropdownItem (Author.name a) theme (Author.value a) (Global <| CacheMsg <| ToggleAuthor a))
 
 
 
 -- Search Bar
 
 
-searchBar : Theme -> Html GMsg
+searchBar : Theme -> Html (Compound Msg)
 searchBar theme =
     div
         [ class "search"
@@ -181,10 +178,10 @@ searchBar theme =
 -- Theme --
 
 
-themeContent : Theme -> List (Html GMsg)
+themeContent : Theme -> List (Html (Compound Msg))
 themeContent theme =
     List.map
-        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (CacheMsg <| SetTheme t))
+        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (Global <| CacheMsg <| SetTheme t))
         Theme.all
 
 
@@ -192,7 +189,7 @@ themeContent theme =
 -- Profile
 
 
-profile : Theme -> Html GMsg
+profile : Theme -> Html msg
 profile theme =
     let
         iconSize =
@@ -239,7 +236,7 @@ profile theme =
 -- Util
 
 
-dropdown : Theme -> String -> List (Html GMsg) -> Html GMsg
+dropdown : Theme -> String -> List (Html msg) -> Html msg
 dropdown theme name content =
     div
         [ class "dropdown"
@@ -305,7 +302,7 @@ dropdown theme name content =
         ]
 
 
-dropdownItem : Theme -> String -> Bool -> GMsg -> Html GMsg
+dropdownItem : Theme -> String -> Bool -> msg -> Html msg
 dropdownItem theme name selected msg =
     let
         underline =
@@ -352,7 +349,7 @@ dropdownItem theme name selected msg =
         ]
 
 
-checkboxDropdownItem : String -> Theme -> Bool -> GMsg -> Html GMsg
+checkboxDropdownItem : String -> Theme -> Bool -> msg -> Html msg
 checkboxDropdownItem name theme value msg =
     div
         [ class "dropdown-item"
@@ -469,7 +466,7 @@ endSpacer =
         []
 
 
-navLink : Theme -> String -> Route -> Html GMsg
+navLink : Theme -> String -> Route -> Html msg
 navLink theme name route =
     div
         [ class "nav-link"
@@ -499,11 +496,11 @@ navLink theme name route =
         ]
 
 
-searchResults : Theme -> Html GMsg
+searchResults : Theme -> Html msg
 searchResults theme =
     text ""
 
 
-searchOverlay : Html GMsg
+searchOverlay : Html msg
 searchOverlay =
     text ""
