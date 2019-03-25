@@ -1,4 +1,4 @@
-module View.Header exposing (Model, Msg(..), view, init, update)
+module View.Header exposing (Model, Msg(..), init, update, view)
 
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
@@ -6,13 +6,13 @@ import Css.Transitions as Transitions exposing (transition)
 import Data.Author as Author exposing (Author)
 import Data.Cache as Cache exposing (Msg(..))
 import Data.Route as Route exposing (Route(..))
+import Data.Search as Search exposing (Result, Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
-import Data.Search as Search exposing (Result, Source)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events exposing (onClick, onInput)
-import Message exposing (Msg(..), Compound(..))
+import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Style.Font as Font
@@ -20,6 +20,7 @@ import Style.Screen as Screen
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes
 import View.Svg as Svg
+
 
 
 -- Model --
@@ -38,12 +39,14 @@ init =
     }
 
 
+
 -- Message --
 
 
 type Msg
     = FocusSearch Bool
     | SetSearchTerm String
+
 
 
 -- Update --
@@ -53,9 +56,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         FocusSearch value ->
-            let searchTerm =
+            let
+                searchTerm =
                     if value == False then
                         ""
+
                     else
                         model.searchTerm
             in
@@ -65,14 +70,15 @@ update msg model =
             ( { model | searchTerm = value }, Cmd.none )
 
 
+
 -- View --
 
 
 view : (Compound Msg -> msg) -> Theme -> List Author -> List Tag -> Model -> List (Html msg)
 view transform theme authors tags model =
-        List.map
-            (Html.Styled.map transform)
-            (viewHeader theme authors tags model)
+    List.map
+        (Html.Styled.map transform)
+        (viewHeader theme authors tags model)
 
 
 viewHeader : Theme -> List Author -> List Tag -> Model -> List (Html (Compound Msg))
@@ -92,6 +98,7 @@ viewHeader theme authors tags model =
             , Css.width (pct 100)
             , backgroundColor (Color.primary theme)
             , Shadow.dp6
+            , zIndex <| int 15
             ]
         ]
         [ endSpacer
@@ -108,10 +115,10 @@ viewHeader theme authors tags model =
         , spacer
         , profile theme
         , endSpacer
-        , searchResults theme model.searchBarFocused sources model.searchTerm
         ]
     , contentOverlay theme model.searchBarFocused
     ]
+
 
 
 -- Overlays
@@ -128,7 +135,11 @@ contentOverlay theme show =
             , Css.width <| pct 100
             , zIndex <| int 10
             , backgroundColor <| Color.overlay theme
-            , if show then display block else display none
+            , if show then
+                display block
+
+              else
+                display none
             ]
         , onClick <| Mod <| FocusSearch False
         ]
@@ -229,57 +240,6 @@ searchBar theme searchTerm =
                 ]
             ]
         ]
-
-
-
-
-
-searchResults : Theme -> Bool -> List (Source (Compound Msg)) -> String -> Html (Compound Msg)
-searchResults theme show sources searchTerm =
-    let
-        transformUp =
-            if show then
-                Css.batch []
-            else
-                transform <| translate3d (px 0) (pct -100) (px 0)
-
-        results =
-            Search.search sources searchTerm
-
-    in
-    div
-        [ class "search-results"
-        , css
-            [ position absolute
-            , top <| px 0
-            , maxHeight <| vh 50
-            , paddingTop <| px Dimension.headerHeight
-            , minHeight <| px Dimension.searchResultHeight
-            , Css.width <| pct 100
-            , backgroundColor <| Color.highContrast theme
-            , transformUp
-            , transition 
-                [ Transitions.transform 100 ]
-            ]
-        ]
-        ( List.map
-            (\r -> 
-                div
-                    [ class "search-result"
-                    , onClick <| Search.onClick r
-                    , css
-                        [ Css.height <| px Dimension.searchResultHeight
-                        , Css.width <| pct 100
-                        , displayFlex
-                        , justifyContent spaceBetween
-                        ]
-                    ]
-                    [ span [] [ text <| Search.value r ]
-                    , span [] [ text <| Search.context r ]
-                    ]
-            )
-            results
-        )
 
 
 -- Theme --

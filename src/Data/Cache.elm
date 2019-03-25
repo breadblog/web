@@ -37,6 +37,7 @@ type Msg
     | ToggleAuthor Author
 
 
+
 -- Constructors --
 
 
@@ -58,6 +59,7 @@ init flags =
         Nothing ->
             Err <|
                 ( Cache <| default Data.Version.error, InvalidVersion )
+
 
 
 -- Update --

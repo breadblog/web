@@ -1,21 +1,23 @@
 {-
-    General data accessible to all Page modules
+   General data accessible to all Page modules
 -}
-module Data.General exposing (General, cache, session, init)
 
 
-import Data.Session exposing (Session)
+module Data.General exposing (General, cache, init, session)
+
 import Data.Cache exposing (Cache)
+import Data.Session exposing (Session)
 
 
-type General =
-    General Internals
+type General
+    = General Internals
 
 
 type alias Internals =
     { cache : Cache
     , session : Session
     }
+
 
 
 -- Constructors --
@@ -27,6 +29,7 @@ init s c =
         { cache = c
         , session = s
         }
+
 
 
 -- Accessors --

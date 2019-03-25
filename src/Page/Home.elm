@@ -1,11 +1,11 @@
-module Page.Home exposing (Model, Msg(..), fromGeneral, init, toGeneral, view, update)
+module Page.Home exposing (Model, Msg(..), fromGeneral, init, toGeneral, update, view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
+import Data.General as General exposing (General)
 import Data.Route as Route exposing (Route(..))
 import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
-import Data.General as General exposing (General)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
@@ -53,6 +53,7 @@ type Msg
     = HeaderMsg Header.Msg
 
 
+
 -- Update --
 
 
@@ -66,9 +67,8 @@ update msg model =
 
                 cmd =
                     Cmd.map HeaderMsg headerCmd
-
             in
-                ( { model | header = headerModel }, cmd )
+            ( { model | header = headerModel }, cmd )
 
 
 
@@ -86,11 +86,10 @@ view model =
 
         authors =
             Cache.authors model.cache
-                
     in
     div
         [ class (Route.toClass Home) ]
-        ( List.append
+        (List.append
             (Header.view (Message.map HeaderMsg) theme authors tags model.header)
             []
         )

@@ -1,18 +1,19 @@
-module Message exposing (Msg(..), Compound(..), map)
+module Message exposing (Compound(..), Msg(..), map)
 
 import Browser
-import Html.Styled exposing (Html)
 import Data.Cache as Cache
 import Data.Theme exposing (Theme)
+import Html.Styled exposing (Html)
 import Url exposing (Url)
 
 
-{-
-    These are global messages to be used across the
-    entire application
 
-    These messages are either handled in Main or their
-    respective Data module
+{-
+   These are global messages to be used across the
+   entire application
+
+   These messages are either handled in Main or their
+   respective Data module
 -}
 
 
@@ -28,7 +29,7 @@ type Compound e
     | Mod e
 
 
-map : (a -> b) -> (Compound a) -> (Compound b)
+map : (a -> b) -> Compound a -> Compound b
 map transform compound =
     case compound of
         Global msg ->

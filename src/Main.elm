@@ -2,19 +2,18 @@ module Main exposing (main)
 
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
-import Url exposing (Url)
+import Css exposing (absolute, px)
+import Data.Cache as Cache exposing (Cache)
+import Data.General as General exposing (General)
+import Data.Route as Route exposing (ProblemPage(..), Route(..))
+import Data.Session as Session exposing (Session)
+import Data.Theme exposing (Theme(..))
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css)
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
-import Css exposing (absolute, px)
-import Data.Cache as Cache exposing (Cache)
-import Data.Route as Route exposing (ProblemPage(..), Route(..))
-import Data.Session as Session exposing (Session)
-import Data.Theme exposing (Theme(..))
-import Data.General as General exposing (General)
-import Message exposing (Msg(..), Compound(..))
+import Message exposing (Compound(..), Msg(..))
 import Page.About
 import Page.Donate
 import Page.Home
@@ -27,6 +26,7 @@ import Page.Redirect
 import Style.Color
 import Style.Font as Font
 import Style.Global
+import Url exposing (Url)
 
 
 
@@ -53,7 +53,8 @@ type PageModel
 -- Message --
 
 
-type alias Msg = Compound InternalMsg
+type alias Msg =
+    Compound InternalMsg
 
 
 type InternalMsg
@@ -87,7 +88,7 @@ init flags url key =
                     c
 
         general =
-            General.init session cache 
+            General.init session cache
 
         problem =
             case decoding of
@@ -101,8 +102,8 @@ init flags url key =
             changeRoute route
                 { problem = None
                 , pageModel =
-                    Redirect
-                        <| General.init session cache 
+                    Redirect <|
+                        General.init session cache
                 }
 
         cmds =
@@ -118,7 +119,6 @@ init flags url key =
 
 
 -- Update --
-
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -143,6 +143,7 @@ update compound model =
 
                         Browser.External href ->
                             ( model, Browser.Navigation.load href )
+
                 UrlChanged url ->
                     let
                         route =
@@ -156,13 +157,13 @@ update compound model =
                             Cache.update cacheMsg cache
                     in
                     ( { model | pageModel = fromGeneral (General.init session newCache) model.pageModel }, cmd )
+
                 NoOp ->
                     ( model, Cmd.none )
 
         Mod msg ->
             case ( model.pageModel, msg ) of
-
-                (Home homeModel, HomeMsg homeMsg) ->
+                ( Home homeModel, HomeMsg homeMsg ) ->
                     updatePage Home HomeMsg Page.Home.update homeModel homeMsg model
 
                 ( Post postModel, PostMsg postMsg ) ->
@@ -176,8 +177,9 @@ update compound model =
                     ( model, Cmd.none )
 
 
+type alias Update msg model =
+    msg -> model -> ( model, Cmd msg )
 
-type alias Update msg model = msg -> model -> ( model, Cmd msg )
 
 updatePage : (modModel -> PageModel) -> (modMsg -> InternalMsg) -> Update modMsg modModel -> modModel -> modMsg -> Model -> ( Model, Cmd Msg )
 updatePage transformModel transformMsg modUpdate modModel modMsg model =
@@ -187,11 +189,8 @@ updatePage transformModel transformMsg modUpdate modModel modMsg model =
 
         cmd =
             Cmd.map (\m -> Mod <| transformMsg m) modCmd
-
     in
     ( { model | pageModel = transformModel newModel }, cmd )
-
-
 
 
 toMsg : (m -> InternalMsg) -> m -> Msg

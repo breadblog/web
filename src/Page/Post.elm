@@ -1,15 +1,15 @@
-module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, view, update)
+module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Data.Cache as Cache exposing (Cache)
+import Data.General as General exposing (General)
 import Data.Post exposing (Post)
 import Data.Session exposing (Session)
 import Data.Theme exposing (Theme)
-import Data.General as General exposing (General)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
-import Message exposing (Msg(..), Compound(..))
+import Message exposing (Compound(..), Msg(..))
 import Style.Post
 import Time
 import View.Markdown as Markdown
@@ -41,6 +41,7 @@ toGeneral model =
     General.init model.session model.cache
 
 
+
 -- Message --
 
 
@@ -48,12 +49,14 @@ type Msg
     = NoOp
 
 
+
 -- Update --
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     ( model, Cmd.none )
+
 
 
 -- View --

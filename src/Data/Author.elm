@@ -3,6 +3,7 @@ module Data.Author exposing (Author, decoder, encode, init, mapValue, name, valu
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
+import Data.Search as Search exposing (Source)
 
 
 
@@ -51,6 +52,19 @@ value : Author -> Bool
 value (Author internals) =
     internals.value
 
+
+-- Util --
+
+
+toSource : msg -> List Author -> Source msg
+toSource msg authors =
+    Search.source
+        ( List.map
+            name
+            authors
+        )
+        "author"
+        msg
 
 
 -- JSON --

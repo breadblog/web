@@ -1,9 +1,9 @@
-module Data.Tag exposing (Tag, decoder, encode, init, mapValue, name, value, toSource)
+module Data.Tag exposing (Tag, decoder, encode, init, mapValue, name, toSource, value)
 
+import Data.Search as Search exposing (Source)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
-import Data.Search as Search exposing (Source)
 
 
 type Tag
@@ -52,20 +52,23 @@ mapValue transform (Tag internals) =
     Tag { internals | value = transform internals.value }
 
 
+
 -- Util
 
 
 toSource : msg -> List Tag -> Source msg
 toSource msg tags =
     Search.source
-        ( List.map
-            (\(Tag t) -> 
+        (List.map
+            (\(Tag t) ->
                 t.name
             )
             tags
         )
         "tag"
         msg
+
+
 
 -- JSON --
 

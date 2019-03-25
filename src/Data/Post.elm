@@ -5,6 +5,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
 import Time
+import Data.Search as Search exposing (Source)
 
 
 type Post
@@ -76,6 +77,19 @@ date : Post -> Time.Posix
 date (Post post) =
     post.date
 
+
+-- Util --
+
+
+toSource : msg -> List Post -> Source msg
+toSource msg posts =
+    Search.source
+        ( List.map
+            title
+            posts
+        )
+        "post"
+        msg
 
 
 -- JSON
