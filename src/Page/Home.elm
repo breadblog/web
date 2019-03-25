@@ -86,14 +86,11 @@ view model =
 
         authors =
             Cache.authors model.cache
-
-        header =
-            Html.Styled.map
-                (Message.map HeaderMsg)
-                (Header.view theme authors tags model.header)
                 
     in
     div
         [ class (Route.toClass Home) ]
-        [ header
-        ]
+        ( List.append
+            (Header.view (Message.map HeaderMsg) theme authors tags model.header)
+            []
+        )

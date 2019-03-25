@@ -8,9 +8,10 @@ import Data.Cache as Cache exposing (Msg(..))
 import Data.Route as Route exposing (Route(..))
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
+import Data.Search as Search exposing (Result, Source)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
-import Html.Styled.Events exposing (onClick)
+import Html.Styled.Events exposing (onClick, onInput)
 import Message exposing (Msg(..), Compound(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
@@ -26,12 +27,14 @@ import View.Svg as Svg
 
 type alias Model =
     { searchBarFocused : Bool
+    , searchTerm : String
     }
 
 
 init : Model
 init =
     { searchBarFocused = False
+    , searchTerm = ""
     }
 
 
@@ -40,6 +43,7 @@ init =
 
 type Msg
     = FocusSearch Bool
+    | SetSearchTerm String
 
 
 -- Update --
@@ -47,17 +51,41 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        FocusSearch value ->
+            let searchTerm =
+                    if value == False then
+                        ""
+                    else
+                        model.searchTerm
+            in
+            ( { model | searchBarFocused = value, searchTerm = searchTerm }, Cmd.none )
+
+        SetSearchTerm value ->
+            ( { model | searchTerm = value }, Cmd.none )
 
 
 -- View --
 
 
-view : Theme -> List Author -> List Tag -> Model -> Html (Compound Msg)
-view theme authors tags model =
-    header
+view : (Compound Msg -> msg) -> Theme -> List Author -> List Tag -> Model -> List (Html msg)
+view transform theme authors tags model =
+        List.map
+            (Html.Styled.map transform)
+            (viewHeader theme authors tags model)
+
+
+viewHeader : Theme -> List Author -> List Tag -> Model -> List (Html (Compound Msg))
+viewHeader theme authors tags model =
+    let
+        sources =
+            [ Tag.toSource (Global NoOp) tags
+            ]
+    in
+    [ header
         [ css
-            [ displayFlex
+            [ position relative
+            , displayFlex
             , flexDirection row
             , alignItems center
             , Css.height (px Dimension.headerHeight)
@@ -72,7 +100,7 @@ view theme authors tags model =
         , dropdown theme "tags" <| tagsContent theme tags
         , dropdown theme "author" <| authorsContent theme authors
         , spacer
-        , searchBar theme
+        , searchBar theme model.searchTerm
         , spacer
         , dropdown theme "theme" <| themeContent theme
         , navLink theme "about" About
@@ -80,7 +108,31 @@ view theme authors tags model =
         , spacer
         , profile theme
         , endSpacer
+        , searchResults theme model.searchBarFocused sources model.searchTerm
         ]
+    , contentOverlay theme model.searchBarFocused
+    ]
+
+
+-- Overlays
+
+
+contentOverlay : Theme -> Bool -> Html (Compound Msg)
+contentOverlay theme show =
+    div
+        [ class "content-overlay"
+        , css
+            [ position absolute
+            , top <| px Dimension.headerHeight
+            , bottom <| px 0
+            , Css.width <| pct 100
+            , zIndex <| int 10
+            , backgroundColor <| Color.overlay theme
+            , if show then display block else display none
+            ]
+        , onClick <| Mod <| FocusSearch False
+        ]
+        []
 
 
 
@@ -128,11 +180,11 @@ authorsContent theme =
 
 
 
--- Search Bar
+-- Search
 
 
-searchBar : Theme -> Html (Compound Msg)
-searchBar theme =
+searchBar : Theme -> String -> Html (Compound Msg)
+searchBar theme searchTerm =
     div
         [ class "search"
         , css
@@ -141,11 +193,13 @@ searchBar theme =
             , position relative
             , Css.height (px 36)
             , Css.width (px 260)
+            , zIndex <| int 15
             , List.map
                 (\f -> f [ display none ])
                 [ Screen.med, Screen.small, Screen.phone ]
                 |> batch
             ]
+        , onClick <| Mod (FocusSearch True)
         ]
         [ input
             [ class "search"
@@ -159,6 +213,8 @@ searchBar theme =
                 , fontSize (rem 1)
                 , fontFamilies Font.montserrat
                 ]
+            , onInput (\s -> Mod <| SetSearchTerm s)
+            , value searchTerm
             ]
             []
         , Svg.search
@@ -173,6 +229,57 @@ searchBar theme =
                 ]
             ]
         ]
+
+
+
+
+
+searchResults : Theme -> Bool -> List (Source (Compound Msg)) -> String -> Html (Compound Msg)
+searchResults theme show sources searchTerm =
+    let
+        transformUp =
+            if show then
+                Css.batch []
+            else
+                transform <| translate3d (px 0) (pct -100) (px 0)
+
+        results =
+            Search.search sources searchTerm
+
+    in
+    div
+        [ class "search-results"
+        , css
+            [ position absolute
+            , top <| px 0
+            , maxHeight <| vh 50
+            , paddingTop <| px Dimension.headerHeight
+            , minHeight <| px Dimension.searchResultHeight
+            , Css.width <| pct 100
+            , backgroundColor <| Color.highContrast theme
+            , transformUp
+            , transition 
+                [ Transitions.transform 100 ]
+            ]
+        ]
+        ( List.map
+            (\r -> 
+                div
+                    [ class "search-result"
+                    , onClick <| Search.onClick r
+                    , css
+                        [ Css.height <| px Dimension.searchResultHeight
+                        , Css.width <| pct 100
+                        , displayFlex
+                        , justifyContent spaceBetween
+                        ]
+                    ]
+                    [ span [] [ text <| Search.value r ]
+                    , span [] [ text <| Search.context r ]
+                    ]
+            )
+            results
+        )
 
 
 -- Theme --
@@ -494,11 +601,6 @@ navLink theme name route =
             ]
             [ text name ]
         ]
-
-
-searchResults : Theme -> Html msg
-searchResults theme =
-    text ""
 
 
 searchOverlay : Html msg

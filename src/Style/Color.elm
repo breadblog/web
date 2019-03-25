@@ -1,4 +1,4 @@
-module Style.Color exposing (accent, background, danger, dropdown, highContrast, primary, primaryFont, secondary, secondaryFont, tertiaryFont)
+module Style.Color exposing (accent, background, danger, dropdown, highContrast, primary, primaryFont, secondary, secondaryFont, tertiaryFont, overlay)
 
 import Css exposing (..)
 import Data.Theme exposing (Theme(..))
@@ -102,3 +102,8 @@ danger theme =
 
         Light ->
             hex "b71c1c"
+
+
+overlay : Theme -> Color
+overlay theme =
+    rgba 0 0 0 0.4
