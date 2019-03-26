@@ -1,63 +1,28 @@
-module Page.About exposing (Model, Msg(..), fromGlobal, init, toGlobal, view)
+module Page.About exposing (view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
+import Data.General as General exposing (General)
 import Data.Route as Route exposing (Route(..))
 import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import Message
 
 
 
--- Model
+-- View --
 
 
-type alias Model =
-    { cache : Cache
-    , session : Session
-    }
-
-
-init : (Model -> e) -> ( Session, Cache ) -> ( e, Cmd msg )
-init transform ( session, cache ) =
-    ( transform <|
-        { session = session
-        , cache = cache
-        }
-    , Cmd.none
-    )
-
-
-fromGlobal : ( Session, Cache ) -> Model -> Model
-fromGlobal ( session, cache ) model =
-    { model | cache = cache, session = session }
-
-
-toGlobal : Model -> ( Session, Cache )
-toGlobal model =
-    ( model.session, model.cache )
-
-
-
--- Message
-
-
-type Msg
-    = NoOp
-
-
-
--- View
-
-
-view : Model -> Html Message.Msg
-view model =
+view : General -> Html msg
+view general =
     let
+        cache =
+            General.cache general
+
         theme =
-            Cache.theme model.cache
+            Cache.theme cache
     in
     div
         [ class (Route.toClass About) ]

@@ -1,4 +1,4 @@
-module Style.Dimension exposing (dropdownHeight, headerHeight)
+module Style.Dimension exposing (dropdownHeight, headerHeight, searchResultHeight)
 
 -- Header
 
@@ -11,3 +11,8 @@ headerHeight =
 dropdownHeight : number
 dropdownHeight =
     250
+
+
+searchResultHeight : number
+searchResultHeight =
+    60

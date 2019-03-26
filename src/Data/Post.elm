@@ -1,6 +1,7 @@
 module Data.Post exposing (Post, decoder, encode)
 
 import Data.PostId as PostId exposing (PostId)
+import Data.Search as Search exposing (Source)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
@@ -75,6 +76,21 @@ author (Post post) =
 date : Post -> Time.Posix
 date (Post post) =
     post.date
+
+
+
+-- Util --
+
+
+toSource : msg -> List Post -> Source msg
+toSource msg posts =
+    Search.source
+        (List.map
+            title
+            posts
+        )
+        "post"
+        msg
 
 
 

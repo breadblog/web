@@ -4,6 +4,7 @@ import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
 import Css exposing (absolute, px)
 import Data.Cache as Cache exposing (Cache)
+import Data.General as General exposing (General)
 import Data.Route as Route exposing (ProblemPage(..), Route(..))
 import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme(..))
@@ -12,7 +13,7 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css)
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
-import Message exposing (Msg(..))
+import Message exposing (Compound(..), Msg(..))
 import Page.About
 import Page.Donate
 import Page.Home
@@ -29,7 +30,7 @@ import Url exposing (Url)
 
 
 
--- Model
+-- Model --
 
 
 type alias Model =
@@ -39,25 +40,31 @@ type alias Model =
 
 
 type PageModel
-    = Redirect Global
-    | NotFound Global
+    = Redirect General
+    | NotFound General
+    | Donate General
+    | About General
     | Home Page.Home.Model
     | Post Page.Post.Model
-    | Donate Page.Donate.Model
-    | About Page.About.Model
     | Profile Page.Profile.Model
 
 
 
--- | Login
+-- Message --
 
 
-type alias Global =
-    ( Session, Cache )
+type alias Msg =
+    Compound InternalMsg
+
+
+type InternalMsg
+    = HomeMsg Page.Home.Msg
+    | PostMsg Page.Post.Msg
+    | ProfileMsg Page.Profile.Msg
 
 
 
--- Init
+-- Init --
 
 
 init : Value -> Url.Url -> Key -> ( Model, Cmd Msg )
@@ -80,8 +87,8 @@ init flags url key =
                 Err ( c, _ ) ->
                     c
 
-        global =
-            ( session, cache )
+        general =
+            General.init session cache
 
         problem =
             case decoding of
@@ -95,8 +102,8 @@ init flags url key =
             changeRoute route
                 { problem = None
                 , pageModel =
-                    Redirect
-                        ( session, cache )
+                    Redirect <|
+                        General.init session cache
                 }
 
         cmds =
@@ -111,67 +118,111 @@ init flags url key =
 
 
 
--- Update
+-- Update --
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update wrapper model =
+update compound model =
     let
-        ( session, cache ) =
-            toGlobal model.pageModel
+        general =
+            toGeneral model.pageModel
+
+        session =
+            General.session general
+
+        cache =
+            General.cache general
     in
-    case wrapper of
-        LinkClicked urlRequest ->
-            case urlRequest of
-                Browser.Internal url ->
-                    ( model, Browser.Navigation.pushUrl session.key (Url.toString url) )
+    case compound of
+        Global msg ->
+            case msg of
+                LinkClicked urlRequest ->
+                    case urlRequest of
+                        Browser.Internal url ->
+                            ( model, Browser.Navigation.pushUrl session.key (Url.toString url) )
 
-                Browser.External href ->
-                    ( model, Browser.Navigation.load href )
+                        Browser.External href ->
+                            ( model, Browser.Navigation.load href )
 
-        UrlChanged url ->
-            let
-                route =
-                    Route.fromUrl url
-            in
-            changeRoute route model
+                UrlChanged url ->
+                    let
+                        route =
+                            Route.fromUrl url
+                    in
+                    changeRoute route model
 
-        CacheMsg msg ->
-            let
-                ( newCache, cmd ) =
-                    Cache.update msg cache
-            in
-            ( { model | pageModel = fromGlobal ( session, newCache ) model.pageModel }, cmd )
+                CacheMsg cacheMsg ->
+                    let
+                        ( newCache, cmd ) =
+                            Cache.update cacheMsg cache
+                    in
+                    ( { model | pageModel = fromGeneral (General.init session newCache) model.pageModel }, cmd )
 
-        NoOp ->
-            ( model, Cmd.none )
+                NoOp ->
+                    ( model, Cmd.none )
+
+        Mod msg ->
+            case ( model.pageModel, msg ) of
+                ( Home homeModel, HomeMsg homeMsg ) ->
+                    updatePage Home HomeMsg Page.Home.update homeModel homeMsg model
+
+                ( Post postModel, PostMsg postMsg ) ->
+                    updatePage Post PostMsg Page.Post.update postModel postMsg model
+
+                ( Profile profileModel, ProfileMsg profileMsg ) ->
+                    updatePage Profile ProfileMsg Page.Profile.update profileModel profileMsg model
+
+                _ ->
+                    -- TODO: Error handling (impossible state)
+                    ( model, Cmd.none )
+
+
+type alias Update msg model =
+    msg -> model -> ( model, Cmd msg )
+
+
+updatePage : (modModel -> PageModel) -> (modMsg -> InternalMsg) -> Update modMsg modModel -> modModel -> modMsg -> Model -> ( Model, Cmd Msg )
+updatePage transformModel transformMsg modUpdate modModel modMsg model =
+    let
+        ( newModel, modCmd ) =
+            modUpdate modMsg modModel
+
+        cmd =
+            Cmd.map (\m -> Mod <| transformMsg m) modCmd
+    in
+    ( { model | pageModel = transformModel newModel }, cmd )
+
+
+toMsg : (m -> InternalMsg) -> m -> Msg
+toMsg transform msg =
+    Mod <| transform msg
 
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
 changeRoute route model =
     let
-        global =
-            toGlobal model.pageModel
+        general =
+            toGeneral model.pageModel
 
         ( pageModel, cmd ) =
             case route of
                 Route.NotFound ->
-                    ( NotFound global, Cmd.none )
-
-                Route.Home ->
-                    Page.Home.init Home global
-
-                Route.Post slug ->
-                    Page.Post.init Post global
+                    ( NotFound general, Cmd.none )
 
                 Route.Donate ->
-                    Page.Donate.init Donate global
+                    ( Donate general, Cmd.none )
 
                 Route.About ->
-                    Page.About.init About global
+                    ( About general, Cmd.none )
+
+                Route.Home ->
+                    Page.Home.init Home general
+
+                Route.Post slug ->
+                    Page.Post.init Post general
 
                 Route.Profile ->
-                    Page.Profile.init Profile global
+                    Page.Profile.init Profile general
     in
     ( { pageModel = pageModel
       , problem = None
@@ -180,23 +231,23 @@ changeRoute route model =
     )
 
 
-toGlobal : PageModel -> ( Session, Cache )
-toGlobal page =
+toGeneral : PageModel -> General
+toGeneral page =
     case page of
         Home model ->
-            Page.Home.toGlobal model
+            Page.Home.toGeneral model
 
         Post model ->
-            Page.Post.toGlobal model
-
-        About model ->
-            Page.About.toGlobal model
-
-        Donate model ->
-            Page.Donate.toGlobal model
+            Page.Post.toGeneral model
 
         Profile model ->
-            Page.Profile.toGlobal model
+            Page.Profile.toGeneral model
+
+        About g ->
+            g
+
+        Donate g ->
+            g
 
         NotFound g ->
             g
@@ -205,33 +256,33 @@ toGlobal page =
             g
 
 
-fromGlobal : ( Session, Cache ) -> PageModel -> PageModel
-fromGlobal global page =
+fromGeneral : General -> PageModel -> PageModel
+fromGeneral general page =
     case page of
         Home model ->
-            Home <| Page.Home.fromGlobal global model
+            Home <| Page.Home.fromGeneral general model
 
         Post model ->
-            Post <| Page.Post.fromGlobal global model
-
-        About model ->
-            About <| Page.About.fromGlobal global model
-
-        Donate model ->
-            Donate <| Page.Donate.fromGlobal global model
+            Post <| Page.Post.fromGeneral general model
 
         Profile model ->
-            Profile <| Page.Profile.fromGlobal global model
+            Profile <| Page.Profile.fromGeneral general model
+
+        About model ->
+            NotFound general
+
+        Donate model ->
+            Donate general
 
         NotFound _ ->
-            NotFound global
+            NotFound general
 
         Redirect _ ->
-            Redirect global
+            Redirect general
 
 
 
--- Subscriptions
+-- Subscriptions --
 
 
 subscriptions : Model -> Sub Msg
@@ -240,7 +291,7 @@ subscriptions model =
 
 
 
--- View
+-- View --
 
 
 view : Model -> Document Msg
@@ -253,8 +304,11 @@ view model =
 body : Model -> List (Html Msg)
 body model =
     let
-        ( session, cache ) =
-            toGlobal model.pageModel
+        general =
+            toGeneral model.pageModel
+
+        cache =
+            General.cache general
 
         theme =
             Cache.theme cache
@@ -294,24 +348,30 @@ viewPage model =
                 Redirect redirect ->
                     Page.Redirect.view redirect
 
+                Donate donate ->
+                    Page.Donate.view donate
+
+                About about ->
+                    Page.About.view about
+
                 Home home ->
-                    Page.Home.view home
+                    Html.Styled.map
+                        (Message.map HomeMsg)
+                        (Page.Home.view home)
 
                 Post post ->
-                    Page.Post.view post
+                    Html.Styled.map
+                        (Message.map PostMsg)
+                        (Page.Post.view post)
 
-                Donate post ->
-                    Page.Donate.view post
-
-                About post ->
-                    Page.About.view post
-
-                Profile post ->
-                    Page.Profile.view post
+                Profile profile ->
+                    Html.Styled.map
+                        (Message.map ProfileMsg)
+                        (Page.Profile.view profile)
 
 
 
--- Program
+-- Program --
 
 
 main : Program Value Model Msg
@@ -321,6 +381,6 @@ main =
         , view = view
         , update = update
         , subscriptions = subscriptions
-        , onUrlChange = UrlChanged
-        , onUrlRequest = LinkClicked
+        , onUrlChange = \u -> Global <| UrlChanged u
+        , onUrlRequest = \r -> Global <| LinkClicked r
         }

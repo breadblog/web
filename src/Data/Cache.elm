@@ -28,7 +28,7 @@ type alias CacheFlags =
 
 
 
--- Message
+-- Message --
 
 
 type Msg
@@ -38,7 +38,31 @@ type Msg
 
 
 
--- Update
+-- Constructors --
+
+
+init : Value -> Result ( Cache, ProblemPage ) ( Cache, Cmd msg )
+init flags =
+    case Version.current of
+        Just currentVersion ->
+            case Decode.decodeValue (flagsDecoder currentVersion) flags of
+                Ok internals ->
+                    let
+                        cache =
+                            Cache internals
+                    in
+                    Ok ( cache, set cache )
+
+                Err err ->
+                    Err ( Cache <| default currentVersion, CorruptCache err )
+
+        Nothing ->
+            Err <|
+                ( Cache <| default Data.Version.error, InvalidVersion )
+
+
+
+-- Update --
 
 
 update : Msg -> Cache -> ( Cache, Cmd msg )
@@ -157,26 +181,6 @@ authors (Cache cache) =
 
 
 -- Util
-
-
-init : Value -> Result ( Cache, ProblemPage ) ( Cache, Cmd msg )
-init flags =
-    case Version.current of
-        Just currentVersion ->
-            case Decode.decodeValue (flagsDecoder currentVersion) flags of
-                Ok internals ->
-                    let
-                        cache =
-                            Cache internals
-                    in
-                    Ok ( cache, set cache )
-
-                Err err ->
-                    Err ( Cache <| default currentVersion, CorruptCache err )
-
-        Nothing ->
-            Err <|
-                ( Cache <| default Data.Version.error, InvalidVersion )
 
 
 default : Version -> Internals

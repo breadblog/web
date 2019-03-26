@@ -1,5 +1,6 @@
-module Data.Tag exposing (Tag, decoder, encode, init, mapValue, name, value)
+module Data.Tag exposing (Tag, decoder, encode, init, mapValue, name, toSource, value)
 
+import Data.Search as Search exposing (Source)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
@@ -49,6 +50,23 @@ value (Tag internals) =
 mapValue : (Bool -> Bool) -> Tag -> Tag
 mapValue transform (Tag internals) =
     Tag { internals | value = transform internals.value }
+
+
+
+-- Util
+
+
+toSource : msg -> List Tag -> Source msg
+toSource msg tags =
+    Search.source
+        (List.map
+            (\(Tag t) ->
+                t.name
+            )
+            tags
+        )
+        "tag"
+        msg
 
 
 
