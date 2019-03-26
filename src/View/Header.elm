@@ -16,7 +16,7 @@ import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Style.Font as Font
-import Style.Screen as Screen
+import Style.Screen as Screen exposing (Screen)
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes
 import View.Svg as Svg
@@ -101,20 +101,23 @@ viewHeader theme authors tags model =
             , zIndex <| int 15
             ]
         ]
-        [ endSpacer
+        -- Desktop
+        [ fixedSpacer Screen.notPhone (px 25)
         , logo theme
-        , spacer
-        , dropdown theme "tags" <| tagsContent theme tags
-        , dropdown theme "author" <| authorsContent theme authors
-        , spacer
+        , spacer Screen.notPhone
+        , dropdown Screen.notPhone theme "tags" <| tagsContent theme tags
+        , dropdown Screen.notPhone theme "author" <| authorsContent theme authors
+        , spacer Screen.notPhone
         , searchBar theme model.searchTerm
-        , spacer
-        , dropdown theme "theme" <| themeContent theme
-        , navLink theme "about" About
-        , navLink theme "donate" Donate
-        , spacer
+        , spacer Screen.notPhone
+        , dropdown Screen.notPhone theme "theme" <| themeContent theme
+        , navLink Screen.notPhone theme "about" About
+        , navLink Screen.notPhone theme "donate" Donate
+        , spacer Screen.notPhone
         , profile theme
-        , endSpacer
+        , fixedSpacer Screen.notPhone (px 25)
+
+        -- Mobile
         ]
     , contentOverlay theme model.searchBarFocused
     ]
@@ -153,7 +156,8 @@ contentOverlay theme show =
 logo : Theme -> Html msg
 logo theme =
     h1
-        []
+        [ css [ Screen.hideOn [ Screen.phone ] ]
+        ]
         [ a
             [ css
                 [ fontFamilies Font.indieFlower
@@ -272,6 +276,7 @@ profile theme =
             [ Css.height (pct 100)
             , displayFlex
             , flexDirection row
+            , Screen.hideOn [ Screen.phone ]
             ]
         ]
         [ Svg.user
@@ -300,12 +305,19 @@ profile theme =
         ]
 
 
+-- Drawer
+
+
+drawer : Theme -> Html msg
+drawer theme =
+    text ""
+
 
 -- Util
 
 
-dropdown : Theme -> String -> List (Html msg) -> Html msg
-dropdown theme name content =
+dropdown : List Screen -> Theme -> String -> List (Html msg) -> Html msg
+dropdown showScreens theme name content =
     div
         [ class "dropdown"
         , css
@@ -315,6 +327,7 @@ dropdown theme name content =
             , alignItems center
             , spacing Right
             , padding2 (px 0) (px 10)
+            , Screen.showOn showScreens
             , hover
                 [ cursor pointer
                 ]
@@ -508,38 +521,38 @@ spacing side =
         ]
 
 
-spacer : Html msg
-spacer =
+spacer : List Screen -> Html msg
+spacer shownScreens =
     div
         [ css
             [ flexGrow <| num 1
-            , Screen.phone
-                [ flexGrow <| num 0 ]
+            , Screen.showOn shownScreens
             ]
         , class "spacer between"
         ]
         []
 
 
-endSpacer : Html msg
-endSpacer =
+fixedSpacer : List Screen -> LengthOrAuto compatible -> Html msg
+fixedSpacer shownScreens width_ =
     div
         [ css
-            [ Css.width <| px 25
-            , Screen.phone
-                [ Css.width <| px 0 ]
+            [ Css.width <| width_
+            , Screen.showOn
+                shownScreens
             ]
-        , class "spacer end"
+        , class "spacer fixed"
         ]
         []
 
 
-navLink : Theme -> String -> Route -> Html msg
-navLink theme name route =
+navLink : List Screen -> Theme -> String -> Route -> Html msg
+navLink shownScreens theme name route =
     div
         [ class "nav-link"
         , css
             [ spacing Right
+            , Screen.showOn shownScreens
             ]
         ]
         [ a
