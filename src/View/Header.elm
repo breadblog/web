@@ -242,6 +242,7 @@ searchBar theme searchTerm =
         ]
 
 
+
 -- Theme --
 
 
