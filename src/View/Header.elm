@@ -16,13 +16,60 @@ import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Style.Font as Font
-import Style.Screen as Screen exposing (Screen)
+import Style.Screen as Screen exposing (Screen(..))
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes
 import View.Svg as Svg
 
 
 
+{-
+   Application Header
+   ==================
+
+   Although this is on many of the pages in the application, this is not
+   a hard and fast rule. There are several pages where we might not want
+   to show the header (such as the error pages) where we want more fine
+   tuned control over how the user navigates on a page
+
+   Layouts
+   =======
+
+   The header supports two different layouts, depending on screen it is
+   being used on
+
+   Full
+   ----
+
+   The full experience makes use of the extra space and dexterity using
+   a series of dropdowns & links for navigation and for more accessible
+   control of displayed content
+
+   ---------------------------------------
+   | Logo Dropdowns Search Links Profile |
+   ---------------------------------------
+
+   Mobile
+   ------
+
+   The mobile experience has to accommodate the fat fingered among us,
+   so everything needs to be either clickable or toggleable. Hence the
+   addition of a hamburger menu which opens into a drawer on the left,
+   allowing navigation to the different pages here. Control over content
+   is not accessible from the header in this layout
+
+   ---------------------------------------
+   | Hamburger                    Search |
+   ---------------------------------------
+   |                   |
+   |   Home            |
+   |   Profile         |
+   |   Authors         |
+   |   About           |
+   |   Donate          |
+   |                   |
+
+-}
 -- Model --
 
 
@@ -87,6 +134,18 @@ viewHeader theme authors tags model =
         sources =
             [ Tag.toSource (Global NoOp) tags
             ]
+
+        desktop =
+            [ SmallDesktop
+            , MediumDesktop
+            , LargeDesktop
+            , HighResDesktop
+            ]
+
+        mobile =
+            [ Phone
+            , Tablet
+            ]
     in
     [ header
         [ css
@@ -101,21 +160,27 @@ viewHeader theme authors tags model =
             , zIndex <| int 15
             ]
         ]
-        -- Desktop
-        [ fixedSpacer Screen.notPhone (px 25)
-        , logo theme
-        , spacer Screen.notPhone
-        , dropdown Screen.notPhone theme "tags" <| tagsContent theme tags
-        , dropdown Screen.notPhone theme "author" <| authorsContent theme authors
-        , spacer Screen.notPhone
+        -- Desktop only
+        [ fixedSpacer desktop (px 25)
+        , logo desktop theme
+        , spacer desktop
+        , dropdown desktop theme "tags" <| tagsContent theme tags
+        , dropdown desktop theme "author" <| authorsContent theme authors
+
+        -- Mobile only
+        -- TODO: Drawer
+        -- Both
+        , spacer desktop
         , searchBar theme model.searchTerm
-        , spacer Screen.notPhone
-        , dropdown Screen.notPhone theme "theme" <| themeContent theme
-        , navLink Screen.notPhone theme "about" About
-        , navLink Screen.notPhone theme "donate" Donate
-        , spacer Screen.notPhone
-        , profile theme
-        , fixedSpacer Screen.notPhone (px 25)
+        , spacer desktop
+
+        -- Desktop only
+        , dropdown desktop theme "theme" <| themeContent theme
+        , navLink desktop theme "about" About
+        , navLink desktop theme "donate" Donate
+        , spacer desktop
+        , profile desktop theme
+        , fixedSpacer desktop (px 25)
 
         -- Mobile
         ]
@@ -124,39 +189,13 @@ viewHeader theme authors tags model =
 
 
 
--- Overlays
-
-
-contentOverlay : Theme -> Bool -> Html (Compound Msg)
-contentOverlay theme show =
-    div
-        [ class "content-overlay"
-        , css
-            [ position absolute
-            , top <| px Dimension.headerHeight
-            , bottom <| px 0
-            , Css.width <| pct 100
-            , zIndex <| int 10
-            , backgroundColor <| Color.overlay theme
-            , if show then
-                display block
-
-              else
-                display none
-            ]
-        , onClick <| Mod <| FocusSearch False
-        ]
-        []
-
-
-
 -- Logo
 
 
-logo : Theme -> Html msg
-logo theme =
+logo : List Screen -> Theme -> Html msg
+logo shownScreens theme =
     h1
-        [ css [ Screen.hideOn [ Screen.phone ] ]
+        [ css [ Screen.showOn shownScreens ]
         ]
         [ a
             [ css
@@ -209,10 +248,6 @@ searchBar theme searchTerm =
             , Css.height (px 36)
             , Css.width (px 260)
             , zIndex <| int 15
-            , List.map
-                (\f -> f [ display none ])
-                [ Screen.med, Screen.small, Screen.phone ]
-                |> batch
             ]
         , onClick <| Mod (FocusSearch True)
         ]
@@ -261,8 +296,8 @@ themeContent theme =
 -- Profile
 
 
-profile : Theme -> Html msg
-profile theme =
+profile : List Screen -> Theme -> Html msg
+profile shownScreens theme =
     let
         iconSize =
             28
@@ -276,7 +311,7 @@ profile theme =
             [ Css.height (pct 100)
             , displayFlex
             , flexDirection row
-            , Screen.hideOn [ Screen.phone ]
+            , Screen.showOn shownScreens
             ]
         ]
         [ Svg.user
@@ -305,12 +340,40 @@ profile theme =
         ]
 
 
+
 -- Drawer
 
 
 drawer : Theme -> Html msg
 drawer theme =
     text ""
+
+
+
+-- Overlay
+
+
+contentOverlay : Theme -> Bool -> Html (Compound Msg)
+contentOverlay theme show =
+    div
+        [ class "content-overlay"
+        , css
+            [ position absolute
+            , top <| px Dimension.headerHeight
+            , bottom <| px 0
+            , Css.width <| pct 100
+            , zIndex <| int 10
+            , backgroundColor <| Color.overlay theme
+            , if show then
+                display block
+
+              else
+                display none
+            ]
+        , onClick <| Mod <| FocusSearch False
+        ]
+        []
+
 
 
 -- Util
@@ -513,11 +576,21 @@ spacing side =
                     marginRight
     in
     batch
-        [ Screen.small [ marginStyle (px 10) ]
-        , Screen.med [ marginStyle (px 15) ]
-        , Screen.base [ marginStyle (px 20) ]
-        , Screen.large [ marginStyle (px 25) ]
-        , Screen.highRes [ marginStyle (px 40) ]
+        [ Screen.style
+            [ Phone ]
+            [ marginStyle (px 10) ]
+        , Screen.style
+            [ Tablet ]
+            [ marginStyle (px 15) ]
+        , Screen.style
+            [ SmallDesktop ]
+            [ marginStyle (px 20) ]
+        , Screen.style
+            [ MediumDesktop ]
+            [ marginStyle (px 25) ]
+        , Screen.style
+            [ LargeDesktop, HighResDesktop ]
+            [ marginStyle (px 40) ]
         ]
 
 
@@ -575,8 +648,3 @@ navLink shownScreens theme name route =
             ]
             [ text name ]
         ]
-
-
-searchOverlay : Html msg
-searchOverlay =
-    text ""

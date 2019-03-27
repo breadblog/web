@@ -1,78 +1,9 @@
-module Style.Screen exposing (Screen, showOn, hideOn, notPhone, base, highRes, large, med, phone, small)
+module Style.Screen exposing (Screen(..), all, desktop, hideOn, mobile, not, showOn, style)
 
 import Css exposing (Style, px)
-import Css.Media as Media exposing (only, screen, withMedia)
+import Css.Media as Media exposing (only, withMedia)
 
 
-type alias Screen = List Style -> Style
-
-
-phone : List Style -> Style
-phone styles =
-    withMedia [ only screen [ Media.maxWidth (px 400) ] ]
-        styles
-
-
-small : List Style -> Style
-small styles =
-    withMedia [ only screen [ Media.minWidth (px 401), Media.maxWidth (px 800) ] ]
-        styles
-
-
-med : List Style -> Style
-med styles =
-    withMedia [ only screen [ Media.minWidth (px 801), Media.maxWidth (px 1200) ] ]
-        styles
-
-
-base : List Style -> Style
-base styles =
-    withMedia [ only screen [ Media.minWidth (px 1201), Media.maxWidth (px 1600) ] ]
-        styles
-
-
-large : List Style -> Style
-large =
-    withMedia [ only screen [ Media.minWidth (px 1601), Media.maxWidth (px 2400) ] ]
-
-
-highRes : List Style -> Style
-highRes styles =
-    withMedia [ only screen [ Media.minWidth (px 2401) ] ]
-        styles
-
-
-screens : List Screen
-screens =
-    [ phone
-    , small
-    , med
-    , base
-    , large
-    , highRes
-    ]
-
-
-notPhone : List Screen
-notPhone =
-    List.filter
-        (\s -> s /= phone)
-        screens
-
-
-
--- TODO: Adjust implementation of these to not use "initial" without performing function equality
--- Might make sense to move to a more Data sense approach
--- i.e screens are concrete types that are mapped to the functions in a dict
--- this way we can perform these comparisons w/o breaking the webpage
--- Means we would need helper functions to perform the Screen.phone [ myPhoneStyles ]
-
--- Screen.style : List Screen.Screen -> List Style -> Style
-
-
-{-
-
-rework these breakpoints (probably can be fewer?)
 type Screen
     = Phone
     | Tablet
@@ -82,32 +13,102 @@ type Screen
     | HighResDesktop
 
 
-style : Screen -> List Style -> Style
-style screen =
+all : List Screen
+all =
+    [ Phone
+    , Tablet
+    , SmallDesktop
+    , MediumDesktop
+    , LargeDesktop
+    , HighResDesktop
+    ]
+
+
+not : List Screen -> List Screen
+not screens =
+    let
+        ints =
+            List.map toInt screens
+    in
+    List.filter
+        (\s -> Basics.not <| List.member (toInt s) ints)
+        all
+
+
+mobile : List Screen
+mobile =
+    [ Phone
+    , Tablet
+    ]
+
+
+desktop : List Screen
+desktop =
+    not mobile
+
+
+style : List Screen -> List Style -> Style
+style screens styles =
+    screens
+        |> List.map (\s -> styleOne s styles)
+        |> Css.batch
+
+
+showOn : List Screen -> Style
+showOn shown =
+    shown
+        |> not
+        |> hideOn
+
+
+hideOn : List Screen -> Style
+hideOn hidden =
+    style hidden [ Css.display Css.none ]
+
+
+
+-- Private
+
+
+styleOne : Screen -> List Style -> Style
+styleOne screen =
     case screen of
         Phone ->
-            withMedia [ only screen [ Media.maxWidth (px 400) ] ]
+            withMedia [ only Media.screen [ Media.maxWidth (px 400) ] ]
 
-        ...
+        Tablet ->
+            withMedia [ only Media.screen [ Media.minWidth (px 401), Media.maxWidth (px 800) ] ]
 
+        SmallDesktop ->
+            withMedia [ only Media.screen [ Media.minWidth (px 801), Media.maxWidth (px 1200) ] ]
 
-Now we have comparable values (Screen) that we can use for more sophisticated functions like showOn
--}
+        MediumDesktop ->
+            withMedia [ only Media.screen [ Media.minWidth (px 1201), Media.maxWidth (px 1600) ] ]
 
+        LargeDesktop ->
+            withMedia [ only Media.screen [ Media.minWidth (px 1601), Media.maxWidth (px 2400) ] ]
 
-showOn : List (List Style -> Style) -> Style
-showOn shown =
-    let
-        hidden =
-            List.filter
-                (\s -> List.member s screens)
-                shown
-    in
-    hideOn hidden
+        HighResDesktop ->
+            withMedia [ only Media.screen [ Media.minWidth (px 2401) ] ]
 
 
-hideOn : List (List Style -> Style) -> Style
-hideOn hidden =
-    hidden
-        |> List.map (\s -> s [ Css.display Css.none ])
-        |> Css.batch
+toInt : Screen -> Int
+toInt screen =
+    case screen of
+        Phone ->
+            1
+
+        Tablet ->
+            2
+
+        SmallDesktop ->
+            3
+
+        MediumDesktop ->
+            4
+
+        LargeDesktop ->
+            5
+
+        HighResDesktop ->
+            6
