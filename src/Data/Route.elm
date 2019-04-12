@@ -1,4 +1,4 @@
-module Data.Route exposing (ProblemPage(..), Route(..), fromUrl, toClass, toPath, toName)
+module Data.Route exposing (ProblemPage(..), Route(..), fromUrl, toClass, toName, toPath)
 
 import Data.Slug as Slug exposing (Slug)
 import Json.Decode as Decode

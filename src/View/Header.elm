@@ -129,18 +129,18 @@ update msg model =
 
 focusSearch : Bool -> Model -> Model
 focusSearch value model =
-            let
-                searchTerm =
-                    if value == False then
-                        ""
+    let
+        searchTerm =
+            if value == False then
+                ""
 
-                    else
-                        model.searchTerm
-                searchOpenOnMobile =
-                    value
+            else
+                model.searchTerm
 
-            in
-             { model | searchBarFocused = value, searchTerm = searchTerm, searchOpenOnMobile = searchOpenOnMobile }
+        searchOpenOnMobile =
+            value
+    in
+    { model | searchBarFocused = value, searchTerm = searchTerm, searchOpenOnMobile = searchOpenOnMobile }
 
 
 
@@ -189,7 +189,7 @@ viewHeader theme authors tags model =
         , spacer Screen.desktop
         , searchBar theme model.searchOpenOnMobile model.searchTerm
         , spacer Screen.desktop
-        
+
         -- MOBILE
         , title theme model.route (not model.searchOpenOnMobile)
 
@@ -204,18 +204,20 @@ viewHeader theme authors tags model =
         -- MOBILE
         , searchOpen <| not model.searchOpenOnMobile
         ]
+
     -- search bar overlay: header > overlay > content
     , searchOverlay theme model.searchBarFocused 10
+
     -- drawer overlay: drawer > overlay > header > content
     , drawerOverlay theme model.drawerOpenOnMobile 20
+
     -- drawer: drawer > header
     , drawer theme model.drawerOpenOnMobile 25
     ]
 
 
+
 -- BOTH --
-
-
 -- Search
 
 
@@ -229,17 +231,20 @@ searchBar theme openOnMobile searchTerm =
             , position relative
             , Css.height (px 36)
             , zIndex <| int 15
+
             -- Mobile styling
             , Screen.style
                 Screen.mobile
                 [ Css.batch <|
                     if openOnMobile then
                         []
+
                     else
                         [ display none ]
                 , flexGrow <| num 1
                 , margin2 (px 0) (px 10)
                 ]
+
             -- Desktop styling
             , Screen.style
                 Screen.desktop
@@ -278,6 +283,7 @@ searchBar theme openOnMobile searchTerm =
         ]
 
 
+
 -- MOBILE --
 
 
@@ -286,6 +292,7 @@ drawerMenu showOnMobile =
     let
         iconSize =
             18
+
         topBtmPadding =
             (Dimension.headerHeight - iconSize) / 2
     in
@@ -297,6 +304,7 @@ drawerMenu showOnMobile =
             , Css.batch <|
                 if showOnMobile then
                     []
+
                 else
                     [ display none ]
             ]
@@ -309,7 +317,6 @@ drawerMenu showOnMobile =
                 ]
             ]
         ]
-
 
 
 searchOpen : Bool -> Html (Compound Msg)
@@ -329,6 +336,7 @@ searchOpen showOnMobile =
             , Css.batch <|
                 if showOnMobile then
                     []
+
                 else
                     [ display none ]
             ]
@@ -350,30 +358,34 @@ title theme route show =
             case route of
                 Home ->
                     "Bits n' Bites"
+
                 _ ->
                     Route.toName route
     in
-        h1
-            [ css
-                [ fontFamilies Font.indieFlower
-                , fontWeight normal
-                , margin (px 0)
-                , textDecoration none
-                , fontSize <| rem 1.8
-                , Screen.showOn Screen.mobile
-                , Css.batch <|
-                    if show then
-                        []
-                    else
-                        [ display none ]
-                ]
+    h1
+        [ css
+            [ fontFamilies Font.indieFlower
+            , fontWeight normal
+            , margin (px 0)
+            , textDecoration none
+            , fontSize <| rem 1.8
+            , Screen.showOn Screen.mobile
+            , Css.batch <|
+                if show then
+                    []
+
+                else
+                    [ display none ]
             ]
-            [ text name ]
+        ]
+        [ text name ]
 
 
 mobileIconPadding : Px
 mobileIconPadding =
     px 18
+
+
 
 -- Logo
 
@@ -417,9 +429,6 @@ authorsContent : Theme -> List Author -> List (Html (Compound Msg))
 authorsContent theme =
     List.map
         (\a -> checkboxDropdownItem (Author.name a) theme (Author.value a) (Global <| CacheMsg <| ToggleAuthor a))
-
-
-
 
 
 
@@ -500,6 +509,7 @@ drawer theme show zInd =
             , Css.batch <|
                 if show then
                     []
+
                 else
                     [ display none ]
             , Screen.showOn Screen.mobile
@@ -512,7 +522,7 @@ drawer theme show zInd =
 -- Overlay
 
 
-overlay : Theme -> List Screen -> Bool -> Int -> (Compound Msg) -> Html (Compound Msg)
+overlay : Theme -> List Screen -> Bool -> Int -> Compound Msg -> Html (Compound Msg)
 overlay theme screens show zInd msg =
     div
         [ class "content-overlay"
@@ -543,6 +553,7 @@ searchOverlay theme show zInd =
 drawerOverlay : Theme -> Bool -> Int -> Html (Compound Msg)
 drawerOverlay theme show zInd =
     overlay theme Screen.mobile show zInd (Mod <| ToggleDrawer)
+
 
 
 -- Util
