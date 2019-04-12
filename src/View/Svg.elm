@@ -4,7 +4,8 @@ import Svg.Styled as Svg exposing (..)
 import Svg.Styled.Attributes as Attributes exposing (..)
 
 
-type alias Icon msg = List (Attribute msg) -> Svg msg
+type alias Icon msg =
+    List (Attribute msg) -> Svg msg
 
 
 attribute : List (Attribute msg) -> Svg msg

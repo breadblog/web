@@ -10,8 +10,8 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound(..))
-import View.Header as Header
 import View.Footer
+import View.Header as Header
 
 
 
@@ -84,6 +84,7 @@ view model =
 
         version =
             Cache.version model.cache
+
         tags =
             Cache.tags model.cache
 

@@ -1,17 +1,15 @@
 module View.Footer exposing (view)
 
 import Css exposing (..)
-import Html.Styled exposing (..)
-import Html.Styled.Attributes as Attr exposing (..)
-import Svg.Styled.Attributes
-import Message exposing (Msg)
 import Data.Theme exposing (Theme)
 import Data.Version exposing (Version)
-import Style.Dimension as Dimension
+import Html.Styled exposing (..)
+import Html.Styled.Attributes as Attr exposing (..)
+import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
-import View.Svg as Svg exposing (Icon)
+import Style.Dimension as Dimension
 import Svg.Styled.Attributes as SvgAttr
-import Message exposing (Msg(..), Compound(..))
+import View.Svg as Svg exposing (Icon)
 
 
 type alias Profile =
@@ -19,6 +17,7 @@ type alias Profile =
     , url : String
     , name : String
     }
+
 
 
 -- View --
@@ -40,6 +39,7 @@ view theme version =
         [ footerLeft theme version
         , footerRight theme
         ]
+
 
 footerLeft : Theme -> Version -> Html (Compound msg)
 footerLeft theme version =
@@ -66,30 +66,33 @@ footerRight theme =
         [ options Svg.linkedin linkedinData
         , options Svg.github githubData
         ]
-        -- (List.map
-        --     (\x ->
-        --         a
-        --             [ href x.path
-        --             , Attr.target "_blank"
-        --             , css
-        --                 [ textDecoration none
-        --                 , color inherit
-        --                 ]
-        --             ]
-        --         [ x.icon
-        --             [ SvgAttr.css
-        --                 [ margin (px 5) ]
-        --             ]
-        --         ]
-        --     )
-        --     [ { icon = Svg.github
-        --       , path = "https://www.google.com"
-        --       }
-        --     , { icon = Svg.linkedin
-        --       , path = "https://www.google.com"
-        --       }
-        --     ]
-        -- )
+
+
+
+-- (List.map
+--     (\x ->
+--         a
+--             [ href x.path
+--             , Attr.target "_blank"
+--             , css
+--                 [ textDecoration none
+--                 , color inherit
+--                 ]
+--             ]
+--         [ x.icon
+--             [ SvgAttr.css
+--                 [ margin (px 5) ]
+--             ]
+--         ]
+--     )
+--     [ { icon = Svg.github
+--       , path = "https://www.google.com"
+--       }
+--     , { icon = Svg.linkedin
+--       , path = "https://www.google.com"
+--       }
+--     ]
+-- )
 
 
 options : Icon msg -> List Profile -> Html msg
@@ -120,7 +123,7 @@ options icon info =
             , css
                 [ opacity <| num 0
                 , position absolute
-                , top <| pct (-100)
+                , top <| pct -100
                 ]
             ]
             (List.map
