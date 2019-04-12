@@ -2,26 +2,30 @@ module Page.Redirect exposing (view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
+import Data.General as General exposing (General)
 import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (Html, main_)
 import Html.Styled.Attributes exposing (class, css)
-import Style.Theme as Theme
+import Style.Color as Color
 
 
 
 -- Model
 
 
-view : ( Session, Cache ) -> Html msg
-view ( session, cache ) =
+view : General -> Html msg
+view general =
     let
+        cache =
+            General.cache general
+
         theme =
             Cache.theme cache
     in
     main_
         [ css
-            [ backgroundColor <| Theme.background theme
+            [ backgroundColor <| Color.background theme
             , height <| pct 100
             , width <| pct 100
             ]

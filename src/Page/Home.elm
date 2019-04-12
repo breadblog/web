@@ -1,15 +1,16 @@
-module Page.Home exposing (Model, Msg(..), fromGlobal, init, toGlobal, view)
+module Page.Home exposing (Model, Msg(..), fromGeneral, init, toGeneral, update, view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
+import Data.General as General exposing (General)
 import Data.Route as Route exposing (Route(..))
 import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import Message
-import View.Header
+import Message exposing (Compound(..))
+import View.Header as Header
 import View.Footer
 
 
@@ -20,42 +21,62 @@ import View.Footer
 type alias Model =
     { cache : Cache
     , session : Session
+    , header : Header.Model
     }
 
 
-init : (Model -> e) -> ( Session, Cache ) -> ( e, Cmd msg )
-init transform ( session, cache ) =
+init : (Model -> e) -> General -> ( e, Cmd msg )
+init transform general =
     ( transform <|
-        { session = session
-        , cache = cache
+        { session = General.session general
+        , cache = General.cache general
+        , header = Header.init Home
         }
     , Cmd.none
     )
 
 
-fromGlobal : ( Session, Cache ) -> Model -> Model
-fromGlobal ( session, cache ) model =
-    { model | cache = cache, session = session }
+fromGeneral : General -> Model -> Model
+fromGeneral general model =
+    { model | cache = General.cache general, session = General.session general }
 
 
-toGlobal : Model -> ( Session, Cache )
-toGlobal model =
-    ( model.session, model.cache )
+toGeneral : Model -> General
+toGeneral model =
+    General.init model.session model.cache
 
 
 
--- Message
+-- Message --
 
 
 type Msg
-    = NoOp
+    = HeaderMsg Header.Msg
 
 
 
--- View
+-- Update --
 
 
-view : Model -> Html Message.Msg
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        HeaderMsg headerMsg ->
+            let
+                ( headerModel, headerCmd ) =
+                    Header.update headerMsg model.header
+
+                cmd =
+                    Cmd.map HeaderMsg headerCmd
+            in
+            ( { model | header = headerModel }, cmd )
+
+
+
+-- View --
+
+
+view : Model -> Html (Compound Msg)
 view model =
     let
         theme =
@@ -63,27 +84,28 @@ view model =
 
         version =
             Cache.version model.cache
+        tags =
+            Cache.tags model.cache
+
+        authors =
+            Cache.authors model.cache
     in
     div
         [ class (Route.toClass Home)
         , css
             [ displayFlex
             , flexDirection column
-            , Css.height (pct 100)
+            , Css.height <| pct 100
             ]
         ]
-        [ View.Header.view theme
-        , main_
-            [
-                css
-                    [ flexGrow (num 1)
+        (List.append
+            (Header.view (Message.map HeaderMsg) theme authors tags model.header)
+            [ main_
+                [ css
+                    [ flexGrow <| num 1
                     ]
+                ]
+                []
+            , View.Footer.view theme version
             ]
-            [
-                text "hello"
-            ]
-        , View.Footer.view <|
-            { theme = theme
-            , version = version
-            }
-        ]
+        )

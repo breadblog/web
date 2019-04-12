@@ -1,7 +1,10 @@
-module View.Svg exposing (attribute, chevronDown, chevronLeft, chevronRight, chevronUp, github, linkedin, search, user)
+module View.Svg exposing (Icon, attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, github, linkedin, menu, search, user, xCircle, xSquare)
 
 import Svg.Styled as Svg exposing (..)
 import Svg.Styled.Attributes as Attributes exposing (..)
+
+
+type alias Icon msg = List (Attribute msg) -> Svg msg
 
 
 attribute : List (Attribute msg) -> Svg msg
@@ -64,3 +67,28 @@ chevronRight attr =
 chevronUp : List (Attribute msg) -> Svg msg
 chevronUp attr =
     svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-chevron-up" ] attr) [ polyline [ points "18 15 12 9 6 15" ] [] ]
+
+
+checkSquare : List (Attribute msg) -> Svg msg
+checkSquare attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-check-square" ] attr) [ polyline [ points "9 11 12 14 22 4" ] [], Svg.path [ d "M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" ] [] ]
+
+
+xSquare : List (Attribute msg) -> Svg msg
+xSquare attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-x-square" ] attr) [ rect [ x "3", y "3", width "18", height "18", rx "2", ry "2" ] [], line [ x1 "9", y1 "9", x2 "15", y2 "15" ] [], line [ x1 "15", y1 "9", x2 "9", y2 "15" ] [] ]
+
+
+checkCircle : List (Attribute msg) -> Svg msg
+checkCircle attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-check-circle" ] attr) [ Svg.path [ d "M22 11.08V12a10 10 0 1 1-5.93-9.14" ] [], polyline [ points "22 4 12 14.01 9 11.01" ] [] ]
+
+
+xCircle : List (Attribute msg) -> Svg msg
+xCircle attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-x-circle" ] attr) [ circle [ cx "12", cy "12", r "10" ] [], line [ x1 "15", y1 "9", x2 "9", y2 "15" ] [], line [ x1 "9", y1 "9", x2 "15", y2 "15" ] [] ]
+
+
+menu : List (Attribute msg) -> Svg msg
+menu attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-menu" ] attr) [ line [ x1 "3", y1 "12", x2 "21", y2 "12" ] [], line [ x1 "3", y1 "6", x2 "21", y2 "6" ] [], line [ x1 "3", y1 "18", x2 "21", y2 "18" ] [] ]

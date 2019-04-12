@@ -1,4 +1,4 @@
-module Data.Theme exposing (Theme(..), decoder, encode, toString)
+module Data.Theme exposing (Theme(..), all, decoder, encode, toString)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -7,6 +7,17 @@ import Json.Encode as Encode exposing (Value)
 type Theme
     = Dark
     | Light
+
+
+all : List Theme
+all =
+    [ Dark
+    , Light
+    ]
+
+
+
+-- Util --
 
 
 toString : Theme -> String
@@ -20,7 +31,7 @@ toString theme =
 
 
 
--- JSON
+-- JSON --
 
 
 encode : Theme -> Value
