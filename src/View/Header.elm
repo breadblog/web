@@ -76,13 +76,19 @@ import View.Svg as Svg
 type alias Model =
     { searchBarFocused : Bool
     , searchTerm : String
+    , drawerOpenOnMobile : Bool
+    , searchOpenOnMobile : Bool
+    , route : Route
     }
 
 
-init : Model
-init =
+init : Route -> Model
+init route =
     { searchBarFocused = False
     , searchTerm = ""
+    , drawerOpenOnMobile = False
+    , searchOpenOnMobile = False
+    , route = route
     }
 
 
@@ -93,6 +99,8 @@ init =
 type Msg
     = FocusSearch Bool
     | SetSearchTerm String
+    | ToggleDrawer
+    | ToggleSearch
 
 
 
@@ -103,6 +111,24 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         FocusSearch value ->
+            ( focusSearch value model, Cmd.none )
+
+        SetSearchTerm value ->
+            ( { model | searchTerm = value }, Cmd.none )
+
+        ToggleDrawer ->
+            ( { model | drawerOpenOnMobile = not model.drawerOpenOnMobile }, Cmd.none )
+
+        ToggleSearch ->
+            let
+                focusedModel =
+                    focusSearch True model
+            in
+            ( { focusedModel | searchOpenOnMobile = not model.searchOpenOnMobile }, Cmd.none )
+
+
+focusSearch : Bool -> Model -> Model
+focusSearch value model =
             let
                 searchTerm =
                     if value == False then
@@ -110,11 +136,11 @@ update msg model =
 
                     else
                         model.searchTerm
-            in
-            ( { model | searchBarFocused = value, searchTerm = searchTerm }, Cmd.none )
+                searchOpenOnMobile =
+                    value
 
-        SetSearchTerm value ->
-            ( { model | searchTerm = value }, Cmd.none )
+            in
+             { model | searchBarFocused = value, searchTerm = searchTerm, searchOpenOnMobile = searchOpenOnMobile }
 
 
 
@@ -134,18 +160,6 @@ viewHeader theme authors tags model =
         sources =
             [ Tag.toSource (Global NoOp) tags
             ]
-
-        desktop =
-            [ SmallDesktop
-            , MediumDesktop
-            , LargeDesktop
-            , HighResDesktop
-            ]
-
-        mobile =
-            [ Phone
-            , Tablet
-            ]
     in
     [ header
         [ css
@@ -153,6 +167,7 @@ viewHeader theme authors tags model =
             , displayFlex
             , flexDirection row
             , alignItems center
+            , justifyContent spaceBetween
             , Css.height (px Dimension.headerHeight)
             , Css.width (pct 100)
             , backgroundColor (Color.primary theme)
@@ -160,34 +175,205 @@ viewHeader theme authors tags model =
             , zIndex <| int 15
             ]
         ]
-        -- Desktop only
-        [ fixedSpacer desktop (px 25)
-        , logo desktop theme
-        , spacer desktop
-        , dropdown desktop theme "tags" <| tagsContent theme tags
-        , dropdown desktop theme "author" <| authorsContent theme authors
+        -- MOBILE
+        [ drawerMenu <| not model.searchOpenOnMobile
 
-        -- Mobile only
-        -- TODO: Drawer
-        -- Both
-        , spacer desktop
-        , searchBar theme model.searchTerm
-        , spacer desktop
+        -- DESKTOP
+        , fixedSpacer Screen.desktop <| px 25
+        , logo Screen.desktop theme
+        , spacer Screen.desktop
+        , dropdown Screen.desktop theme "tags" <| tagsContent theme tags
+        , dropdown Screen.desktop theme "author" <| authorsContent theme authors
 
-        -- Desktop only
-        , dropdown desktop theme "theme" <| themeContent theme
-        , navLink desktop theme "about" About
-        , navLink desktop theme "donate" Donate
-        , spacer desktop
-        , profile desktop theme
-        , fixedSpacer desktop (px 25)
+        -- BOTH
+        , spacer Screen.desktop
+        , searchBar theme model.searchOpenOnMobile model.searchTerm
+        , spacer Screen.desktop
+        
+        -- MOBILE
+        , title theme model.route (not model.searchOpenOnMobile)
 
-        -- Mobile
+        -- DESKTOP
+        , dropdown Screen.desktop theme "theme" <| themeContent theme
+        , navLink Screen.desktop theme "about" About
+        , navLink Screen.desktop theme "donate" Donate
+        , spacer Screen.desktop
+        , profile Screen.desktop theme
+        , fixedSpacer Screen.desktop (px 25)
+
+        -- MOBILE
+        , searchOpen <| not model.searchOpenOnMobile
         ]
-    , contentOverlay theme model.searchBarFocused
+    -- search bar overlay: header > overlay > content
+    , searchOverlay theme model.searchBarFocused 10
+    -- drawer overlay: drawer > overlay > header > content
+    , drawerOverlay theme model.drawerOpenOnMobile 20
+    -- drawer: drawer > header
+    , drawer theme model.drawerOpenOnMobile 25
     ]
 
 
+-- BOTH --
+
+
+-- Search
+
+
+searchBar : Theme -> Bool -> String -> Html (Compound Msg)
+searchBar theme openOnMobile searchTerm =
+    div
+        [ class "search"
+        , css
+            [ displayFlex
+            , flexDirection row
+            , position relative
+            , Css.height (px 36)
+            , zIndex <| int 15
+            -- Mobile styling
+            , Screen.style
+                Screen.mobile
+                [ Css.batch <|
+                    if openOnMobile then
+                        []
+                    else
+                        [ display none ]
+                , flexGrow <| num 1
+                , margin2 (px 0) (px 10)
+                ]
+            -- Desktop styling
+            , Screen.style
+                Screen.desktop
+                [ Css.width <| px 260
+                ]
+            ]
+        , onClick <| Mod (FocusSearch True)
+        ]
+        [ input
+            [ class "search"
+            , css
+                [ flexGrow (num 1)
+                , borderWidth (px 0)
+                , outline none
+                , backgroundColor (Color.accent theme)
+                , color (Color.secondaryFont theme)
+                , paddingLeft (px 11)
+                , fontSize (rem 1)
+                , fontFamilies Font.montserrat
+                ]
+            , onInput (\s -> Mod <| SetSearchTerm s)
+            , value searchTerm
+            ]
+            []
+        , Svg.search
+            [ Svg.Styled.Attributes.css
+                [ position absolute
+                , right (px 0)
+                , Css.height (px 18)
+                , Css.width (px 18)
+                , alignSelf center
+                , marginRight (px 8)
+                , Css.color (Color.secondaryFont theme)
+                ]
+            ]
+        ]
+
+
+-- MOBILE --
+
+
+drawerMenu : Bool -> Html (Compound Msg)
+drawerMenu showOnMobile =
+    let
+        iconSize =
+            18
+        topBtmPadding =
+            (Dimension.headerHeight - iconSize) / 2
+    in
+    div
+        [ class "drawer-menu"
+        , css
+            [ Screen.showOn Screen.mobile
+            , padding2 (px topBtmPadding) mobileIconPadding
+            , Css.batch <|
+                if showOnMobile then
+                    []
+                else
+                    [ display none ]
+            ]
+        , onClick <| Mod <| ToggleDrawer
+        ]
+        [ Svg.menu
+            [ Svg.Styled.Attributes.css
+                [ Css.width <| px iconSize
+                , Css.height <| px iconSize
+                ]
+            ]
+        ]
+
+
+
+searchOpen : Bool -> Html (Compound Msg)
+searchOpen showOnMobile =
+    let
+        iconSize =
+            18
+
+        topBtmPadding =
+            (Dimension.headerHeight - iconSize) / 2
+    in
+    div
+        [ class "search-toggle"
+        , css
+            [ Screen.showOn Screen.mobile
+            , padding2 (px topBtmPadding) mobileIconPadding
+            , Css.batch <|
+                if showOnMobile then
+                    []
+                else
+                    [ display none ]
+            ]
+        , onClick <| Mod <| ToggleSearch
+        ]
+        [ Svg.search
+            [ Svg.Styled.Attributes.css
+                [ Css.width <| px iconSize
+                , Css.height <| px iconSize
+                ]
+            ]
+        ]
+
+
+title : Theme -> Route -> Bool -> Html msg
+title theme route show =
+    let
+        name =
+            case route of
+                Home ->
+                    "Bits n' Bites"
+                _ ->
+                    Route.toName route
+    in
+        h1
+            [ css
+                [ fontFamilies Font.indieFlower
+                , fontWeight normal
+                , margin (px 0)
+                , textDecoration none
+                , fontSize <| rem 1.8
+                , Screen.showOn Screen.mobile
+                , Css.batch <|
+                    if show then
+                        []
+                    else
+                        [ display none ]
+                ]
+            ]
+            [ text name ]
+
+
+mobileIconPadding : Px
+mobileIconPadding =
+    px 18
 
 -- Logo
 
@@ -234,51 +420,6 @@ authorsContent theme =
 
 
 
--- Search
-
-
-searchBar : Theme -> String -> Html (Compound Msg)
-searchBar theme searchTerm =
-    div
-        [ class "search"
-        , css
-            [ displayFlex
-            , flexDirection row
-            , position relative
-            , Css.height (px 36)
-            , Css.width (px 260)
-            , zIndex <| int 15
-            ]
-        , onClick <| Mod (FocusSearch True)
-        ]
-        [ input
-            [ class "search"
-            , css
-                [ flexGrow (num 1)
-                , borderWidth (px 0)
-                , outline none
-                , backgroundColor (Color.accent theme)
-                , color (Color.secondaryFont theme)
-                , paddingLeft (px 11)
-                , fontSize (rem 1)
-                , fontFamilies Font.montserrat
-                ]
-            , onInput (\s -> Mod <| SetSearchTerm s)
-            , value searchTerm
-            ]
-            []
-        , Svg.search
-            [ Svg.Styled.Attributes.css
-                [ position absolute
-                , right (px 0)
-                , Css.height (px 18)
-                , Css.width (px 18)
-                , alignSelf center
-                , marginRight (px 8)
-                , Css.color (Color.secondaryFont theme)
-                ]
-            ]
-        ]
 
 
 
@@ -344,17 +485,35 @@ profile shownScreens theme =
 -- Drawer
 
 
-drawer : Theme -> Html msg
-drawer theme =
-    text ""
+drawer : Theme -> Bool -> Int -> Html msg
+drawer theme show zInd =
+    div
+        [ class "drawer"
+        , css
+            [ position absolute
+            , left <| px 0
+            , top <| px 0
+            , bottom <| px 0
+            , Css.width <| pct 80
+            , zIndex <| int zInd
+            , backgroundColor <| Color.highContrast theme
+            , Css.batch <|
+                if show then
+                    []
+                else
+                    [ display none ]
+            , Screen.showOn Screen.mobile
+            ]
+        ]
+        []
 
 
 
 -- Overlay
 
 
-contentOverlay : Theme -> Bool -> Html (Compound Msg)
-contentOverlay theme show =
+overlay : Theme -> List Screen -> Bool -> Int -> (Compound Msg) -> Html (Compound Msg)
+overlay theme screens show zInd msg =
     div
         [ class "content-overlay"
         , css
@@ -362,18 +521,28 @@ contentOverlay theme show =
             , top <| px Dimension.headerHeight
             , bottom <| px 0
             , Css.width <| pct 100
-            , zIndex <| int 10
+            , zIndex <| int zInd
             , backgroundColor <| Color.overlay theme
             , if show then
                 display block
 
               else
                 display none
+            , Screen.showOn screens
             ]
-        , onClick <| Mod <| FocusSearch False
+        , onClick msg
         ]
         []
 
+
+searchOverlay : Theme -> Bool -> Int -> Html (Compound Msg)
+searchOverlay theme show zInd =
+    overlay theme Screen.all show zInd (Mod <| FocusSearch False)
+
+
+drawerOverlay : Theme -> Bool -> Int -> Html (Compound Msg)
+drawerOverlay theme show zInd =
+    overlay theme Screen.mobile show zInd (Mod <| ToggleDrawer)
 
 
 -- Util

@@ -70,6 +70,8 @@ hideOn hidden =
 -- Private
 
 
+-- TODO: How to reliably determine iPad pro vs small laptop?? ie high res vs low res + shit screen
+-- TODO: How to test that ALL screen sizes are covered?
 styleOne : Screen -> List Style -> Style
 styleOne screen =
     case screen of

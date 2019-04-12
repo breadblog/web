@@ -29,7 +29,7 @@ init transform general =
     ( transform <|
         { session = General.session general
         , cache = General.cache general
-        , header = Header.init
+        , header = Header.init Home
         }
     , Cmd.none
     )

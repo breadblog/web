@@ -1,4 +1,4 @@
-module View.Svg exposing (attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, github, linkedin, search, user, xCircle, xSquare)
+module View.Svg exposing (attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, github, linkedin, search, user, xCircle, xSquare, menu)
 
 import Svg.Styled as Svg exposing (..)
 import Svg.Styled.Attributes as Attributes exposing (..)
@@ -84,3 +84,8 @@ checkCircle attr =
 xCircle : List (Attribute msg) -> Svg msg
 xCircle attr =
     svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-x-circle" ] attr) [ circle [ cx "12", cy "12", r "10" ] [], line [ x1 "15", y1 "9", x2 "9", y2 "15" ] [], line [ x1 "9", y1 "9", x2 "15", y2 "15" ] [] ]
+
+
+menu : List (Attribute msg) -> Svg msg
+menu attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-menu" ] attr) [ line [ x1 "3", y1 "12", x2 "21", y2 "12" ] [], line [ x1 "3", y1 "6", x2 "21", y2 "6" ] [], line [ x1 "3", y1 "18", x2 "21", y2 "18" ] [] ]
