@@ -1,11 +1,13 @@
 module View.Footer exposing (Model, Msg, init, update, view)
 
 import Css exposing (..)
-import Data.Theme exposing (Theme)
-import Data.Version exposing (Version)
+import Css.Transitions as Transitions exposing (transition)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Message exposing (Compound(..), Msg(..))
+import Data.Route as Route exposing (Route(..))
+import Data.Theme exposing (Theme)
+import Data.Version exposing (Version)
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Svg.Styled.Attributes
@@ -101,12 +103,24 @@ footerLeft : Theme -> Version -> Html (Compound msg)
 footerLeft theme version =
     div
         [ css
-            [ margin (px 15)
-            , fontSize <| rem 1.1
-            , letterSpacing <| px 1.5
+            [ 
             ]
         ]
-        [ text <| Data.Version.toString version
+        [ a
+            [ href <| Route.toPath Changelog
+            , css
+                [ textDecoration none
+                , fontSize <| rem 1.1
+                , letterSpacing <| px 1.5
+                , margin (px 15)
+                , color <| Color.secondaryFont theme
+                , hover
+                    [ color <| Color.primaryFont theme
+                    ]
+                ]
+            ]
+            [ text <| Data.Version.toString version
+            ]
         ]
 
 
@@ -174,6 +188,12 @@ options theme icon info =
             [ Svg.Styled.Attributes.css
                 [ Css.width <| px iconSize
                 , Css.height <| px iconSize
+                , color <| Color.secondaryFont theme
+                , transition
+                    [ Transitions.color3 100  0 Transitions.ease ]
+                , hover
+                    [ color <| Color.primaryFont theme
+                    ]
                 ]
             ]
         , div
@@ -205,9 +225,11 @@ options theme icon info =
                             [ displayFlex
                             , flexDirection row
                             , alignItems center
-                            , padding2 (px 5) (px 10)
+                            , padding2 (px 9) (px 12)
                             , textDecoration none
                             , color <| Color.primaryFont theme
+                            , transition
+                                [ Transitions.color3 100  0 Transitions.ease ]
                             , hover
                                 [ backgroundColor <| Color.dropdownActive theme ]
                             ]
@@ -215,8 +237,8 @@ options theme icon info =
                         [ img
                             [ src d.image
                             , css
-                                [ Css.height <| px 32
-                                , Css.width <| px 32
+                                [ Css.height <| px 40
+                                , Css.width <| px 40
                                 , Css.property "clip-path" "circle(50%)"
                                 , backgroundColor <| Color.dropdownContrast theme
                                 ]
@@ -224,7 +246,9 @@ options theme icon info =
                             []
                         , span
                             [ css
-                                [ margin4 (px 0) (px 0) (px 0) (px 5) ]
+                                [ margin4 (px 0) (px 0) (px 0) (px 10)
+                                , fontSize <| rem 1.2
+                                ]
                             ]
                             [ text d.name ]
                         ]

@@ -12,9 +12,9 @@ type Route
     | Home
     | Post Slug
     | Profile
-      -- | Login
     | About
     | Donate
+    | Changelog
 
 
 type ProblemPage
@@ -100,8 +100,9 @@ toName route =
         Profile ->
             "Profile"
 
-        -- Login ->
-        --     "Login"
+        Changelog ->
+            "Changelog"
+
         NotFound ->
             "404"
 
@@ -141,6 +142,9 @@ toPath route =
 
         Donate ->
             relative [ "/donate" ] []
+
+        Changelog ->
+            relative [ "/changelog" ] []
 
         NotFound ->
             relative [ "/404" ] []

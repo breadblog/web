@@ -23,6 +23,7 @@ import Page.Problem.CorruptCache
 import Page.Problem.InvalidVersion
 import Page.Profile
 import Page.Redirect
+import Page.Changelog
 import Style.Color
 import Style.Font as Font
 import Style.Global
@@ -47,6 +48,7 @@ type PageModel
     | Home Page.Home.Model
     | Post Page.Post.Model
     | Profile Page.Profile.Model
+    | Changelog Page.Changelog.Model
 
 
 
@@ -63,6 +65,7 @@ type InternalMsg
     | ProfileMsg Page.Profile.Msg
     | DonateMsg Page.Donate.Msg
     | AboutMsg Page.About.Msg
+    | ChangelogMsg Page.Changelog.Msg
 
 
 
@@ -226,6 +229,9 @@ changeRoute route model =
 
                 Route.Profile ->
                     Page.Profile.init general Profile (toMsg ProfileMsg)
+
+                Route.Changelog ->
+                    Page.Changelog.init general Changelog (toMsg ChangelogMsg)
     in
     ( { pageModel = pageModel
       , problem = None
@@ -252,6 +258,9 @@ toGeneral page =
         Donate model ->
             Page.Donate.toGeneral model
 
+        Changelog model ->
+            Page.Changelog.toGeneral model
+
         NotFound g ->
             g
 
@@ -276,6 +285,9 @@ fromGeneral general page =
 
         Donate model ->
             Donate <| Page.Donate.fromGeneral general model
+
+        Changelog model ->
+            Changelog <| Page.Changelog.fromGeneral general model
 
         NotFound _ ->
             NotFound general
@@ -375,6 +387,11 @@ viewPage model =
                     List.map
                         (Html.Styled.map (Message.map ProfileMsg))
                         (Page.Profile.view profile)
+
+                Changelog changelog ->
+                    List.map
+                        (Html.Styled.map (Message.map ChangelogMsg))
+                        (Page.Changelog.view changelog)
 
 
 
