@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, Msg(..), init, update, view)
+module Page.Home exposing (Model, Msg, init, update, view, toGeneral, fromGeneral)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
@@ -20,22 +20,36 @@ import View.Page as Page
 
 
 type alias Model =
+    Page.PageModel Internals
+
+
+type alias Internals =
     {}
 
 
-init : (Page.Model Model -> e) -> General -> ( e, Cmd msg )
-init transform general =
-    ( transform
-        (Page.init {} Cmd.none Home general)
-    , Cmd.none
-    )
+init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> (mainModel, Cmd mainMsg)
+init =
+    Page.init {} Cmd.none Home
 
+
+toGeneral : Model -> General
+toGeneral =
+    Page.toGeneral
+
+
+fromGeneral : General -> Model -> Model
+fromGeneral =
+    Page.fromGeneral
 
 
 -- Message --
 
 
-type Msg
+type alias Msg =
+    Page.Msg ModMsg
+
+
+type ModMsg
     = NoOp
 
 
@@ -43,36 +57,29 @@ type Msg
 -- Update --
 
 
-update : Page.Msg Msg -> Page.Model Model -> ( Page.Model Model, Cmd (Page.Msg Msg) )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update =
-    Page.update updatePage
+    Page.update updateMod
 
 
-updatePage : Msg -> Page.Model Model -> ( Model, Cmd Msg )
-updatePage msg pageModel =
-    let
-        model =
-            Page.mod pageModel
-    in
+updateMod : ModMsg -> s -> c -> Internals -> ( Internals, Cmd ModMsg )
+updateMod msg _ _ internals =
     case msg of
         NoOp ->
-            ( model, Cmd.none )
+            ( internals, Cmd.none )
 
 
 
 -- View --
 
 
-view : Page.Model Model -> Html (Compound Msg)
+view : Model -> Page.ViewResult ModMsg
 view model =
-    Page.view model
-        (\theme cache modModel ->
-            homeMain
-        )
+    Page.view model viewHome
 
 
-homeMain : List (Html (Compound Msg))
-homeMain =
+viewHome : Session -> Cache -> Internals -> List (Html (Compound ModMsg))
+viewHome _ _ _ =
     [ main_
         [ css
             [ flexGrow <| num 1

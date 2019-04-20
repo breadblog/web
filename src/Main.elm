@@ -10,7 +10,7 @@ import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme(..))
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (class, css)
+import Html.Styled.Attributes exposing (id, css)
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Message exposing (Compound(..), Msg(..))
@@ -42,8 +42,8 @@ type alias Model =
 type PageModel
     = Redirect General
     | NotFound General
-    | Donate General
-    | About General
+    | Donate Page.Donate.Model
+    | About Page.About.Model
     | Home Page.Home.Model
     | Post Page.Post.Model
     | Profile Page.Profile.Model
@@ -61,6 +61,14 @@ type InternalMsg
     = HomeMsg Page.Home.Msg
     | PostMsg Page.Post.Msg
     | ProfileMsg Page.Profile.Msg
+    | DonateMsg Page.Donate.Msg
+    | AboutMsg Page.About.Msg
+
+
+
+toMsg : (e -> InternalMsg) -> e -> Msg
+toMsg transform msg =
+    Mod <| transform <| msg
 
 
 
@@ -193,11 +201,6 @@ updatePage transformModel transformMsg modUpdate modModel modMsg model =
     ( { model | pageModel = transformModel newModel }, cmd )
 
 
-toMsg : (m -> InternalMsg) -> m -> Msg
-toMsg transform msg =
-    Mod <| transform msg
-
-
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
 changeRoute route model =
     let
@@ -210,19 +213,19 @@ changeRoute route model =
                     ( NotFound general, Cmd.none )
 
                 Route.Donate ->
-                    ( Donate general, Cmd.none )
+                    Page.Donate.init general Donate (toMsg DonateMsg)
 
                 Route.About ->
-                    ( About general, Cmd.none )
+                    Page.About.init general About (toMsg AboutMsg)
 
                 Route.Home ->
-                    Page.Home.init Home general
+                    Page.Home.init general Home (toMsg HomeMsg)
 
                 Route.Post slug ->
-                    Page.Post.init Post general
+                    Page.Post.init slug general Post (toMsg PostMsg)
 
                 Route.Profile ->
-                    Page.Profile.init Profile general
+                    Page.Profile.init general Profile (toMsg ProfileMsg)
     in
     ( { pageModel = pageModel
       , problem = None
@@ -243,11 +246,11 @@ toGeneral page =
         Profile model ->
             Page.Profile.toGeneral model
 
-        About g ->
-            g
+        About model ->
+            Page.About.toGeneral model
 
-        Donate g ->
-            g
+        Donate model ->
+            Page.Donate.toGeneral model
 
         NotFound g ->
             g
@@ -269,10 +272,10 @@ fromGeneral general page =
             Profile <| Page.Profile.fromGeneral general model
 
         About model ->
-            NotFound general
+            About <| Page.About.fromGeneral general model
 
         Donate model ->
-            Donate general
+            Donate <| Page.Donate.fromGeneral general model
 
         NotFound _ ->
             NotFound general
@@ -314,7 +317,7 @@ body model =
             Cache.theme cache
     in
     [ div
-        [ class "app"
+        [ id "app"
         , css
             [ Css.position Css.relative
             , Css.height <| Css.pct 100
@@ -324,12 +327,12 @@ body model =
             , Css.fontFamilies Font.montserrat
             ]
         ]
-        [ viewPage model ]
+        (viewPage model)
     , Style.Global.style theme
     ]
 
 
-viewPage : Model -> Html Msg
+viewPage : Model -> List (Html Msg)
 viewPage model =
     case model.problem of
         InvalidVersion ->
@@ -349,24 +352,28 @@ viewPage model =
                     Page.Redirect.view redirect
 
                 Donate donate ->
-                    Page.Donate.view donate
+                    List.map
+                        (Html.Styled.map (Message.map DonateMsg))
+                        (Page.Donate.view donate)
 
                 About about ->
-                    Page.About.view about
+                    List.map
+                        (Html.Styled.map (Message.map AboutMsg))
+                        (Page.About.view about)
 
                 Home home ->
-                    Html.Styled.map
-                        (Message.map HomeMsg)
+                    List.map
+                        (Html.Styled.map (Message.map HomeMsg))
                         (Page.Home.view home)
 
                 Post post ->
-                    Html.Styled.map
-                        (Message.map PostMsg)
+                    List.map
+                        (Html.Styled.map (Message.map PostMsg))
                         (Page.Post.view post)
 
                 Profile profile ->
-                    Html.Styled.map
-                        (Message.map ProfileMsg)
+                    List.map
+                        (Html.Styled.map (Message.map ProfileMsg))
                         (Page.Profile.view profile)
 
 

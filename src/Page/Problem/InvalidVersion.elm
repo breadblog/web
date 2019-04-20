@@ -15,6 +15,6 @@ init =
     {}
 
 
-view : Model -> Html msg
+view : Model -> List (Html msg)
 view model =
-    text "problem page"
+    [ text "problem page" ]

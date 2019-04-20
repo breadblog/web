@@ -15,6 +15,10 @@ style theme =
     global
         [ html [ full ]
         , body [ full ]
+        , id "app"
+            [ displayFlex
+            , flexDirection column
+            ]
         , class "dropdown"
             [ hover
                 [ descendants

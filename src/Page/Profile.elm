@@ -1,4 +1,4 @@
-module Page.Profile exposing (Model, Msg(..), fromGeneral, init, toGeneral, update, view)
+module Page.Profile exposing (Model, Msg, view, update, init, toGeneral, fromGeneral)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
@@ -9,66 +9,69 @@ import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import Message exposing (Compound(..), Msg(..))
+import Message exposing (Compound)
+import View.Page as Page
 
 
 
--- Model
+-- Model --
 
 
 type alias Model =
-    { cache : Cache
-    , session : Session
-    }
+    Page.PageModel Internals
 
 
-init : (Model -> e) -> General -> ( e, Cmd msg )
-init transform general =
-    ( transform <|
-        { session = General.session general
-        , cache = General.cache general
-        }
-    , Cmd.none
-    )
+type alias Internals =
+    {}
 
 
-fromGeneral : General -> Model -> Model
-fromGeneral general model =
-    { model | cache = General.cache general, session = General.session general }
+init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
+init =
+    Page.init {} Cmd.none Profile
 
 
 toGeneral : Model -> General
-toGeneral model =
-    General.init model.session model.cache
+toGeneral =
+    Page.toGeneral
 
 
+fromGeneral : General -> Model -> Model
+fromGeneral =
+    Page.fromGeneral
 
--- Message
+
+-- Message --
 
 
-type Msg
-    = NoOp
+type alias Msg =
+    Page.Msg ModMsg
 
+
+type ModMsg =
+    NoOp
 
 
 -- Update --
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    ( model, Cmd.none )
+update =
+    Page.update updateMod
 
 
+updateMod : msg -> s -> c -> Internals -> ( Internals, Cmd msg )
+updateMod _ _ _ internals =
+    ( internals, Cmd.none )
 
--- View
+
+-- View --
 
 
-view : Model -> Html (Compound Msg)
+view : Model -> Page.ViewResult msg
 view model =
-    let
-        theme =
-            Cache.theme model.cache
-    in
-    div
-        [ class (Route.toClass Profile) ]
-        []
+    Page.view model viewProfile
+
+
+viewProfile : Session -> Cache -> Internals -> List (Html (Compound m))
+viewProfile _ _ _ =
+    []

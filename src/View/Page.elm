@@ -1,4 +1,4 @@
-module View.Page exposing (Model, Msg, cache, init, mod, session, theme, toGeneral, update, view)
+module View.Page exposing (PageModel, Msg, ViewResult, TransformModel, TransformMsg, init, toGeneral, update, view, fromGeneral)
 
 import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
@@ -24,8 +24,8 @@ import View.Header as Header
 -- Model --
 
 
-type Model modModel
-    = Model (Internals modModel)
+type PageModel modModel
+    = PageModel (Internals modModel)
 
 
 type alias Internals modModel =
@@ -33,12 +33,21 @@ type alias Internals modModel =
     , footer : Footer.Model
     , cache : Cache
     , session : Session
-    , page : modModel
+    , mod : modModel
     }
 
 
-init : modModel -> Cmd modMsg -> Route -> General -> ( Model modModel, Cmd (Msg modMsg) )
-init modModel pageCmd route general =
+type alias TransformModel modModel model_ =
+    PageModel modModel -> model_
+
+
+type alias TransformMsg modMsg msg =
+    Msg modMsg -> msg
+
+
+
+init : modModel -> Cmd modMsg -> Route -> General -> TransformModel modModel model_ -> TransformMsg modMsg msg -> ( model_, Cmd msg )
+init modModel modCmd route general transformModel transformMsg =
     let
         header =
             Header.init route
@@ -46,50 +55,46 @@ init modModel pageCmd route general =
         footer =
             Footer.init
 
-        cmd =
+        pageCmd =
             Cmd.map
                 PageMsg
-                pageCmd
+                modCmd
 
-        model =
-            Model
+        pageModel =
+            PageModel
                 { header = header
                 , footer = footer
-                , page = modModel
+                , mod = modModel
                 , cache = General.cache general
                 , session = General.session general
                 }
+
+        model_ =
+            transformModel pageModel
+
+        cmd =
+            Cmd.map transformMsg pageCmd
+
     in
-    ( model, cmd )
+    ( model_, cmd )
 
 
-toGeneral : Model modModel -> General
-toGeneral (Model model) =
-    General.init model.session model.cache (Cache.theme model.cache)
+toGeneral : PageModel modModel -> General
+toGeneral (PageModel pageModel) =
+    General.init pageModel.session pageModel.cache
 
 
+fromGeneral : General -> PageModel modModel -> PageModel modModel
+fromGeneral general (PageModel pageModel) =
+    let
+        session_ =
+            General.session general
 
--- Accessors --
+        cache_ =
+            General.cache general
 
-
-theme : Model p -> Theme
-theme (Model model) =
-    Cache.theme model.cache
-
-
-session : Model p -> Session
-session (Model model) =
-    model.session
-
-
-cache : Model p -> Cache
-cache (Model model) =
-    model.cache
-
-
-mod : Model p -> p
-mod (Model model) =
-    model.page
+    in
+    PageModel { pageModel | session = session_, cache = cache_ }
 
 
 
@@ -106,38 +111,48 @@ type Msg modMsg
 -- Update --
 
 
-update : (modMsg -> Model modModel -> ( modModel, Cmd modMsg )) -> Msg modMsg -> Model modModel -> ( Model modModel, Cmd (Msg modMsg) )
-update pageUpdate msg (Model model) =
+type alias ModUpdate modModel modMsg =
+    modMsg -> Session -> Cache -> modModel -> ( modModel, Cmd modMsg )
+
+
+update : ModUpdate modModel modMsg -> Msg modMsg -> PageModel modModel -> ( PageModel modModel, Cmd (Msg modMsg) )
+update modUpdate msg (PageModel pageModel) =
     case msg of
         HeaderMsg headerMsg ->
             let
                 ( headerModel, headerCmd ) =
-                    Header.update headerMsg model.header
+                    Header.update headerMsg pageModel.header
 
                 cmd =
                     Cmd.map HeaderMsg headerCmd
             in
-            ( Model { model | header = headerModel }, cmd )
+            ( PageModel { pageModel | header = headerModel }, cmd )
 
         FooterMsg footerMsg ->
             let
                 ( footerModel, footerCmd ) =
-                    Footer.update footerMsg model.footer
+                    Footer.update footerMsg pageModel.footer
 
                 cmd =
                     Cmd.map FooterMsg footerCmd
             in
-            ( Model { model | footer = footerModel }, cmd )
+            ( PageModel { pageModel | footer = footerModel }, cmd )
 
         PageMsg modMsg ->
             let
+                session =
+                    pageModel.session
+
+                cache =
+                    pageModel.cache
+
                 ( modModel, pageCmd ) =
-                    pageUpdate modMsg (Model model)
+                    modUpdate modMsg session cache pageModel.mod
 
                 cmd =
                     Cmd.map PageMsg pageCmd
             in
-            ( Model { model | page = modModel }, cmd )
+            ( PageModel { pageModel | mod = modModel }, cmd )
 
 
 
@@ -145,41 +160,41 @@ update pageUpdate msg (Model model) =
 
 
 type alias ViewPage modModel modMsg =
-    Theme -> Cache -> modModel -> List (Html (Compound modMsg))
+    Session -> Cache -> modModel -> List (Html (Compound modMsg))
 
 
 type alias ViewResult modMsg =
     List (Html (Compound (Msg modMsg)))
 
 
-view : Model modModel -> ViewPage modModel modMsg -> ViewResult modMsg
-view (Model model) viewPage =
+view : PageModel modModel -> ViewPage modModel modMsg -> ViewResult modMsg
+view (PageModel pageModel) viewPage =
     let
         tags =
-            Cache.tags model.cache
+            Cache.tags pageModel.cache
 
         authors =
-            Cache.authors model.cache
+            Cache.authors pageModel.cache
 
         version =
-            Cache.version model.cache
+            Cache.version pageModel.cache
 
         theme_ =
-            Cache.theme model.cache
+            Cache.theme pageModel.cache
 
         header =
-            Header.view (Message.map HeaderMsg) theme_ authors tags model.header
+            Header.view (Message.map HeaderMsg) theme_ authors tags pageModel.header
 
         footer =
             Footer.view (Message.map FooterMsg) theme_ version
 
-        page =
+        mod =
             List.map
                 (Html.Styled.map (Message.map PageMsg))
-                (viewPage theme_ model.cache model.page)
+                (viewPage pageModel.session pageModel.cache pageModel.mod)
     in
     List.concat
         [ header
-        , page
+        , mod
         , footer
         ]

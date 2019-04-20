@@ -14,7 +14,7 @@ import Style.Color as Color
 -- Model
 
 
-view : General -> Html msg
+view : General -> List (Html msg)
 view general =
     let
         cache =
@@ -23,7 +23,7 @@ view general =
         theme =
             Cache.theme cache
     in
-    main_
+    [ main_
         [ css
             [ backgroundColor <| Color.background theme
             , height <| pct 100
@@ -32,3 +32,4 @@ view general =
         , class "redirect"
         ]
         []
+    ]

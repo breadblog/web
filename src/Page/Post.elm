@@ -5,6 +5,8 @@ import Data.General as General exposing (General)
 import Data.Post exposing (Post)
 import Data.Session exposing (Session)
 import Data.Theme exposing (Theme)
+import Data.Route exposing (Route(..))
+import Data.Slug exposing (Slug)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
@@ -13,39 +15,44 @@ import Message exposing (Compound(..), Msg(..))
 import Style.Post
 import Time
 import View.Markdown as Markdown
+import View.Page as Page
+
+
+-- Model --
 
 
 type alias Model =
-    { cache : Cache
-    , session : Session
-    }
+    Page.PageModel Internals
 
 
-init : (Model -> e) -> General -> ( e, Cmd msg )
-init transform general =
-    ( transform <|
-        { session = General.session general
-        , cache = General.cache general
-        }
-    , Cmd.none
-    )
+type alias Internals =
+    {}
+
+
+init : Slug -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> (mainModel, Cmd mainMsg)
+init slug =
+    Page.init {} Cmd.none (Post slug)
 
 
 fromGeneral : General -> Model -> Model
-fromGeneral general model =
-    { model | cache = General.cache general, session = General.session general }
+fromGeneral =
+    Page.fromGeneral
 
 
 toGeneral : Model -> General
-toGeneral model =
-    General.init model.session model.cache
+toGeneral =
+    Page.toGeneral
 
 
 
 -- Message --
 
 
-type Msg
+type alias Msg =
+    Page.Msg ModMsg
+
+
+type ModMsg
     = NoOp
 
 
@@ -54,19 +61,30 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    ( model, Cmd.none )
+update =
+    Page.update updateMod
 
+
+updateMod : ModMsg -> s -> c -> Internals -> ( Internals, Cmd ModMsg )
+updateMod msg _ _ internals =
+    case msg of
+        NoOp ->
+            ( internals, Cmd.none )
 
 
 -- View --
 
 
-view : Model -> Html (Compound Msg)
+view : Model -> Page.ViewResult ModMsg
 view model =
+    Page.view model viewPost
+
+
+viewPost : Session -> Cache -> Internals -> List (Html (Compound ModMsg))
+viewPost session cache internals =
     let
         theme =
-            Cache.theme model.cache
+            Cache.theme cache
 
         post =
             { title = "My Post"
@@ -81,7 +99,7 @@ view model =
         name =
             "post"
     in
-    div
+    [ div
         [ class name ]
         [ h1
             [ class "title" ]
@@ -91,6 +109,7 @@ view model =
             [ text post.author ]
         , Markdown.toHtml name postStyle.content post.content
         ]
+    ]
 
 
 content =
