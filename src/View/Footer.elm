@@ -1,4 +1,4 @@
-module View.Footer exposing (Model, Msg, view, init, update)
+module View.Footer exposing (Model, Msg, init, update, view)
 
 import Css exposing (..)
 import Data.Theme exposing (Theme)
@@ -19,6 +19,7 @@ type alias Profile =
     }
 
 
+
 -- Model --
 
 
@@ -26,11 +27,15 @@ type alias Model =
     { page : FooterPage
     }
 
+
+
 {--
     Mobile only, the footer page is used to determine whether
     to show the user one of the menus that would be provided
     to a desktop user via a dropdown (dropup in this case)
 --}
+
+
 type FooterPage
     = None
     | Github
@@ -43,6 +48,7 @@ init =
     }
 
 
+
 -- Message --
 
 
@@ -50,14 +56,16 @@ type Msg
     = SetPage FooterPage
 
 
+
 -- Update --
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SetPage page ->
             ( { model | page = page }, Cmd.none )
+
 
 
 -- View --
@@ -87,7 +95,6 @@ viewFooter theme version =
         , footerRight theme
         ]
     ]
-
 
 
 footerLeft : Theme -> Version -> Html (Compound msg)

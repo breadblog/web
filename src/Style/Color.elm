@@ -1,7 +1,8 @@
-module Style.Color exposing (accent, background, danger, dropdown, dropdownContrast, dropdownActive, overlay, primary, primaryFont, secondary, secondaryFont, tertiaryFont, drawer)
+module Style.Color exposing (accent, background, danger, drawer, dropdown, dropdownActive, dropdownContrast, overlay, primary, primaryFont, secondary, secondaryFont, tertiaryFont)
 
 import Css exposing (..)
 import Data.Theme exposing (Theme(..))
+
 
 
 -- Core colors
@@ -47,6 +48,7 @@ accent theme =
             hex ""
 
 
+
 -- Element Specific
 
 
@@ -83,7 +85,6 @@ dropdownActive theme =
 
         Light ->
             hex "fff"
-
 
 
 primaryFont : Theme -> Color

@@ -1,15 +1,15 @@
-module View.Page exposing (Model, Msg, init, update, view, toGeneral, theme, cache, session, mod)
+module View.Page exposing (Model, Msg, cache, init, mod, session, theme, toGeneral, update, view)
 
-
+import Data.Cache as Cache exposing (Cache)
+import Data.General as General exposing (General)
+import Data.Route as Route exposing (Route)
+import Data.Session as Session exposing (Session)
+import Data.Theme as Theme exposing (Theme)
 import Html.Styled exposing (Html, main_)
 import Message exposing (Compound(..))
-import Data.Route as Route exposing (Route)
-import Data.General as General exposing (General)
-import Data.Theme as Theme exposing (Theme)
-import Data.Cache as Cache exposing (Cache)
-import Data.Session as Session exposing (Session)
 import View.Footer as Footer
 import View.Header as Header
+
 
 
 {--
@@ -21,13 +21,11 @@ import View.Header as Header
     Do not use for pages you don't want to have a
     header/footer
 --}
-
-
 -- Model --
 
 
-type Model modModel =
-    Model (Internals modModel)
+type Model modModel
+    = Model (Internals modModel)
 
 
 type alias Internals modModel =
@@ -61,9 +59,8 @@ init modModel pageCmd route general =
                 , cache = General.cache general
                 , session = General.session general
                 }
-
     in
-        (model, cmd)
+    ( model, cmd )
 
 
 toGeneral : Model modModel -> General
@@ -71,7 +68,9 @@ toGeneral (Model model) =
     General.init model.session model.cache (Cache.theme model.cache)
 
 
+
 -- Accessors --
+
 
 theme : Model p -> Theme
 theme (Model model) =
@@ -93,6 +92,7 @@ mod (Model model) =
     model.page
 
 
+
 -- Message --
 
 
@@ -102,10 +102,11 @@ type Msg modMsg
     | PageMsg modMsg
 
 
+
 -- Update --
 
 
-update : (modMsg -> Model modModel -> (modModel, Cmd modMsg)) -> Msg modMsg -> Model modModel -> (Model modModel, Cmd (Msg modMsg))
+update : (modMsg -> Model modModel -> ( modModel, Cmd modMsg )) -> Msg modMsg -> Model modModel -> ( Model modModel, Cmd (Msg modMsg) )
 update pageUpdate msg (Model model) =
     case msg of
         HeaderMsg headerMsg ->
@@ -118,7 +119,6 @@ update pageUpdate msg (Model model) =
             in
             ( Model { model | header = headerModel }, cmd )
 
-
         FooterMsg footerMsg ->
             let
                 ( footerModel, footerCmd ) =
@@ -129,7 +129,6 @@ update pageUpdate msg (Model model) =
             in
             ( Model { model | footer = footerModel }, cmd )
 
-
         PageMsg modMsg ->
             let
                 ( modModel, pageCmd ) =
@@ -137,16 +136,16 @@ update pageUpdate msg (Model model) =
 
                 cmd =
                     Cmd.map PageMsg pageCmd
-
             in
             ( Model { model | page = modModel }, cmd )
+
 
 
 -- View --
 
 
 type alias ViewPage modModel modMsg =
-        Theme -> Cache -> modModel -> List (Html (Compound modMsg))
+    Theme -> Cache -> modModel -> List (Html (Compound modMsg))
 
 
 type alias ViewResult modMsg =
@@ -178,10 +177,9 @@ view (Model model) viewPage =
             List.map
                 (Html.Styled.map (Message.map PageMsg))
                 (viewPage theme_ model.cache model.page)
-
     in
-        List.concat
-            [ header
-            , page
-            , footer
-            ]
+    List.concat
+        [ header
+        , page
+        , footer
+        ]

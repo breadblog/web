@@ -31,6 +31,7 @@ init transform general =
     )
 
 
+
 -- Message --
 
 
@@ -42,20 +43,21 @@ type Msg
 -- Update --
 
 
-update : Page.Msg Msg -> Page.Model Model -> ( Page.Model Model, Cmd (Page.Msg Msg))
+update : Page.Msg Msg -> Page.Model Model -> ( Page.Model Model, Cmd (Page.Msg Msg) )
 update =
     Page.update updatePage
 
 
 updatePage : Msg -> Page.Model Model -> ( Model, Cmd Msg )
 updatePage msg pageModel =
-    let model =
+    let
+        model =
             Page.mod pageModel
-
     in
     case msg of
         NoOp ->
             ( model, Cmd.none )
+
 
 
 -- View --
