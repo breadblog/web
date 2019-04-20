@@ -7,6 +7,7 @@ module Data.General exposing (General, cache, init, session)
 
 import Data.Cache exposing (Cache)
 import Data.Session exposing (Session)
+import Data.Theme exposing (Theme)
 
 
 type General
@@ -23,8 +24,8 @@ type alias Internals =
 -- Constructors --
 
 
-init : Session -> Cache -> General
-init s c =
+init : Session -> Cache -> Theme -> General
+init s c t =
     General
         { cache = c
         , session = s

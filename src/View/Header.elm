@@ -505,7 +505,7 @@ drawer theme show zInd =
             , bottom <| px 0
             , Css.width <| pct 80
             , zIndex <| int zInd
-            , backgroundColor <| Color.highContrast theme
+            , backgroundColor <| Color.drawer theme
             , Css.batch <|
                 if show then
                     []
@@ -655,7 +655,7 @@ dropdownItem theme name selected msg =
             , flexGrow <| num 0
             , minWidth <| px 160
             , hover
-                [ backgroundColor <| Color.highContrast theme ]
+                [ backgroundColor <| Color.dropdownActive theme ]
             , transition
                 [ Transitions.backgroundColor 100 ]
             ]
@@ -687,7 +687,7 @@ checkboxDropdownItem name theme value msg =
             , transition
                 [ Transitions.backgroundColor 100 ]
             , hover
-                [ backgroundColor <| Color.highContrast theme
+                [ backgroundColor <| Color.dropdownActive theme
                 ]
             ]
         , onClick msg

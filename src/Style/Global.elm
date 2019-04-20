@@ -35,7 +35,7 @@ style theme =
                     [ selector "svg"
                         [ color <| Color.primaryFont theme ]
                     , class "footer-options"
-                        [ Css.opacity <| num 1 ]
+                        [ display initial ]
                     ]
                 ]
             ]
