@@ -10,11 +10,12 @@ import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme(..))
 import Html
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (id, css)
+import Html.Styled.Attributes exposing (css, id)
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Message exposing (Compound(..), Msg(..))
 import Page.About
+import Page.Changelog
 import Page.Donate
 import Page.Home
 import Page.NotFound
@@ -23,7 +24,6 @@ import Page.Problem.CorruptCache
 import Page.Problem.InvalidVersion
 import Page.Profile
 import Page.Redirect
-import Page.Changelog
 import Style.Color
 import Style.Font as Font
 import Style.Global
@@ -66,7 +66,6 @@ type InternalMsg
     | DonateMsg Page.Donate.Msg
     | AboutMsg Page.About.Msg
     | ChangelogMsg Page.Changelog.Msg
-
 
 
 toMsg : (e -> InternalMsg) -> e -> Msg

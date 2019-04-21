@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, Msg, init, update, view, toGeneral, fromGeneral)
+module Page.Home exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
@@ -27,7 +27,7 @@ type alias Internals =
     {}
 
 
-init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> (mainModel, Cmd mainMsg)
+init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
 init =
     Page.init {} Cmd.none Home
 
@@ -40,6 +40,7 @@ toGeneral =
 fromGeneral : General -> Model -> Model
 fromGeneral =
     Page.fromGeneral
+
 
 
 -- Message --

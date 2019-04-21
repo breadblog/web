@@ -3,10 +3,10 @@ module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, vie
 import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
 import Data.Post exposing (Post)
-import Data.Session exposing (Session)
-import Data.Theme exposing (Theme)
 import Data.Route exposing (Route(..))
+import Data.Session exposing (Session)
 import Data.Slug exposing (Slug)
+import Data.Theme exposing (Theme)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
@@ -16,6 +16,7 @@ import Style.Post
 import Time
 import View.Markdown as Markdown
 import View.Page as Page
+
 
 
 -- Model --
@@ -29,7 +30,7 @@ type alias Internals =
     {}
 
 
-init : Slug -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> (mainModel, Cmd mainMsg)
+init : Slug -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
 init slug =
     Page.init {} Cmd.none (Post slug)
 
@@ -70,6 +71,7 @@ updateMod msg _ _ internals =
     case msg of
         NoOp ->
             ( internals, Cmd.none )
+
 
 
 -- View --

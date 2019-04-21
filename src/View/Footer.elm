@@ -2,12 +2,12 @@ module View.Footer exposing (Model, Msg, init, update, view)
 
 import Css exposing (..)
 import Css.Transitions as Transitions exposing (transition)
-import Html.Styled exposing (..)
-import Html.Styled.Attributes as Attr exposing (..)
-import Message exposing (Compound(..), Msg(..))
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Data.Version exposing (Version)
+import Html.Styled exposing (..)
+import Html.Styled.Attributes as Attr exposing (..)
+import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Svg.Styled.Attributes
@@ -103,8 +103,7 @@ footerLeft : Theme -> Version -> Html (Compound msg)
 footerLeft theme version =
     div
         [ css
-            [ 
-            ]
+            []
         ]
         [ a
             [ href <| Route.toPath Changelog
@@ -190,7 +189,7 @@ options theme icon info =
                 , Css.height <| px iconSize
                 , color <| Color.secondaryFont theme
                 , transition
-                    [ Transitions.color3 100  0 Transitions.ease ]
+                    [ Transitions.color3 100 0 Transitions.ease ]
                 , hover
                     [ color <| Color.primaryFont theme
                     ]
@@ -229,7 +228,7 @@ options theme icon info =
                             , textDecoration none
                             , color <| Color.primaryFont theme
                             , transition
-                                [ Transitions.color3 100  0 Transitions.ease ]
+                                [ Transitions.color3 100 0 Transitions.ease ]
                             , hover
                                 [ backgroundColor <| Color.dropdownActive theme ]
                             ]

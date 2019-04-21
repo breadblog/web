@@ -1,4 +1,4 @@
-module View.Page exposing (PageModel, Msg, ViewResult, TransformModel, TransformMsg, init, toGeneral, update, view, fromGeneral)
+module View.Page exposing (Msg, PageModel, TransformModel, TransformMsg, ViewResult, fromGeneral, init, toGeneral, update, view)
 
 import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
@@ -45,7 +45,6 @@ type alias TransformMsg modMsg msg =
     Msg modMsg -> msg
 
 
-
 init : modModel -> Cmd modMsg -> Route -> General -> TransformModel modModel model_ -> TransformMsg modMsg msg -> ( model_, Cmd msg )
 init modModel modCmd route general transformModel transformMsg =
     let
@@ -74,7 +73,6 @@ init modModel modCmd route general transformModel transformMsg =
 
         cmd =
             Cmd.map transformMsg pageCmd
-
     in
     ( model_, cmd )
 
@@ -92,7 +90,6 @@ fromGeneral general (PageModel pageModel) =
 
         cache_ =
             General.cache general
-
     in
     PageModel { pageModel | session = session_, cache = cache_ }
 

@@ -1,4 +1,4 @@
-module Page.Donate exposing (Model, Msg, view, update, init, toGeneral, fromGeneral)
+module Page.Donate exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
@@ -40,6 +40,7 @@ fromGeneral =
     Page.fromGeneral
 
 
+
 -- Message --
 
 
@@ -47,8 +48,9 @@ type alias Msg =
     Page.Msg ModMsg
 
 
-type ModMsg =
-    NoOp
+type ModMsg
+    = NoOp
+
 
 
 -- Update --
@@ -62,6 +64,7 @@ update =
 updateMod : msg -> s -> c -> Internals -> ( Internals, Cmd msg )
 updateMod _ _ _ internals =
     ( internals, Cmd.none )
+
 
 
 -- View --
