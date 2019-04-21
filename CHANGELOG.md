@@ -4,23 +4,29 @@
 
 ## 0.0.7
 
-* TODO
+* Mobile friendly header
 
 ## 0.0.6
 
-* TODO
+* Search sources
 
 ## 0.0.5
 
-* TODO
+* Header
 
 ## 0.0.4
 
-* TODO
+* Version validation
 
 ## 0.0.3
 
-* TODO
+* Basic error handling
+* Cache data
+* Post data
+* Routing
+* Session data
+* Theming
+* User data
 
 ## 0.0.2
 
