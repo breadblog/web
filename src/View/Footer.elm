@@ -262,7 +262,7 @@ githubData : List Profile
 githubData =
     [ { image = "https://avatars3.githubusercontent.com/u/47406828?s=200&v=4"
       , url = "https://github.com/BreadBlog"
-      , name = "blog"
+      , name = "bits n' bites"
       }
     , { image = "https://avatars2.githubusercontent.com/u/14935550?s=88&v=4"
       , url = "https://github.com/Parasrah"

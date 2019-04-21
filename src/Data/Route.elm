@@ -39,6 +39,7 @@ urlParser =
         -- Info
         , Parser.map About (s "about")
         , Parser.map Donate (s "donate")
+        , Parser.map Changelog (s "changelog")
 
         -- ErrorPages
         ]

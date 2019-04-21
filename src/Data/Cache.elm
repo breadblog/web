@@ -49,7 +49,7 @@ init flags =
                 Ok internals ->
                     let
                         cache =
-                            Cache internals
+                            Cache { internals | version = currentVersion }
                     in
                     Ok ( cache, set cache )
 

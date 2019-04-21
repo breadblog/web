@@ -74,4 +74,9 @@ view model =
 
 viewChangelog : Session -> Cache -> Internals -> List (Html (Compound m))
 viewChangelog _ _ _ =
-    []
+    [ main_
+        [ css
+            [ flexGrow <| num 1 ]
+        ]
+        []
+    ]
