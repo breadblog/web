@@ -1,4 +1,4 @@
-module Page.Donate exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.Changelog exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
@@ -27,7 +27,7 @@ type alias Internals =
 
 init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
 init =
-    Page.init {} Cmd.none Donate
+    Page.init {} Cmd.none Changelog
 
 
 toGeneral : Model -> General
@@ -72,9 +72,14 @@ updateMod _ _ _ internals =
 
 view : Model -> Page.ViewResult msg
 view model =
-    Page.view model viewDonate
+    Page.view model viewChangelog
 
 
-viewDonate : Session -> Cache -> Internals -> List (Html (Compound m))
-viewDonate _ _ _ =
-    []
+viewChangelog : Session -> Cache -> Internals -> List (Html (Compound m))
+viewChangelog _ _ _ =
+    [ main_
+        [ css
+            [ flexGrow <| num 1 ]
+        ]
+        []
+    ]

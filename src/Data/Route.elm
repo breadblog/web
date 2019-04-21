@@ -12,9 +12,9 @@ type Route
     | Home
     | Post Slug
     | Profile
-      -- | Login
     | About
     | Donate
+    | Changelog
 
 
 type ProblemPage
@@ -39,6 +39,7 @@ urlParser =
         -- Info
         , Parser.map About (s "about")
         , Parser.map Donate (s "donate")
+        , Parser.map Changelog (s "changelog")
 
         -- ErrorPages
         ]
@@ -100,8 +101,9 @@ toName route =
         Profile ->
             "Profile"
 
-        -- Login ->
-        --     "Login"
+        Changelog ->
+            "Changelog"
+
         NotFound ->
             "404"
 
@@ -141,6 +143,9 @@ toPath route =
 
         Donate ->
             relative [ "/donate" ] []
+
+        Changelog ->
+            relative [ "/changelog" ] []
 
         NotFound ->
             relative [ "/404" ] []

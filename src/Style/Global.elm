@@ -15,6 +15,10 @@ style theme =
     global
         [ html [ full ]
         , body [ full ]
+        , id "app"
+            [ displayFlex
+            , flexDirection column
+            ]
         , class "dropdown"
             [ hover
                 [ descendants
@@ -27,6 +31,16 @@ style theme =
                     ]
                 , Css.backgroundColor <| Color.dropdown theme
                 , Shadow.dp6
+                ]
+            ]
+        , class "footer-dropup"
+            [ hover
+                [ descendants
+                    [ selector "svg"
+                        [ color <| Color.primaryFont theme ]
+                    , class "footer-options"
+                        [ display initial ]
+                    ]
                 ]
             ]
         ]

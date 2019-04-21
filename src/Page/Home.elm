@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, Msg(..), fromGeneral, init, toGeneral, update, view)
+module Page.Home exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
@@ -10,7 +10,9 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound(..))
+import View.Footer as Footer
 import View.Header as Header
+import View.Page as Page
 
 
 
@@ -18,39 +20,38 @@ import View.Header as Header
 
 
 type alias Model =
-    { cache : Cache
-    , session : Session
-    , header : Header.Model
-    }
+    Page.PageModel Internals
 
 
-init : (Model -> e) -> General -> ( e, Cmd msg )
-init transform general =
-    ( transform <|
-        { session = General.session general
-        , cache = General.cache general
-        , header = Header.init Home
-        }
-    , Cmd.none
-    )
+type alias Internals =
+    {}
 
 
-fromGeneral : General -> Model -> Model
-fromGeneral general model =
-    { model | cache = General.cache general, session = General.session general }
+init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
+init =
+    Page.init {} Cmd.none Home
 
 
 toGeneral : Model -> General
-toGeneral model =
-    General.init model.session model.cache
+toGeneral =
+    Page.toGeneral
+
+
+fromGeneral : General -> Model -> Model
+fromGeneral =
+    Page.fromGeneral
 
 
 
 -- Message --
 
 
-type Msg
-    = HeaderMsg Header.Msg
+type alias Msg =
+    Page.Msg ModMsg
+
+
+type ModMsg
+    = NoOp
 
 
 
@@ -58,38 +59,32 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        HeaderMsg headerMsg ->
-            let
-                ( headerModel, headerCmd ) =
-                    Header.update headerMsg model.header
+update =
+    Page.update updateMod
 
-                cmd =
-                    Cmd.map HeaderMsg headerCmd
-            in
-            ( { model | header = headerModel }, cmd )
+
+updateMod : ModMsg -> s -> c -> Internals -> ( Internals, Cmd ModMsg )
+updateMod msg _ _ internals =
+    case msg of
+        NoOp ->
+            ( internals, Cmd.none )
 
 
 
 -- View --
 
 
-view : Model -> Html (Compound Msg)
+view : Model -> Page.ViewResult ModMsg
 view model =
-    let
-        theme =
-            Cache.theme model.cache
+    Page.view model viewHome
 
-        tags =
-            Cache.tags model.cache
 
-        authors =
-            Cache.authors model.cache
-    in
-    div
-        [ class (Route.toClass Home) ]
-        (List.append
-            (Header.view (Message.map HeaderMsg) theme authors tags model.header)
-            []
-        )
+viewHome : Session -> Cache -> Internals -> List (Html (Compound ModMsg))
+viewHome _ _ _ =
+    [ main_
+        [ css
+            [ flexGrow <| num 1
+            ]
+        ]
+        []
+    ]
