@@ -32,7 +32,7 @@ secondary : Theme -> Color
 secondary theme =
     case theme of
         Dark ->
-            hex "302A2A"
+            hex "616161"
 
         Light ->
             hex ""
