@@ -16,11 +16,19 @@ import View.Header as Header
 import View.Page as Page
 import Style.Color as Color
 
-
 {--
 
     Home Page
     =========
+
+    Present
+    -------
+
+    Simple homescreen that simply shows cards for the various posts
+    in chronological order
+
+    Future
+    ------
 
     Intention of the home page is to allow discovery of blog posts
     that may be of interest to the user. We do this through a
@@ -47,8 +55,7 @@ type alias Internals =
 
 
 type alias Row =
-    { name : String
-    , posts : List (Post Preview)
+    { posts : List (Post Preview)
     }
 
 
@@ -110,8 +117,7 @@ viewHome : Session -> Cache -> Internals -> List (Html (Compound ModMsg))
 viewHome _ cache internals =
     let
         new =
-            { name = "new"
-            , posts = internals.posts
+            { posts = internals.posts
             }
         theme =
             Cache.theme cache
@@ -129,10 +135,7 @@ row : Theme -> Row -> Html (Compound ModMsg)
 row theme r =
     div
         [ class "row" ]
-        [ h2
-            [ class "row-title" ]
-            [ text r.name ]
-        , div
+        [ div
             [ class "cards" ]
             (List.map (card theme) r.posts)
         ]
