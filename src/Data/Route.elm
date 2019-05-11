@@ -128,10 +128,10 @@ toPath : Route -> String
 toPath route =
     case route of
         Home ->
-            relative [] []
+            relative [ "/" ] []
 
         Post slug ->
-            relative [ "post", Slug.toString slug ] []
+            relative [ "/post", Slug.toString slug ] []
 
         Profile ->
             relative [ "/profile" ] []

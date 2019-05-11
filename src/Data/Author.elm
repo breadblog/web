@@ -1,13 +1,14 @@
-module Data.Author exposing (Author, decoder, encode, init, mapValue, name, value)
+module Data.Author exposing (Author, bio, decoder, encode, mapWatched, mocks, name, username, watched)
 
 import Data.Search as Search exposing (Source)
+import Data.Username as Username exposing (Username)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
 
 
 
--- Model --
+{- Model -}
 
 
 type Author
@@ -15,23 +16,30 @@ type Author
 
 
 type alias Internals =
-    { name : String
-    , value : Bool
+    { username : Username
+    , name : String
+    , bio : String
+    , watched : Bool
     }
 
 
 
--- TODO: remove this
+{- Accessors -}
 
 
-init : String -> Author
-init name_ =
-    Author { name = name_, value = True }
+username : Author -> Username
+username (Author internals) =
+    internals.username
 
 
+mapWatched : (Bool -> Bool) -> Author -> Author
+mapWatched transform (Author internals) =
+    Author { internals | watched = transform internals.watched }
 
--- Accessors --
--- name
+
+watched : Author -> Bool
+watched (Author internals) =
+    internals.watched
 
 
 name : Author -> String
@@ -39,29 +47,20 @@ name (Author internals) =
     internals.name
 
 
-
--- value
-
-
-mapValue : (Bool -> Bool) -> Author -> Author
-mapValue transform (Author internals) =
-    Author { internals | value = transform internals.value }
-
-
-value : Author -> Bool
-value (Author internals) =
-    internals.value
+bio : Author -> String
+bio (Author internals) =
+    internals.bio
 
 
 
--- Util --
+{- Util -}
 
 
 toSource : msg -> List Author -> Source msg
 toSource msg authors =
     Search.source
         (List.map
-            name
+            (\(Author a) -> Username.toString a.username)
             authors
         )
         "author"
@@ -69,20 +68,45 @@ toSource msg authors =
 
 
 
--- JSON --
+{- JSON -}
 
 
 decoder : Decoder Author
 decoder =
     Decode.succeed Internals
+        |> required "username" Username.decoder
         |> required "name" Decode.string
-        |> required "value" Decode.bool
+        |> required "bio" Decode.string
+        |> required "watched" Decode.bool
         |> Decode.map Author
 
 
 encode : Author -> Value
 encode (Author internals) =
     Encode.object
-        [ ( "name", Encode.string internals.name )
-        , ( "value", Encode.bool internals.value )
+        [ ( "username", Username.encode internals.username )
+        , ( "name", Encode.string internals.name )
+        , ( "bio", Encode.string internals.bio )
+        , ( "watched", Encode.bool internals.watched )
         ]
+
+
+
+{- Mock Data -}
+
+
+mocks : List Author
+mocks =
+    [ Author
+        { username = Username.fromString "parasrah"
+        , name = "Brad Pfannmuller"
+        , bio = "privacy enthusiast and web developer"
+        , watched = True
+        }
+    , Author
+        { username = Username.fromString "qnbst"
+        , name = "Bea Esguerra"
+        , bio = "food enthusiast and web developer"
+        , watched = True
+        }
+    ]

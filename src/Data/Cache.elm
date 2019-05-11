@@ -100,7 +100,7 @@ toggleTagList : Tag -> List Tag -> List Tag
 toggleTagList tag =
     let
         toggled =
-            Tag.mapValue (\n -> not n) tag
+            Tag.mapWatched (\n -> not n) tag
     in
     List.map
         (\t ->
@@ -116,7 +116,7 @@ toggleAuthorList : Author -> List Author -> List Author
 toggleAuthorList author =
     let
         toggled =
-            Author.mapValue not author
+            Author.mapWatched not author
     in
     List.map
         (\a ->
@@ -187,8 +187,8 @@ default : Version -> Internals
 default ver =
     { theme = Dark
     , version = ver
-    , tags = []
-    , authors = []
+    , tags = Tag.mocks
+    , authors = Author.mocks
     }
 
 
@@ -210,19 +210,10 @@ decoder =
         |> required "theme" Theme.decoder
         |> optional "tags"
             (Decode.list Tag.decoder)
-            [ Tag.init "elm"
-            , Tag.init "rust"
-            , Tag.init "dev"
-            , Tag.init "privacy"
-            , Tag.init "food"
-            , Tag.init "travel"
-            , Tag.init "philosophy"
-            ]
+            Tag.mocks
         |> optional "authors"
             (Decode.list Author.decoder)
-            [ Author.init "Parasrah"
-            , Author.init "Qnbst"
-            ]
+            Author.mocks
 
 
 defaultDecoder : Version -> Decoder Internals

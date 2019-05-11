@@ -1,7 +1,7 @@
 module Data.Session exposing (Session, init)
 
 import Browser.Navigation exposing (Key)
-import Data.User as User exposing (User)
+import Data.Author as Author exposing (Author)
 
 
 
@@ -10,10 +10,11 @@ import Data.User as User exposing (User)
 
    Contains state global to the application that is stored in memory
 -}
+{--Model --}
 
 
 type alias Session =
-    { user : Maybe User
+    { user : Maybe Author
     , key : Key
     }
 

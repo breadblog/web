@@ -9,6 +9,7 @@ import Data.Route as Route exposing (Route(..))
 import Data.Search as Search exposing (Result, Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
+import Data.Username as Username exposing (Username)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events exposing (onClick, onInput)
@@ -418,7 +419,7 @@ logo shownScreens theme =
 tagsContent : Theme -> List Tag -> List (Html (Compound Msg))
 tagsContent theme =
     List.map
-        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.value t) (Global <| CacheMsg <| ToggleTag t))
+        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (Global <| CacheMsg <| ToggleTag t))
 
 
 
@@ -428,7 +429,7 @@ tagsContent theme =
 authorsContent : Theme -> List Author -> List (Html (Compound Msg))
 authorsContent theme =
     List.map
-        (\a -> checkboxDropdownItem (Author.name a) theme (Author.value a) (Global <| CacheMsg <| ToggleAuthor a))
+        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (Global <| CacheMsg <| ToggleAuthor a))
 
 
 

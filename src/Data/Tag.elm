@@ -1,9 +1,13 @@
-module Data.Tag exposing (Tag, decoder, encode, init, mapValue, name, toSource, value)
+module Data.Tag exposing (Tag, decoder, encode, mapWatched, mocks, name, toSource, watched)
 
 import Data.Search as Search exposing (Source)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (required)
+import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
+
+
+
+{- Model -}
 
 
 type Tag
@@ -12,25 +16,13 @@ type Tag
 
 type alias Internals =
     { name : String
-    , value : Bool
+    , description : String
+    , watched : Bool
     }
 
 
 
--- TODO: Remove
-
-
-init : String -> Tag
-init name_ =
-    Tag
-        { name = name_
-        , value = True
-        }
-
-
-
--- Accessors --
--- name
+{- Accessors -}
 
 
 name : Tag -> String
@@ -38,22 +30,18 @@ name (Tag internals) =
     internals.name
 
 
-
--- value
-
-
-value : Tag -> Bool
-value (Tag internals) =
-    internals.value
+watched : Tag -> Bool
+watched (Tag internals) =
+    internals.watched
 
 
-mapValue : (Bool -> Bool) -> Tag -> Tag
-mapValue transform (Tag internals) =
-    Tag { internals | value = transform internals.value }
+mapWatched : (Bool -> Bool) -> Tag -> Tag
+mapWatched transform (Tag internals) =
+    Tag { internals | watched = transform internals.watched }
 
 
 
--- Util
+{- Util -}
 
 
 toSource : msg -> List Tag -> Source msg
@@ -70,14 +58,15 @@ toSource msg tags =
 
 
 
--- JSON --
+{- JSON -}
 
 
 decoder : Decoder Tag
 decoder =
     Decode.succeed Internals
         |> required "name" Decode.string
-        |> required "value" Decode.bool
+        |> required "description" Decode.string
+        |> optional "watched" Decode.bool True
         |> Decode.map Tag
 
 
@@ -85,5 +74,30 @@ encode : Tag -> Value
 encode (Tag tag) =
     Encode.object
         [ ( "name", Encode.string tag.name )
-        , ( "value", Encode.bool tag.value )
+        , ( "description", Encode.string tag.description )
+        , ( "watched", Encode.bool tag.watched )
         ]
+
+
+
+{- Mock Data -}
+
+
+mocks : List Tag
+mocks =
+    [ Tag
+        { name = "elm"
+        , description = "The elm programming language"
+        , watched = True
+        }
+    , Tag
+        { name = "js"
+        , description = "The Javascript programming language"
+        , watched = True
+        }
+    , Tag
+        { name = "privacy"
+        , description = "A well thought out description :P"
+        , watched = True
+        }
+    ]
