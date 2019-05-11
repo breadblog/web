@@ -10,9 +10,7 @@ import Data.Author as Author exposing (Author)
 
    Contains state global to the application that is stored in memory
 -}
-
-
-{-- Model --}
+{--Model --}
 
 
 type alias Session =

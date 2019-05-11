@@ -1,30 +1,32 @@
-module Data.Post exposing (Post, Preview, Full, fullEncoder, fullDecoder, previewDecoder, previewEncoder, mocks, title)
+module Data.Post exposing (Full, Post, Preview, fullDecoder, fullEncoder, mocks, previewDecoder, previewEncoder, title)
 
-import Data.Username as Username exposing (Username)
-import Data.Body as Body exposing (Body)
 import Data.Author as Author exposing (Author)
+import Data.Body as Body exposing (Body)
+import Data.Search as Search exposing (Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.UUID as UUID exposing (UUID)
-import Data.Search as Search exposing (Source)
+import Data.Username as Username exposing (Username)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (required, custom, hardcoded)
+import Json.Decode.Pipeline exposing (custom, hardcoded, required)
 import Json.Encode as Encode exposing (Value)
 import Time
+
 
 
 {- Model -}
 
 
-type Post extra =
-    Post extra Internals
+type Post extra
+    = Post extra Internals
 
 
-type Full =
-    Full Body
+type Full
+    = Full Body
 
 
-type Preview =
-    Preview
+type Preview
+    = Preview
+
 
 type alias Internals =
     { uuid : UUID
@@ -37,14 +39,13 @@ type alias Internals =
     }
 
 
-{- Accessors -}
 
+{- Accessors -}
 
 
 uuid : Post e -> UUID
 uuid (Post e post) =
     post.uuid
-
 
 
 title : Post e -> String
@@ -56,7 +57,6 @@ mapTitle : (String -> String) -> Post e -> Post e
 mapTitle fn (Post e post) =
     Post e
         { post | title = fn post.title }
-
 
 
 body : Post Full -> Body
@@ -71,11 +71,9 @@ mapBody fn (Post (Full body_) post) =
         post
 
 
-
 author : Post e -> Username
 author (Post e post) =
     post.author
-
 
 
 date : Post e -> Time.Posix
@@ -100,15 +98,13 @@ toSource msg posts =
 
 
 {- JSON -}
-
-
 -- Encoders
 
 
 fullEncoder : Post Full -> Value
 fullEncoder (Post (Full body_) internals) =
-    Encode.object
-        <| List.append
+    Encode.object <|
+        List.append
             (internalsEncoder internals)
             [ ( "body", Body.encode body_ ) ]
 
@@ -119,7 +115,7 @@ previewEncoder (Post Preview internals) =
         internalsEncoder internals
 
 
-internalsEncoder : Internals -> List (String, Value)
+internalsEncoder : Internals -> List ( String, Value )
 internalsEncoder internals =
     [ ( "uuid", UUID.encode internals.uuid )
     , ( "title", Encode.string internals.title )
@@ -129,6 +125,7 @@ internalsEncoder internals =
     , ( "date", Encode.int (Time.posixToMillis internals.date) )
     , ( "favorite", Encode.bool internals.favorite )
     ]
+
 
 
 -- Decoders
@@ -154,6 +151,7 @@ timeDecoder =
                 Decode.succeed (Time.millisToPosix int)
             )
 
+
 previewDecoder : Decoder (Post Preview)
 previewDecoder =
     Decode.succeed Post
@@ -168,6 +166,7 @@ fullDecoder =
         |> custom internalsDecoder
 
 
+
 {- TODO: Remove. Mock Data -}
 
 
@@ -177,17 +176,18 @@ mocks =
         bodyStr =
             """
             """
+
         internals =
             { uuid = UUID.fromString "c900e1b0-55c8-469f-a636-395016c34e0c"
             , title = "A future of privacy"
             , description = "I discuss how our current approach to privacy could potentially affect our future decisions"
-            , tags = List.filter (\n -> (Tag.name n) == "privacy") Tag.mocks
+            , tags = List.filter (\n -> Tag.name n == "privacy") Tag.mocks
             , author = Username.fromString "parasrah"
             , date = Time.millisToPosix 1556080183000
             , favorite = False
             }
+
         post =
             Post Preview internals
-
     in
     [ post ]

@@ -1,8 +1,8 @@
 module Data.UUID exposing (UUID, decoder, encode, fromString)
 
-
-import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
+
 
 
 {--
@@ -16,13 +16,11 @@ import Json.Decode as Decode exposing (Decoder)
     NOTE: SHOULD NEVER CREATE UUID's FOR DATABASE ON WEB CLIENT
 
 --}
-
-
 {- Model -}
 
 
-type UUID =
-    UUID String
+type UUID
+    = UUID String
 
 
 
@@ -36,10 +34,10 @@ decoder =
             (\str -> Decode.succeed (UUID str))
 
 
-
 encode : UUID -> Value
 encode (UUID str) =
     Encode.string str
+
 
 
 {- TODO: remove. Mock data -}

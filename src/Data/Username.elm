@@ -1,15 +1,16 @@
-module Data.Username exposing (Username, toString, decoder, encode, compare, fromString)
+module Data.Username exposing (Username, compare, decoder, encode, fromString, toString)
 
-
-import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
+
 
 
 {- Model -}
 
 
-type Username =
-    Username String
+type Username
+    = Username String
+
 
 
 {- Accessors -}
@@ -20,7 +21,9 @@ toString (Username str) =
     str
 
 
+
 {- Util -}
+
 
 compare : Username -> Username -> Bool
 compare (Username a) (Username b) =
@@ -38,10 +41,10 @@ decoder =
             (\str -> Decode.succeed (Username str))
 
 
-
 encode : Username -> Value
 encode (Username str) =
     Encode.string str
+
 
 
 {- TODO: Remove. Mock Data -}

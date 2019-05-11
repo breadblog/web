@@ -1,12 +1,14 @@
-module Data.Tag exposing (Tag, decoder, encode, mapWatched, name, toSource, watched, mocks)
+module Data.Tag exposing (Tag, decoder, encode, mapWatched, mocks, name, toSource, watched)
 
 import Data.Search as Search exposing (Source)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (required, optional)
+import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 
 
+
 {- Model -}
+
 
 type Tag
     = Tag Internals
@@ -26,7 +28,6 @@ type alias Internals =
 name : Tag -> String
 name (Tag internals) =
     internals.name
-
 
 
 watched : Tag -> Bool
@@ -76,6 +77,7 @@ encode (Tag tag) =
         , ( "description", Encode.string tag.description )
         , ( "watched", Encode.bool tag.watched )
         ]
+
 
 
 {- Mock Data -}

@@ -3,18 +3,20 @@ module Page.Home exposing (Model, Msg, fromGeneral, init, toGeneral, update, vie
 import Css exposing (..)
 import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
+import Data.Post as Post exposing (Post, Preview)
 import Data.Route as Route exposing (Route(..))
 import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
-import Data.Post as Post exposing (Post, Preview)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound(..))
+import Style.Color as Color
 import View.Footer as Footer
 import View.Header as Header
 import View.Page as Page
-import Style.Color as Color
+
+
 
 {--
 
@@ -40,9 +42,6 @@ import Style.Color as Color
     see (by authors or tags).
 
 --}
-
-
-
 -- Model
 
 
@@ -63,7 +62,8 @@ init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg M
 init =
     Page.init
         { posts = Post.mocks }
-        Cmd.none Home
+        Cmd.none
+        Home
 
 
 toGeneral : Model -> General
@@ -119,6 +119,7 @@ viewHome _ cache internals =
         new =
             { posts = internals.posts
             }
+
         theme =
             Cache.theme cache
     in
@@ -129,4 +130,3 @@ viewHome _ cache internals =
         ]
         []
     ]
-

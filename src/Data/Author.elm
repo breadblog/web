@@ -1,10 +1,11 @@
-module Data.Author exposing (Author, decoder, encode, username, watched, mapWatched, bio, name, mocks)
+module Data.Author exposing (Author, bio, decoder, encode, mapWatched, mocks, name, username, watched)
 
-import Data.Username as Username exposing (Username)
 import Data.Search as Search exposing (Source)
+import Data.Username as Username exposing (Username)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
+
 
 
 {- Model -}
@@ -88,6 +89,7 @@ encode (Author internals) =
         , ( "bio", Encode.string internals.bio )
         , ( "watched", Encode.bool internals.watched )
         ]
+
 
 
 {- Mock Data -}

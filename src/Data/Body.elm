@@ -1,12 +1,16 @@
-module Data.Body exposing (Body, encode, decoder, toString, fromString)
+module Data.Body exposing (Body, decoder, encode, fromString, toString)
 
-import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
+
+
 
 {- Model -}
 
-type Body =
-    Body String
+
+type Body
+    = Body String
+
 
 
 {- Accessors -}
@@ -17,7 +21,9 @@ toString (Body str) =
     str
 
 
+
 {- JSON -}
+
 
 decoder : Decoder Body
 decoder =
@@ -29,6 +35,7 @@ decoder =
 encode : Body -> Value
 encode (Body str) =
     Encode.string str
+
 
 
 {- TODO: remove. Mock Data -}
