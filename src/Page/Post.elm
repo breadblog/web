@@ -1,11 +1,13 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
+import Http
+import Config
 import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
-import Data.Post exposing (Post)
+import Data.Post exposing (Post, Full)
 import Data.Route exposing (Route(..))
 import Data.Session exposing (Session)
-import Data.Slug exposing (Slug)
+import Data.UUID as UUID exposing (UUID)
 import Data.Theme exposing (Theme)
 import Html
 import Html.Styled exposing (..)
@@ -26,13 +28,18 @@ type alias Model =
     Page.PageModel Internals
 
 
-type alias Internals =
-    {}
+type Internals
+    = Loading
+    | Ready (Post Full)
+    | Failure Int
 
 
-init : Slug -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init slug =
-    Page.init {} Cmd.none (Post slug)
+init : UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
+init uuid =
+    Page.init
+        Loading
+        (getPost uuid)
+        (Post uuid)
 
 
 fromGeneral : General -> Model -> Model
@@ -54,7 +61,7 @@ type alias Msg =
 
 
 type ModMsg
-    = NoOp
+    = GotPost (Result Http.Error (Post Full))
 
 
 
@@ -69,11 +76,23 @@ update =
 updateMod : ModMsg -> s -> c -> Internals -> ( Internals, Cmd ModMsg )
 updateMod msg _ _ internals =
     case msg of
-        NoOp ->
+        GotPost _ ->
             ( internals, Cmd.none )
 
 
 
+-- Util --
+
+getPost : UUID -> Cmd ModMsg
+getPost uuid =
+    let
+        path =
+            UUID.toPath "/api/post" uuid
+    in
+    Http.get
+        { url = Config.apiUrl ++ path
+        , expect = Http.expectJson GotPost Data.Post.fullDecoder
+        }
 -- View --
 
 

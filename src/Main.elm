@@ -223,8 +223,8 @@ changeRoute route model =
                 Route.Home ->
                     Page.Home.init general Home (toMsg HomeMsg)
 
-                Route.Post slug ->
-                    Page.Post.init slug general Post (toMsg PostMsg)
+                Route.Post uuid ->
+                    Page.Post.init uuid general Post (toMsg PostMsg)
 
                 Route.Profile ->
                     Page.Profile.init general Profile (toMsg ProfileMsg)
