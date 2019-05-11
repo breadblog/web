@@ -127,38 +127,6 @@ viewHome _ cache internals =
             [ flexGrow <| num 1
             ]
         ]
-        [ row theme new ]
+        []
     ]
 
-
-row : Theme -> Row -> Html (Compound ModMsg)
-row theme r =
-    div
-        [ class "row" ]
-        [ div
-            [ class "cards" ]
-            (List.map (card theme) r.posts)
-        ]
-
-
-card : Theme -> Post Preview -> Html (Compound ModMsg)
-card theme preview =
-    div
-        [ class "preview"
-        , css
-            [ backgroundColor <| Color.secondary theme ]
-        ]
-        [ h3
-            []
-            [ text <| Post.title preview ]
-        , div
-            []
-            []
-        , div
-            [ class "tags"
-            , css
-                [ displayFlex
-                ]
-            ]
-            []
-        ]
