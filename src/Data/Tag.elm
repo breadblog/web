@@ -1,4 +1,4 @@
-module Data.Tag exposing (Tag, decoder, encode, mapWatched, mocks, name, toSource, watched)
+module Data.Tag exposing (Tag, decoder, encode, mapWatched, name, toSource, watched)
 
 import Data.Search as Search exposing (Source)
 import Json.Decode as Decode exposing (Decoder)
@@ -77,27 +77,3 @@ encode (Tag tag) =
         , ( "description", Encode.string tag.description )
         , ( "watched", Encode.bool tag.watched )
         ]
-
-
-
-{- Mock Data -}
-
-
-mocks : List Tag
-mocks =
-    [ Tag
-        { name = "elm"
-        , description = "The elm programming language"
-        , watched = True
-        }
-    , Tag
-        { name = "js"
-        , description = "The Javascript programming language"
-        , watched = True
-        }
-    , Tag
-        { name = "privacy"
-        , description = "A well thought out description :P"
-        , watched = True
-        }
-    ]

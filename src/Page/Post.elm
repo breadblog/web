@@ -1,20 +1,20 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
-import Http
 import Config
+import Data.Author as Author exposing (Author)
+import Data.Body as Body exposing (Body)
 import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
-import Data.Post as Post exposing (Post, Full)
+import Data.Post as Post exposing (Full, Post)
 import Data.Route exposing (Route(..))
 import Data.Session exposing (Session)
-import Data.UUID as UUID exposing (UUID)
 import Data.Theme exposing (Theme)
-import Data.Body as Body exposing (Body)
-import Data.Author as Author exposing (Author)
+import Data.UUID as UUID exposing (UUID)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
+import Http
 import Message exposing (Compound(..), Msg(..))
 import Style.Post
 import Time
@@ -85,6 +85,7 @@ updateMod msg _ _ internals =
 
 -- Util --
 
+
 getPost : UUID -> Cmd ModMsg
 getPost uuid =
     let
@@ -95,6 +96,9 @@ getPost uuid =
         { url = Config.apiUrl ++ path
         , expect = Http.expectJson GotPost Post.fullDecoder
         }
+
+
+
 -- View --
 
 
@@ -108,7 +112,6 @@ viewPost session cache internals =
     let
         theme =
             Cache.theme cache
-
     in
     case internals of
         Loading ->

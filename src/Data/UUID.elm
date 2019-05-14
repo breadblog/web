@@ -1,4 +1,4 @@
-module Data.UUID exposing (UUID, decoder, encode, fromString, urlParser, toPath)
+module Data.UUID exposing (UUID, decoder, encode, fromString, toPath, urlParser)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -24,6 +24,7 @@ type UUID
     = UUID String
 
 
+
 {- URL -}
 
 
@@ -35,6 +36,7 @@ urlParser =
 toPath : String -> UUID -> String
 toPath str (UUID uuid) =
     str ++ "/" ++ uuid
+
 
 
 {- JSON -}

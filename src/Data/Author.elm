@@ -1,9 +1,9 @@
-module Data.Author exposing (Author, bio, decoder, encode, mapWatched, name, username, watched, usernameFromUUID)
+module Data.Author exposing (Author, bio, decoder, encode, mapWatched, name, username, usernameFromUUID, watched)
 
-import Data.UUID as UUID exposing (UUID)
 import Data.Search as Search exposing (Source)
+import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (required, optional)
+import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 
 
@@ -96,6 +96,7 @@ encode (Author internals) =
         [ ( "username", Encode.string internals.username )
         , ( "name", Encode.string internals.name )
         , ( "bio", Encode.string internals.bio )
+
         -- Omit "watched" field because "core don't care"
         , ( "uuid", UUID.encode internals.uuid )
         ]

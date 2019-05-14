@@ -61,7 +61,7 @@ type alias Row =
 init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
 init =
     Page.init
-        { posts = Post.mocks }
+        { posts = [] }
         Cmd.none
         Home
 

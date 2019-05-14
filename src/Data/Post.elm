@@ -1,4 +1,4 @@
-module Data.Post exposing (Full, Post, Preview, fullDecoder, fullEncoder, mocks, previewDecoder, previewEncoder, title, description, author, body)
+module Data.Post exposing (Full, Post, Preview, author, body, description, fullDecoder, fullEncoder, previewDecoder, previewEncoder, title)
 
 import Data.Author as Author exposing (Author)
 import Data.Body as Body exposing (Body)
@@ -168,30 +168,3 @@ fullDecoder =
     Decode.succeed Post
         |> required "body" (Decode.map Full Body.decoder)
         |> custom internalsDecoder
-
-
-
-{- TODO: Remove. Mock Data -}
-
-
-mocks : List (Post Preview)
-mocks =
-    let
-        bodyStr =
-            """
-            """
-
-        internals =
-            { uuid = UUID.fromString "c900e1b0-55c8-469f-a636-395016c34e0c"
-            , title = "A future of privacy"
-            , description = "I discuss how our current approach to privacy could potentially affect our future decisions"
-            , tags = List.filter (\n -> Tag.name n == "privacy") Tag.mocks
-            , author = UUID.fromString "parasrah"
-            , date = Time.millisToPosix 1556080183000
-            , favorite = False
-            }
-
-        post =
-            Post Preview internals
-    in
-    [ post ]

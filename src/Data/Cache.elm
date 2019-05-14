@@ -187,8 +187,8 @@ default : Version -> Internals
 default ver =
     { theme = Dark
     , version = ver
-    , tags = Tag.mocks
-    , authors = Author.mocks
+    , tags = []
+    , authors = []
     }
 
 
@@ -210,10 +210,10 @@ decoder =
         |> required "theme" Theme.decoder
         |> optional "tags"
             (Decode.list Tag.decoder)
-            Tag.mocks
+            []
         |> optional "authors"
             (Decode.list Author.decoder)
-            Author.mocks
+            []
 
 
 defaultDecoder : Version -> Decoder Internals
