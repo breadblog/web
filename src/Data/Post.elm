@@ -1,11 +1,10 @@
-module Data.Post exposing (Full, Post, Preview, fullDecoder, fullEncoder, mocks, previewDecoder, previewEncoder, title)
+module Data.Post exposing (Full, Post, Preview, fullDecoder, fullEncoder, mocks, previewDecoder, previewEncoder, title, description, author, body)
 
 import Data.Author as Author exposing (Author)
 import Data.Body as Body exposing (Body)
 import Data.Search as Search exposing (Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.UUID as UUID exposing (UUID)
-import Data.Username as Username exposing (Username)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (custom, hardcoded, required)
 import Json.Encode as Encode exposing (Value)
@@ -33,7 +32,7 @@ type alias Internals =
     , title : String
     , description : String
     , tags : List Tag
-    , author : Username
+    , author : UUID
     , date : Time.Posix
     , favorite : Bool
     }
@@ -46,6 +45,11 @@ type alias Internals =
 uuid : Post e -> UUID
 uuid (Post e post) =
     post.uuid
+
+
+description : Post e -> String
+description (Post e post) =
+    post.description
 
 
 title : Post e -> String
@@ -71,7 +75,7 @@ mapBody fn (Post (Full body_) post) =
         post
 
 
-author : Post e -> Username
+author : Post e -> UUID
 author (Post e post) =
     post.author
 
@@ -121,7 +125,7 @@ internalsEncoder internals =
     , ( "title", Encode.string internals.title )
     , ( "description", Encode.string internals.description )
     , ( "tags", Encode.list Tag.encode internals.tags )
-    , ( "author", Username.encode internals.author )
+    , ( "author", UUID.encode internals.author )
     , ( "date", Encode.int (Time.posixToMillis internals.date) )
     , ( "favorite", Encode.bool internals.favorite )
     ]
@@ -138,7 +142,7 @@ internalsDecoder =
         |> required "title" Decode.string
         |> required "description" Decode.string
         |> required "tags" (Decode.list Tag.decoder)
-        |> required "author" Username.decoder
+        |> required "author" UUID.decoder
         |> required "date" timeDecoder
         |> required "favorite" Decode.bool
 
@@ -182,7 +186,7 @@ mocks =
             , title = "A future of privacy"
             , description = "I discuss how our current approach to privacy could potentially affect our future decisions"
             , tags = List.filter (\n -> Tag.name n == "privacy") Tag.mocks
-            , author = Username.fromString "parasrah"
+            , author = UUID.fromString "parasrah"
             , date = Time.millisToPosix 1556080183000
             , favorite = False
             }

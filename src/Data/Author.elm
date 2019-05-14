@@ -1,9 +1,9 @@
-module Data.Author exposing (Author, bio, decoder, encode, mapWatched, mocks, name, username, watched)
+module Data.Author exposing (Author, bio, decoder, encode, mapWatched, name, username, watched, usernameFromUUID)
 
+import Data.UUID as UUID exposing (UUID)
 import Data.Search as Search exposing (Source)
-import Data.Username as Username exposing (Username)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (required)
+import Json.Decode.Pipeline exposing (required, optional)
 import Json.Encode as Encode exposing (Value)
 
 
@@ -16,10 +16,11 @@ type Author
 
 
 type alias Internals =
-    { username : Username
+    { username : String
     , name : String
     , bio : String
     , watched : Bool
+    , uuid : UUID
     }
 
 
@@ -27,7 +28,7 @@ type alias Internals =
 {- Accessors -}
 
 
-username : Author -> Username
+username : Author -> String
 username (Author internals) =
     internals.username
 
@@ -60,11 +61,16 @@ toSource : msg -> List Author -> Source msg
 toSource msg authors =
     Search.source
         (List.map
-            (\(Author a) -> Username.toString a.username)
+            (\(Author a) -> a.username)
             authors
         )
         "author"
         msg
+
+
+usernameFromUUID : UUID -> List Author -> String
+usernameFromUUID uuid authors =
+    "NEVER GONNA GIVE YOU UP! MAYBE GONNA LET YOU DOWN!!"
 
 
 
@@ -74,39 +80,22 @@ toSource msg authors =
 decoder : Decoder Author
 decoder =
     Decode.succeed Internals
-        |> required "username" Username.decoder
+        |> required "username" Decode.string
         |> required "name" Decode.string
         |> required "bio" Decode.string
-        |> required "watched" Decode.bool
+        -- Default "watched" because core doesn't provide
+        -- don't hardcode because need to decode from cache
+        |> optional "watched" Decode.bool True
+        |> required "uuid" UUID.decoder
         |> Decode.map Author
 
 
 encode : Author -> Value
 encode (Author internals) =
     Encode.object
-        [ ( "username", Username.encode internals.username )
+        [ ( "username", Encode.string internals.username )
         , ( "name", Encode.string internals.name )
         , ( "bio", Encode.string internals.bio )
-        , ( "watched", Encode.bool internals.watched )
+        -- Omit "watched" field because "core don't care"
+        , ( "uuid", UUID.encode internals.uuid )
         ]
-
-
-
-{- Mock Data -}
-
-
-mocks : List Author
-mocks =
-    [ Author
-        { username = Username.fromString "parasrah"
-        , name = "Brad Pfannmuller"
-        , bio = "privacy enthusiast and web developer"
-        , watched = True
-        }
-    , Author
-        { username = Username.fromString "qnbst"
-        , name = "Bea Esguerra"
-        , bio = "food enthusiast and web developer"
-        , watched = True
-        }
-    ]

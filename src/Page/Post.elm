@@ -4,11 +4,13 @@ import Http
 import Config
 import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
-import Data.Post exposing (Post, Full)
+import Data.Post as Post exposing (Post, Full)
 import Data.Route exposing (Route(..))
 import Data.Session exposing (Session)
 import Data.UUID as UUID exposing (UUID)
 import Data.Theme exposing (Theme)
+import Data.Body as Body exposing (Body)
+import Data.Author as Author exposing (Author)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
@@ -87,11 +89,11 @@ getPost : UUID -> Cmd ModMsg
 getPost uuid =
     let
         path =
-            UUID.toPath "/api/post" uuid
+            UUID.toPath "/post" uuid
     in
     Http.get
         { url = Config.apiUrl ++ path
-        , expect = Http.expectJson GotPost Data.Post.fullDecoder
+        , expect = Http.expectJson GotPost Post.fullDecoder
         }
 -- View --
 
@@ -107,57 +109,52 @@ viewPost session cache internals =
         theme =
             Cache.theme cache
 
-        post =
-            { title = "My Post"
-            , author = "Parasrah"
-            , date = Time.millisToPosix 1550810346641
-            , content = content
-            }
-
-        postStyle =
-            Style.Post.style theme
-
-        name =
-            "post"
     in
-    [ div
-        [ class name ]
-        [ h1
-            [ class "title" ]
-            [ text post.title ]
-        , h2
-            [ class "author" ]
-            [ text post.author ]
-        , Markdown.toHtml name postStyle.content post.content
-        ]
-    ]
+    case internals of
+        Loading ->
+            [ text "loading" ]
 
+        Failure err ->
+            [ text "error" ]
 
-content =
-    """
-# My Content
+        Ready post ->
+            let
+                postStyle =
+                    Style.Post.style theme
 
-This is my content
+                title =
+                    Post.title post
 
-I hope you like it
+                desc =
+                    Post.description post
 
-* In all seriousness though
-* This is clearly not a blog post yet
-* And this is under active development
-* Lorem Ipsum :D
+                authorUUID =
+                    Post.author post
 
-```elm
-view : Model -> Html Msg
-view model =
-    let
-        post =
-            { title = "My Post"
-            , author = "Parasrah"
-            , date = Time.millisToPosix 1550810346641
-            , content = content
-            }
+                body =
+                    Post.body post
 
-    in
-        View.Post.view "dark-post" post Style.Post.darkPostStyle
-```
-    """
+                contents =
+                    Body.toString body
+
+                authors =
+                    Cache.authors cache
+
+                username =
+                    Author.usernameFromUUID authorUUID authors
+
+                className =
+                    "post"
+            in
+            [ div
+                [ class className
+                ]
+                [ h1
+                    [ class "title" ]
+                    [ text title ]
+                , h2
+                    [ class "author" ]
+                    [ text username ]
+                , Markdown.toHtml className postStyle.content contents
+                ]
+            ]
