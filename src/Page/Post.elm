@@ -1,16 +1,20 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
+import Config
+import Data.Author as Author exposing (Author)
+import Data.Body as Body exposing (Body)
 import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
-import Data.Post exposing (Post)
+import Data.Post as Post exposing (Full, Post)
 import Data.Route exposing (Route(..))
 import Data.Session exposing (Session)
-import Data.Slug exposing (Slug)
 import Data.Theme exposing (Theme)
+import Data.UUID as UUID exposing (UUID)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
+import Http
 import Message exposing (Compound(..), Msg(..))
 import Style.Post
 import Time
@@ -26,13 +30,18 @@ type alias Model =
     Page.PageModel Internals
 
 
-type alias Internals =
-    {}
+type Internals
+    = Loading
+    | Ready (Post Full)
+    | Failure Int
 
 
-init : Slug -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init slug =
-    Page.init {} Cmd.none (Post slug)
+init : UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
+init uuid =
+    Page.init
+        Loading
+        (getPost uuid)
+        (Post uuid)
 
 
 fromGeneral : General -> Model -> Model
@@ -54,7 +63,7 @@ type alias Msg =
 
 
 type ModMsg
-    = NoOp
+    = GotPost (Result Http.Error (Post Full))
 
 
 
@@ -69,8 +78,24 @@ update =
 updateMod : ModMsg -> s -> c -> Internals -> ( Internals, Cmd ModMsg )
 updateMod msg _ _ internals =
     case msg of
-        NoOp ->
+        GotPost _ ->
             ( internals, Cmd.none )
+
+
+
+-- Util --
+
+
+getPost : UUID -> Cmd ModMsg
+getPost uuid =
+    let
+        path =
+            UUID.toPath "/post" uuid
+    in
+    Http.get
+        { url = Config.apiUrl ++ path
+        , expect = Http.expectJson GotPost Post.fullDecoder
+        }
 
 
 
@@ -87,58 +112,52 @@ viewPost session cache internals =
     let
         theme =
             Cache.theme cache
-
-        post =
-            { title = "My Post"
-            , author = "Parasrah"
-            , date = Time.millisToPosix 1550810346641
-            , content = content
-            }
-
-        postStyle =
-            Style.Post.style theme
-
-        name =
-            "post"
     in
-    [ div
-        [ class name ]
-        [ h1
-            [ class "title" ]
-            [ text post.title ]
-        , h2
-            [ class "author" ]
-            [ text post.author ]
-        , Markdown.toHtml name postStyle.content post.content
-        ]
-    ]
+    case internals of
+        Loading ->
+            [ text "loading" ]
 
+        Failure err ->
+            [ text "error" ]
 
-content =
-    """
-# My Content
+        Ready post ->
+            let
+                postStyle =
+                    Style.Post.style theme
 
-This is my content
+                title =
+                    Post.title post
 
-I hope you like it
+                desc =
+                    Post.description post
 
-* In all seriousness though
-* This is clearly not a blog post yet
-* And this is under active development
-* Lorem Ipsum :D
+                authorUUID =
+                    Post.author post
 
-```elm
-view : Model -> Html Msg
-view model =
-    let
-        post =
-            { title = "My Post"
-            , author = "Parasrah"
-            , date = Time.millisToPosix 1550810346641
-            , content = content
-            }
+                body =
+                    Post.body post
 
-    in
-        View.Post.view "dark-post" post Style.Post.darkPostStyle
-```
-    """
+                contents =
+                    Body.toString body
+
+                authors =
+                    Cache.authors cache
+
+                username =
+                    Author.usernameFromUUID authorUUID authors
+
+                className =
+                    "post"
+            in
+            [ div
+                [ class className
+                ]
+                [ h1
+                    [ class "title" ]
+                    [ text title ]
+                , h2
+                    [ class "author" ]
+                    [ text username ]
+                , Markdown.toHtml className postStyle.content contents
+                ]
+            ]

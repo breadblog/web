@@ -1,6 +1,6 @@
 module Data.Route exposing (ProblemPage(..), Route(..), fromUrl, toClass, toName, toPath)
 
-import Data.Slug as Slug exposing (Slug)
+import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode
 import Url exposing (Url)
 import Url.Builder exposing (relative)
@@ -10,7 +10,7 @@ import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, to
 type Route
     = NotFound
     | Home
-    | Post Slug
+    | Post UUID
     | Profile
     | About
     | Donate
@@ -34,7 +34,7 @@ urlParser =
         [ Parser.map Home top
 
         -- Posts
-        , Parser.map Post (s "post" </> Slug.urlParser)
+        , Parser.map Post (s "post" </> UUID.urlParser)
 
         -- Info
         , Parser.map About (s "about")
@@ -96,7 +96,7 @@ toName route =
             "Donate"
 
         Post slug ->
-            "Post" ++ Slug.toString slug
+            "Post"
 
         Profile ->
             "Profile"
@@ -130,14 +130,12 @@ toPath route =
         Home ->
             relative [ "/" ] []
 
-        Post slug ->
-            relative [ "/post", Slug.toString slug ] []
+        Post uuid ->
+            relative [ UUID.toPath "/post" uuid ] []
 
         Profile ->
             relative [ "/profile" ] []
 
-        -- Login ->
-        --     relative [ "/login" ] []
         About ->
             relative [ "/about" ] []
 
