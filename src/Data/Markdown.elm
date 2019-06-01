@@ -1,17 +1,26 @@
-module View.Markdown exposing (toHtml)
+module Data.Markdown exposing (Markdown, toHtml)
 
 import Css.Global exposing (Snippet, descendants, global)
 import Html.Attributes
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
-import Markdown
+import Markdown as MD
 
 
-toHtml : String -> List Snippet -> String -> Html msg
-toHtml className styles content =
+type Markdown =
+    Markdown String
+
+
+create : String -> Markdown
+create str =
+    Markdown str
+
+
+toHtml : String -> List Snippet -> Markdown -> Html msg
+toHtml className styles (Markdown content) =
     let
         markdown =
-            Markdown.toHtml
+            MD.toHtml
                 [ Html.Attributes.class (markdownClass className)
                 ]
                 content

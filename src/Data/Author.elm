@@ -1,10 +1,12 @@
-module Data.Author exposing (Author, bio, decoder, encode, mapWatched, name, username, usernameFromUUID, watched)
+module Data.Author exposing (Author, bio, decoder, encode, mapWatched, name, username, usernameFromUUID, watched, uuid)
 
+import Http
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
+import Config
 
 
 
@@ -53,6 +55,10 @@ bio (Author internals) =
     internals.bio
 
 
+uuid : Author -> UUID
+uuid (Author internals) =
+    internals.uuid
+
 
 {- Util -}
 
@@ -68,10 +74,27 @@ toSource msg authors =
         msg
 
 
-usernameFromUUID : UUID -> List Author -> String
-usernameFromUUID uuid authors =
-    "NEVER GONNA GIVE YOU UP! MAYBE GONNA LET YOU DOWN!!"
+usernameFromUUID : UUID -> List Author -> Maybe String
+usernameFromUUID authorUUID authors =
+    let
+        (valid, _) =
+            List.partition (\author ->
+                author
+                    |> uuid
+                    |> UUID.compare authorUUID
+            )
+            authors
 
+        found =
+            List.head valid
+
+    in
+    case found of
+        Just author ->
+            Just <| username author
+
+        Nothing ->
+            Nothing
 
 
 {- JSON -}

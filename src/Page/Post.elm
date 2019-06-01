@@ -32,8 +32,14 @@ type alias Model =
 
 type Internals
     = Loading
-    | Ready (Post Full)
-    | Failure Int
+    | LoadingAuthors (Post Full)
+    | Ready (Post Full) String
+    | Failed Failure
+
+
+type Failure
+    = NoSuchAuthor UUID
+
 
 
 init : UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
@@ -75,11 +81,42 @@ update =
     Page.update updateMod
 
 
-updateMod : ModMsg -> s -> c -> Internals -> ( Internals, Cmd ModMsg )
-updateMod msg _ _ internals =
+updateMod : ModMsg -> Session -> Cache -> Internals -> ( Internals, Cmd ModMsg )
+updateMod msg _ cache internals =
     case msg of
-        GotPost _ ->
-            ( internals, Cmd.none )
+        GotPost post ->
+            let
+                authors =
+                    Cache.authors cache
+
+                maybeUsername =
+                    Author.usernameFromUUID authorUUID authors
+                
+            in
+            case maybeUsername of
+                Just username ->
+                    Ready post username
+
+                Nothing ->
+                    (LoadingAuthors post, )
+
+
+
+            case internals of
+                LoadingAuthors ->
+                    case maybeUsername of
+                        Just username ->
+                            ( Ready post username )
+
+                _ ->
+                    case maybeUsername of
+                        Just username ->
+                            ( Ready post username, Cmd.none )
+
+                        Nothing ->
+                            ( LoadingAuthor post, Cmd.none )
+
+
 
 
 
@@ -112,52 +149,86 @@ viewPost session cache internals =
     let
         theme =
             Cache.theme cache
+
     in
     case internals of
         Loading ->
-            [ text "loading" ]
+            loadingView theme
 
         Failure err ->
-            [ text "error" ]
+            failureView theme
 
         Ready post ->
             let
-                postStyle =
-                    Style.Post.style theme
-
-                title =
-                    Post.title post
-
-                desc =
-                    Post.description post
-
-                authorUUID =
-                    Post.author post
-
-                body =
-                    Post.body post
-
-                contents =
-                    Body.toString body
-
                 authors =
                     Cache.authors cache
 
-                username =
+                maybeUsername =
                     Author.usernameFromUUID authorUUID authors
-
-                className =
-                    "post"
+                    
             in
-            [ div
-                [ class className
-                ]
-                [ h1
-                    [ class "title" ]
-                    [ text title ]
-                , h2
-                    [ class "author" ]
-                    [ text username ]
-                , Markdown.toHtml className postStyle.content contents
-                ]
-            ]
+            case maybeUsername of
+                Just username ->
+
+                Nothing ->
+
+
+
+loadingView : Theme -> List (Html (Compound ModMsg))
+loadingView theme =
+    []
+
+
+failureView : Theme -> List (Html (Compound ModMsg)) 
+failureView theme =
+    []
+
+
+readyView : Session -> Cache -> Internals -> List (Html (Compound ModMsg))
+readyView session cache internals =
+    let
+        postStyle =
+            Style.Post.style theme
+
+        title =
+            Post.title post
+
+        desc =
+            Post.description post
+
+        authorUUID =
+            Post.author post
+
+        body =
+            Post.body post
+
+        contents =
+            Body.toString body
+
+        authors =
+            Cache.authors cache
+
+        maybeUsername =
+
+        className =
+            "post"
+    in
+    case maybeUsername of
+        Just username ->
+
+        Nothing ->
+            -- unable to find matching username, should trigger refresh of 
+    [ div
+        [ class className
+        ]
+        [ h1
+            [ class "title" ]
+            [ text title ]
+        , h2
+            [ class "author" ]
+            [ text username ]
+        , Markdown.toHtml className postStyle.content contents
+        ]
+    ]
+
+

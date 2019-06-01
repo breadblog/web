@@ -2,6 +2,8 @@ module Data.Session exposing (Session, init)
 
 import Browser.Navigation exposing (Key)
 import Data.Author as Author exposing (Author)
+import Data.Problem exposing (Problem)
+import Message exposing (Compound)
 
 
 
@@ -9,13 +11,20 @@ import Data.Author as Author exposing (Author)
    Session
 
    Contains state global to the application that is stored in memory
+--
+--
 -}
 {--Model --}
+
+type Never
+    = Never Never
+
 
 
 type alias Session =
     { user : Maybe Author
     , key : Key
+    , problem : Maybe (Problem (Compound Never))
     }
 
 

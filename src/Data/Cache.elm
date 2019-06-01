@@ -1,5 +1,7 @@
 port module Data.Cache exposing (Cache, Msg(..), authors, init, tags, theme, update, version)
 
+import Http
+import Config
 import Data.Author as Author exposing (Author)
 import Data.Route exposing (ProblemPage(..))
 import Data.Tag as Tag exposing (Tag)
@@ -9,6 +11,7 @@ import Json.Decode as Decode exposing (Decoder, Error(..))
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import Version
+import Data.General exposing (General)
 
 
 type Cache
@@ -35,6 +38,8 @@ type Msg
     = SetTheme Theme
     | ToggleTag Tag
     | ToggleAuthor Author
+    | UpdateAuthors
+    | GotAuthors (Result Http.Error (List Author))
 
 
 
@@ -65,7 +70,7 @@ init flags =
 -- Update --
 
 
-update : Msg -> Cache -> ( Cache, Cmd msg )
+update : Msg -> Cache -> ( General, Cmd msg )
 update msg (Cache oldCache) =
     let
         ( internals, cmd ) =
@@ -84,6 +89,17 @@ update msg (Cache oldCache) =
                     ( { oldCache | authors = toggleAuthorList author oldCache.authors }
                     , Cmd.none
                     )
+
+                UpdateAuthors ->
+                    ( oldCache
+                    , updateAuthors
+                    )
+
+                GotAuthors res ->
+                    case res of
+                        Ok(gotAuthors) ->
+                            -- TODO:
+
 
         newCache =
             Cache internals
@@ -179,8 +195,19 @@ authors (Cache cache) =
     cache.authors
 
 
+-- HTTP --
 
--- Util
+
+updateAuthors : Cmd Msg
+updateAuthors =
+    Http.get
+        { url = Config.apiUrl ++ "/author"
+        , expect = Http.expectJson GotAuthors (Decode.list Author.decoder)
+        }
+
+
+
+-- Util --
 
 
 default : Version -> Internals
@@ -193,7 +220,7 @@ default ver =
 
 
 
--- JSON
+-- JSON --
 
 
 flagsDecoder : Version -> Decoder Internals

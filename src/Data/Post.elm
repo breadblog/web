@@ -85,7 +85,6 @@ date (Post e post) =
     post.date
 
 
-
 {- Util -}
 
 
@@ -102,6 +101,7 @@ toSource msg posts =
 
 
 {- JSON -}
+
 -- Encoders
 
 
