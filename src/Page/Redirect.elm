@@ -15,11 +15,8 @@ import Style.Color as Color
 view : General -> List (Html msg)
 view general =
     let
-        cache =
-            General.cache general
-
         theme =
-            Cache.theme cache
+            General.theme general
     in
     [ main_
         [ css

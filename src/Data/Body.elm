@@ -2,6 +2,7 @@ module Data.Body exposing (Body, decoder, encode, fromString, toString)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
+import Data.Markdown as Markdown exposing (Markdown)
 
 
 
@@ -9,16 +10,12 @@ import Json.Encode as Encode exposing (Value)
 
 
 type Body
-    = Body String
+    = Body Markdown
 
 
 
 {- Accessors -}
 
-
-toString : Body -> String
-toString (Body str) =
-    str
 
 
 
@@ -27,20 +24,11 @@ toString (Body str) =
 
 decoder : Decoder Body
 decoder =
-    Decode.string
+    Markdown.decoder
         |> Decode.andThen
-            (\str -> Decode.succeed (Body str))
+            (\md -> Decode.succeed (Body md))
 
 
 encode : Body -> Value
 encode (Body str) =
     Encode.string str
-
-
-
-{- TODO: remove. Mock Data -}
-
-
-fromString : String -> Body
-fromString str =
-    Body str

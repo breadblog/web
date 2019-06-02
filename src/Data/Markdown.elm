@@ -1,5 +1,7 @@
-module Data.Markdown exposing (Markdown, toHtml, create)
+module Data.Markdown exposing (Markdown, toHtml, create, decoder)
 
+import Json.Encode as Encode exposing (Value)
+import Json.Decode as Decode exposing (Decoder)
 import Css.Global exposing (Snippet, descendants, global)
 import Html.Attributes
 import Html.Styled exposing (..)
@@ -41,3 +43,20 @@ toHtml className styles (Markdown content) =
 markdownClass : String -> String
 markdownClass className =
     className ++ "-markdown"
+
+
+{- JSON -}
+
+
+decoder : Decoder Markdown
+decoder =
+    Decode.string
+        |> Decode.andThen
+            (\str ->
+                Decode.succeed (Markdown str)
+            )
+
+
+encode : Markdown -> Value
+encode (Markdown str) =
+    Encode.string str

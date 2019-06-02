@@ -8,7 +8,15 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound)
-import View.Page as Page
+import View.Page as Page exposing (PageUpdateOutput)
+import Update
+
+
+{-
+    Changelog page
+
+    TODO: Create webpack plugin to transform changelog from "md" to "elm"
+-}
 
 
 
@@ -54,14 +62,17 @@ type ModMsg
 -- Update --
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> PageUpdateOutput ModMsg Internals
 update =
     Page.update updateMod
 
 
-updateMod : msg -> s -> c -> Internals -> ( Internals, Cmd msg )
-updateMod _ _ _ internals =
-    ( internals, Cmd.none )
+updateMod : msg -> General -> Internals -> Update.Output ModMsg Internals
+updateMod _ general internals =
+    { model = internals
+    , general = general
+    , cmd = Cmd.none
+    }
 
 
 
@@ -73,8 +84,8 @@ view model =
     Page.view model viewChangelog
 
 
-viewChangelog : Session -> Cache -> Internals -> List (Html (Compound m))
-viewChangelog _ _ _ =
+viewChangelog : General -> Internals -> List (Html (Compound m))
+viewChangelog _ _ =
     [ main_
         [ css
             [ flexGrow <| num 1 ]

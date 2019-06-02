@@ -1,4 +1,4 @@
-module Data.Problem exposing (Problem, Description(..), create)
+module Data.Problem exposing (Problem, Description(..), create, map)
 
 
 import Http
@@ -49,3 +49,28 @@ create : String -> Description -> Maybe e -> Problem e
 create title_ desc handler_ =
     Problem <|
         Internals title_ desc handler_
+
+
+{- Util -}
+
+
+map : (a -> b) -> List (Problem a) -> List (Problem b)
+map transform problems =
+    List.map (\(Problem problem) ->
+        let
+            reaction_ =
+                case problem.reaction of
+                    Nothing ->
+                        Nothing
+
+                    Just(h) ->
+                        Just <| transform h
+
+        in
+        { title = problem.title
+        , description = problem.description
+        , reaction = reaction_
+        }
+            |> Problem
+    )
+    problems

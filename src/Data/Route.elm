@@ -11,7 +11,6 @@ type Route
     = NotFound
     | Home
     | Post UUID
-    | Profile
     | About
     | Donate
     | Changelog
@@ -98,9 +97,6 @@ toName route =
         Post slug ->
             "Post"
 
-        Profile ->
-            "Profile"
-
         Changelog ->
             "Changelog"
 
@@ -132,9 +128,6 @@ toPath route =
 
         Post uuid ->
             relative [ UUID.toPath "/post" uuid ] []
-
-        Profile ->
-            relative [ "/profile" ] []
 
         About ->
             relative [ "/about" ] []

@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), cache, init)
+port module Data.General exposing (General, Msg(..), cache, init, theme, tags, authors, version, problems, pushProblem)
 
 
 import Http
@@ -301,6 +301,17 @@ authors general =
 user : General -> Maybe Author
 user (General general) =
     general.user
+
+
+problems : General -> List (Problem Msg)
+problems (General general) =
+    general.problems
+
+
+pushProblem : Problem Msg -> General -> General
+pushProblem problem (General general) =
+    { general | problems = problem :: general.problems }
+        |> General
 
 
 

@@ -18,7 +18,6 @@ import Page.Donate
 import Page.Home
 import Page.NotFound
 import Page.Post
-import Page.Profile
 import Page.Redirect
 import Style.Color
 import Style.Font as Font
@@ -30,10 +29,7 @@ import Url exposing (Url)
 -- Model --
 
 
-type alias Model =
-    { problem : ProblemPage
-    , pageModel : PageModel
-    }
+type alias Model = PageModel
 
 
 type PageModel
@@ -43,7 +39,6 @@ type PageModel
     | About Page.About.Model
     | Home Page.Home.Model
     | Post Page.Post.Model
-    | Profile Page.Profile.Model
     | Changelog Page.Changelog.Model
 
 
@@ -58,7 +53,6 @@ type alias Msg =
 type InternalMsg
     = HomeMsg Page.Home.Msg
     | PostMsg Page.Post.Msg
-    | ProfileMsg Page.Profile.Msg
     | DonateMsg Page.Donate.Msg
     | AboutMsg Page.About.Msg
     | ChangelogMsg Page.Changelog.Msg
@@ -79,30 +73,9 @@ init flags url key =
         route =
             Route.fromUrl url
 
-        session =
-            Session.init key
-
-        decoding =
-            Cache.init flags
-
-        cache =
-            case decoding of
-                Ok ( c, _ ) ->
-                    c
-
-                Err ( c, _ ) ->
-                    c
-
         general =
-            General.init session cache
+            General.init key flags
 
-        problem =
-            case decoding of
-                Ok _ ->
-                    None
-
-                Err ( _, p ) ->
-                    p
 
         ( model, cmd ) =
             changeRoute route
@@ -175,9 +148,6 @@ update compound model =
                 ( Post postModel, PostMsg postMsg ) ->
                     updatePage Post PostMsg Page.Post.update postModel postMsg model
 
-                ( Profile profileModel, ProfileMsg profileMsg ) ->
-                    updatePage Profile ProfileMsg Page.Profile.update profileModel profileMsg model
-
                 _ ->
                     -- TODO: Error handling (impossible state)
                     ( model, Cmd.none )
@@ -222,9 +192,6 @@ changeRoute route model =
                 Route.Post uuid ->
                     Page.Post.init uuid general Post (toMsg PostMsg)
 
-                Route.Profile ->
-                    Page.Profile.init general Profile (toMsg ProfileMsg)
-
                 Route.Changelog ->
                     Page.Changelog.init general Changelog (toMsg ChangelogMsg)
     in
@@ -243,9 +210,6 @@ toGeneral page =
 
         Post model ->
             Page.Post.toGeneral model
-
-        Profile model ->
-            Page.Profile.toGeneral model
 
         About model ->
             Page.About.toGeneral model
@@ -271,9 +235,6 @@ fromGeneral general page =
 
         Post model ->
             Post <| Page.Post.fromGeneral general model
-
-        Profile model ->
-            Profile <| Page.Profile.fromGeneral general model
 
         About model ->
             About <| Page.About.fromGeneral general model
@@ -377,11 +338,6 @@ viewPage model =
                     List.map
                         (Html.Styled.map (Message.map PostMsg))
                         (Page.Post.view post)
-
-                Profile profile ->
-                    List.map
-                        (Html.Styled.map (Message.map ProfileMsg))
-                        (Page.Profile.view profile)
 
                 Changelog changelog ->
                     List.map

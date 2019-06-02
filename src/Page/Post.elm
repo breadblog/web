@@ -3,7 +3,7 @@ module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, vie
 import Config
 import Data.Author as Author exposing (Author)
 import Data.Body as Body exposing (Body)
-import Data.General as General exposing (General)
+import Data.General as General exposing (General, Msg(..))
 import Data.Post as Post exposing (Full, Post)
 import Data.Route exposing (Route(..))
 import Data.Theme exposing (Theme)
@@ -17,7 +17,9 @@ import Http
 import Message exposing (Compound(..), Msg(..))
 import Style.Post
 import Time
-import View.Page as Page
+import View.Page as Page exposing (PageUpdateOutput)
+import Update
+import Data.Problem as Problem exposing (Problem, Description(..))
 
 
 
@@ -74,47 +76,57 @@ type ModMsg
 -- Update --
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> PageUpdateOutput ModMsg Internals
 update =
     Page.update updateMod
 
 
-updateMod : ModMsg -> Session -> Cache -> Internals -> ( Internals, Cmd ModMsg )
-updateMod msg _ cache internals =
+updateMod : ModMsg -> General -> Internals -> Update.Output ModMsg Internals
+updateMod msg general internals =
+    let
+        simpleOutput model =
+            { model = model
+            , general = general
+            , cmd = Cmd.none
+            }
+
+    in
     case msg of
-        GotPost post ->
-            let
-                authors =
-                    Cache.authors cache
+        GotPost res ->
+            case res of
+                Ok(post) ->
+                    let
+                        authors =
+                            General.authors general
 
-                maybeUsername =
-                    Author.usernameFromUUID authorUUID authors
-                
-            in
-            case maybeUsername of
-                Just username ->
-                    Ready post username
+                        authorUUID =
+                            Post.author post
 
-                Nothing ->
-                    (LoadingAuthors post, )
-
-
-
-            case internals of
-                LoadingAuthors ->
+                        maybeUsername =
+                            Author.usernameFromUUID authorUUID authors
+                        
+                    in
                     case maybeUsername of
                         Just username ->
-                            ( Ready post username )
-
-                _ ->
-                    case maybeUsername of
-                        Just username ->
-                            ( Ready post username, Cmd.none )
+                            simpleOutput <| Ready post username
 
                         Nothing ->
-                            ( LoadingAuthor post, Cmd.none )
+                            { model = LoadingAuthors post
+                            , cmd = Global <| GeneralMsg <| UpdateAuthors
+                            , general = general
+                            }
 
-
+                Err(err) ->
+                    { model = internals
+                    , cmd = Cmd.none
+                    , general = General.pushProblem
+                        (Problem.create
+                            "No Such Author"
+                            HttpError err
+                            Nothing
+                        )
+                        general
+                    }
 
 
 
@@ -142,34 +154,27 @@ view model =
     Page.view model viewPost
 
 
-viewPost : Session -> Cache -> Internals -> List (Html (Compound ModMsg))
-viewPost session cache internals =
+viewPost : General -> Internals -> List (Html (Compound ModMsg))
+viewPost general internals =
     let
         theme =
-            Cache.theme cache
+            General.theme general
 
     in
     case internals of
         Loading ->
             loadingView theme
 
-        Failure err ->
+        Failed err ->
             failureView theme
 
-        Ready post ->
+        Ready post username ->
             let
                 authors =
-                    Cache.authors cache
+                    General.authors general
 
-                maybeUsername =
-                    Author.usernameFromUUID authorUUID authors
-                    
             in
-            case maybeUsername of
-                Just username ->
-
-                Nothing ->
-
+                readyView general username post
 
 
 loadingView : Theme -> List (Html (Compound ModMsg))
@@ -182,9 +187,12 @@ failureView theme =
     []
 
 
-readyView : Session -> Cache -> Internals -> List (Html (Compound ModMsg))
-readyView session cache internals =
+readyView : General -> String -> Post Full -> List (Html (Compound ModMsg))
+readyView general username post =
     let
+        theme =
+            General.theme general
+
         postStyle =
             Style.Post.style theme
 
@@ -204,18 +212,11 @@ readyView session cache internals =
             Body.toString body
 
         authors =
-            Cache.authors cache
-
-        maybeUsername =
+            General.authors general
 
         className =
             "post"
     in
-    case maybeUsername of
-        Just username ->
-
-        Nothing ->
-            -- unable to find matching username, should trigger refresh of 
     [ div
         [ class className
         ]

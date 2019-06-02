@@ -3,6 +3,7 @@ module View.Header exposing (Model, Msg(..), init, update, view)
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
 import Css.Transitions as Transitions exposing (transition)
+import Data.General as General exposing (General, Msg(..))
 import Data.Author as Author exposing (Author)
 import Data.Route as Route exposing (Route(..))
 import Data.Search as Search exposing (Result, Source)
@@ -19,6 +20,7 @@ import Style.Screen as Screen exposing (Screen(..))
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes
 import View.Svg as Svg
+import Update
 
 
 
@@ -62,7 +64,6 @@ import View.Svg as Svg
    ---------------------------------------
    |                   |
    |   Home            |
-   |   Profile         |
    |   Authors         |
    |   About           |
    |   Donate          |
@@ -106,24 +107,32 @@ type Msg
 -- Update --
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Msg -> General -> Model -> Update.Output Msg Model
+update msg general model =
+    let
+        simpleOutput m =
+            { model = m
+            , cmd = Cmd.none
+            , general = general
+            }
+
+    in
     case msg of
         FocusSearch value ->
-            ( focusSearch value model, Cmd.none )
+            simpleOutput <| focusSearch value model
 
         SetSearchTerm value ->
-            ( { model | searchTerm = value }, Cmd.none )
+            simpleOutput <| { model | searchTerm = value }
 
         ToggleDrawer ->
-            ( { model | drawerOpenOnMobile = not model.drawerOpenOnMobile }, Cmd.none )
+            simpleOutput <| { model | drawerOpenOnMobile = not model.drawerOpenOnMobile }
 
         ToggleSearch ->
             let
                 focusedModel =
                     focusSearch True model
             in
-            ( { focusedModel | searchOpenOnMobile = not model.searchOpenOnMobile }, Cmd.none )
+            simpleOutput <| { focusedModel | searchOpenOnMobile = not model.searchOpenOnMobile }
 
 
 focusSearch : Bool -> Model -> Model
@@ -417,7 +426,7 @@ logo shownScreens theme =
 tagsContent : Theme -> List Tag -> List (Html (Compound Msg))
 tagsContent theme =
     List.map
-        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (Global <| CacheMsg <| ToggleTag t))
+        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (Global <| GeneralMsg <| ToggleTag t))
 
 
 
@@ -427,7 +436,7 @@ tagsContent theme =
 authorsContent : Theme -> List Author -> List (Html (Compound Msg))
 authorsContent theme =
     List.map
-        (\a -> checkboxDropdownItem (Author.username a) theme (Author.watched a) (Global <| CacheMsg <| ToggleAuthor a))
+        (\a -> checkboxDropdownItem (Author.username a) theme (Author.watched a) (Global <| GeneralMsg <| ToggleAuthor a))
 
 
 
@@ -437,7 +446,7 @@ authorsContent theme =
 themeContent : Theme -> List (Html (Compound Msg))
 themeContent theme =
     List.map
-        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (Global <| CacheMsg <| SetTheme t))
+        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (Global <| GeneralMsg <| SetTheme t))
         Theme.all
 
 
