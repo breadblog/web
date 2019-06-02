@@ -1,4 +1,4 @@
-module Data.Markdown exposing (Markdown, toHtml)
+module Data.Markdown exposing (Markdown, toHtml, create)
 
 import Css.Global exposing (Snippet, descendants, global)
 import Html.Attributes

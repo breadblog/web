@@ -3,13 +3,12 @@ module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, vie
 import Config
 import Data.Author as Author exposing (Author)
 import Data.Body as Body exposing (Body)
-import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
 import Data.Post as Post exposing (Full, Post)
 import Data.Route exposing (Route(..))
-import Data.Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Data.UUID as UUID exposing (UUID)
+import Data.Markdown as Markdown exposing (Markdown)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
@@ -18,7 +17,6 @@ import Http
 import Message exposing (Compound(..), Msg(..))
 import Style.Post
 import Time
-import View.Markdown as Markdown
 import View.Page as Page
 
 

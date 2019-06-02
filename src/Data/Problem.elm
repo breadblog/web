@@ -1,6 +1,8 @@
-module Data.Problem exposing (Problem)
+module Data.Problem exposing (Problem, Description(..), create)
 
 
+import Http
+import Json.Decode
 import Data.Markdown exposing (Markdown)
 
 
@@ -8,11 +10,17 @@ type Problem handler
     = Problem (Internals handler)
 
 
+type Description
+    = JsonError Json.Decode.Error
+    | MarkdownError Markdown
+    | HttpError Http.Error
+
+
 type alias Internals handler =
     -- title for the problem
     { title : String
     -- a description of the problem (in markdown)
-    , description : Markdown
+    , description : Description
     -- a possible message to trigger, handling the problem
     , reaction : Maybe handler
     }
@@ -25,7 +33,7 @@ title (Problem internals) =
     internals.title
 
 
-description : Problem e -> Markdown
+description : Problem e -> Description
 description (Problem internals) =
     internals.description
 
@@ -37,7 +45,7 @@ reaction (Problem internals) =
 
 {- Constructors -}
 
-create : String -> Markdown -> Maybe e -> Problem e
+create : String -> Description -> Maybe e -> Problem e
 create title_ desc handler_ =
     Problem <|
         Internals title_ desc handler_

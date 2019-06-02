@@ -1,9 +1,7 @@
 module View.Page exposing (Msg, PageModel, TransformModel, TransformMsg, ViewResult, fromGeneral, init, toGeneral, update, view)
 
-import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
 import Data.Route as Route exposing (Route)
-import Data.Session as Session exposing (Session)
 import Data.Theme as Theme exposing (Theme)
 import Html.Styled exposing (Html, main_)
 import Message exposing (Compound(..))
@@ -31,8 +29,7 @@ type PageModel modModel
 type alias Internals modModel =
     { header : Header.Model
     , footer : Footer.Model
-    , cache : Cache
-    , session : Session
+    , general : General
     , mod : modModel
     }
 
@@ -64,8 +61,7 @@ init modModel modCmd route general transformModel transformMsg =
                 { header = header
                 , footer = footer
                 , mod = modModel
-                , cache = General.cache general
-                , session = General.session general
+                , general = general
                 }
 
         model_ =
@@ -79,7 +75,7 @@ init modModel modCmd route general transformModel transformMsg =
 
 toGeneral : PageModel modModel -> General
 toGeneral (PageModel pageModel) =
-    General.init pageModel.session pageModel.cache
+    pageModel.general
 
 
 fromGeneral : General -> PageModel modModel -> PageModel modModel

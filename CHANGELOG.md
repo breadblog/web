@@ -1,3 +1,23 @@
+## 0.0.12
+
+* Improve error handling
+* Fix post API link
+* Transition from cache/session to general
+* Setup author API link
+
+## 0.0.11
+
+* Setup post API link
+
+## 0.0.10
+
+* Update dependencies
+* Rework Data.*
+
+## 0.0.9
+
+* Update README
+
 ## 0.0.8
 
 * Implement footer

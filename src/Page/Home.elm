@@ -1,11 +1,9 @@
 module Page.Home exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Css exposing (..)
-import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
 import Data.Post as Post exposing (Post, Preview)
 import Data.Route as Route exposing (Route(..))
-import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)

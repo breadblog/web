@@ -3,10 +3,8 @@ module Main exposing (main)
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
 import Css exposing (absolute, px)
-import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
 import Data.Route as Route exposing (ProblemPage(..), Route(..))
-import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme(..))
 import Html
 import Html.Styled exposing (..)
@@ -20,8 +18,6 @@ import Page.Donate
 import Page.Home
 import Page.NotFound
 import Page.Post
-import Page.Problem.CorruptCache
-import Page.Problem.InvalidVersion
 import Page.Profile
 import Page.Redirect
 import Style.Color
