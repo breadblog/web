@@ -12,8 +12,8 @@ import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Svg.Styled.Attributes
-import View.Svg as Svg exposing (Icon)
 import Update
+import View.Svg as Svg exposing (Icon)
 
 
 type alias Profile =
@@ -72,7 +72,6 @@ update msg general model =
             , cmd = Cmd.none
             , general = general
             }
-
     in
     case msg of
         SetPage page ->

@@ -1,8 +1,8 @@
 module Message exposing (Compound(..), Msg(..), map)
 
 import Browser
-import Data.Theme exposing (Theme)
 import Data.General as General exposing (General)
+import Data.Theme exposing (Theme)
 import Html.Styled exposing (Html)
 import Url exposing (Url)
 

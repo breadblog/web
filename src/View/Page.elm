@@ -1,14 +1,14 @@
-module View.Page exposing (Msg, PageModel, TransformModel, TransformMsg, ViewResult, PageUpdateOutput, fromGeneral, init, toGeneral, update, view)
+module View.Page exposing (Msg, PageModel, PageUpdateOutput, TransformModel, TransformMsg, ViewResult, fromGeneral, init, toGeneral, update, view)
 
-import Data.Problem as Problem exposing (Problem)
 import Data.General as General exposing (General)
+import Data.Problem as Problem exposing (Problem)
 import Data.Route as Route exposing (Route)
 import Data.Theme as Theme exposing (Theme)
 import Html.Styled exposing (Html, main_)
 import Message exposing (Compound(..))
+import Update
 import View.Footer as Footer
 import View.Header as Header
-import Update
 
 
 
@@ -119,7 +119,6 @@ update modUpdate pageMsg (PageModel pageModel) =
 
                 cmd =
                     toCompoundPageCmd ModMsg mod.cmd
-
             in
             { model = PageModel { pageModel | mod = mod.model }
             , cmd = cmd
@@ -133,7 +132,6 @@ update modUpdate pageMsg (PageModel pageModel) =
 
                 cmd =
                     toCompoundPageCmd HeaderMsg header.cmd
-
             in
             { model = PageModel { pageModel | header = header.model }
             , cmd = cmd
@@ -147,7 +145,6 @@ update modUpdate pageMsg (PageModel pageModel) =
 
                 cmd =
                     toCompoundPageCmd FooterMsg footer.cmd
-
             in
             { model = PageModel { pageModel | footer = footer.model }
             , cmd = cmd
@@ -155,7 +152,7 @@ update modUpdate pageMsg (PageModel pageModel) =
             }
 
 
-toCompoundPageCmd : (e -> (Msg modMsg)) -> Cmd (Compound e) -> Cmd (Compound (Msg modMsg))
+toCompoundPageCmd : (e -> Msg modMsg) -> Cmd (Compound e) -> Cmd (Compound (Msg modMsg))
 toCompoundPageCmd transform cmd =
     Cmd.map
         (\m ->
@@ -167,6 +164,7 @@ toCompoundPageCmd transform cmd =
                     Mod <| transform msg
         )
         cmd
+
 
 
 -- View --

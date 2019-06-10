@@ -1,19 +1,19 @@
-port module Data.General exposing (General, Msg(..), init, theme, tags, authors, version, problems, pushProblem, updateAuthors, key, update)
+port module Data.General exposing (General, Msg(..), authors, init, key, problems, pushProblem, tags, theme, update, updateAuthors, version)
 
-
-import Http
 import Browser.Navigation exposing (Key)
-import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode exposing (Value)
-import Json.Decode.Pipeline exposing (optional, required)
-import Data.Problem as Problem exposing (Problem, Description(..))
-import Data.Author as Author exposing (Author)
-import Data.Version exposing (Version)
-import Data.Theme as Theme exposing (Theme(..))
-import Data.Tag as Tag exposing (Tag)
-import Data.Markdown as Markdown
 import Config
+import Data.Author as Author exposing (Author)
+import Data.Markdown as Markdown
+import Data.Problem as Problem exposing (Description(..), Problem)
+import Data.Tag as Tag exposing (Tag)
+import Data.Theme as Theme exposing (Theme(..))
+import Data.Version exposing (Version)
+import Http
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline exposing (optional, required)
+import Json.Encode as Encode exposing (Value)
 import Version
+
 
 
 {- Model -}
@@ -48,6 +48,7 @@ type alias CacheFlags =
     }
 
 
+
 {- Constructors -}
 
 
@@ -64,24 +65,24 @@ init key_ flags =
                         Err err ->
                             ( Cache <| defaultCache currentVersion
                             , [ Problem.create
-                                  "Corrupt Cache"
-                                  (JsonError err)
-                                  Nothing
+                                    "Corrupt Cache"
+                                    (JsonError err)
+                                    Nothing
                               ]
                             )
+
                 Nothing ->
                     let
                         errorMsg =
                             """
                             The current version of the application is invalid. This error is safe to ignore, although we'd appreciate if you open an issue.
                             """
-
                     in
                     ( Cache <| defaultCache Data.Version.error
                     , [ Problem.create
-                        "Invalid Version"
-                        (MarkdownError <| Markdown.create errorMsg)
-                        Nothing
+                            "Invalid Version"
+                            (MarkdownError <| Markdown.create errorMsg)
+                            Nothing
                       ]
                     )
 
@@ -92,11 +93,9 @@ init key_ flags =
             , problems = cacheProblems
             }
                 |> General
-
-
     in
     ( general, setCache cache_ )
-        
+
 
 defaultCache : Version -> ICache
 defaultCache currentVersion =
@@ -105,6 +104,7 @@ defaultCache currentVersion =
     , tags = []
     , authors = []
     }
+
 
 
 {- Messages -}
@@ -116,6 +116,7 @@ type Msg
     | ToggleAuthor Author
     | UpdateAuthors
     | GotAuthors (Result Http.Error (List Author))
+
 
 
 {- Update -}
@@ -139,7 +140,6 @@ update msg general =
                     let
                         tags_ =
                             toggleTagList tag iCache.tags
-
                     in
                     updateCache general { iCache | tags = tags_ }
 
@@ -147,7 +147,6 @@ update msg general =
                     let
                         authors_ =
                             toggleAuthorList author iCache.authors
-
                     in
                     updateCache general { iCache | authors = authors_ }
 
@@ -156,33 +155,29 @@ update msg general =
 
                 GotAuthors res ->
                     case res of
-                        Ok(authors_) ->
+                        Ok authors_ ->
                             updateCache general { iCache | authors = authors_ }
 
-
-                        Err(err) ->
+                        Err err ->
                             let
                                 problem =
                                     Problem.create
                                         "Failed to Update Authors"
                                         (HttpError err)
                                         Nothing
-
                             in
                             ( { iGeneral
-                              | problems = problem :: iGeneral.problems
+                                | problems = problem :: iGeneral.problems
                               }
                                 |> General
                             , [ Cmd.none ]
                             )
-
-
-        in
-        ( newGeneral
-        , Cmd.batch
-            <| commands ++
-                [ setCache <| cache newGeneral ]
-        )
+    in
+    ( newGeneral
+    , Cmd.batch <|
+        commands
+            ++ [ setCache <| cache newGeneral ]
+    )
 
 
 updateCache : General -> ICache -> ( General, List (Cmd Msg) )
@@ -193,7 +188,6 @@ updateCache general iCache =
 
         cache_ =
             Cache iCache
-
     in
     ( General { iGeneral | cache = cache_ }
     , [ setCache <| cache_ ]
@@ -232,6 +226,7 @@ toggleAuthorList author =
         )
 
 
+
 {- HTTP -}
 
 
@@ -241,6 +236,7 @@ updateAuthors =
         { url = Config.apiUrl ++ "/author"
         , expect = Http.expectJson GotAuthors (Decode.list Author.decoder)
         }
+
 
 
 {- Ports -}
@@ -254,6 +250,7 @@ setCache c =
     c
         |> encodeCache
         |> setCachePort
+
 
 
 {- Accessors (public) -}
@@ -270,7 +267,6 @@ version general =
         |> cache
         |> cacheInternals
         |> .version
-
 
 
 theme : General -> Theme
@@ -297,7 +293,10 @@ authors general =
         |> .authors
 
 
+
 -- TODO: Change to User type
+
+
 user : General -> Maybe Author
 user (General general) =
     general.user
@@ -326,6 +325,7 @@ key (General internals) =
 cacheInternals : Cache -> ICache
 cacheInternals (Cache iCache) =
     iCache
+
 
 
 {- JSON -}

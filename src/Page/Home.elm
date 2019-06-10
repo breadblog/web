@@ -10,10 +10,10 @@ import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound(..))
 import Style.Color as Color
+import Update
 import View.Footer as Footer
 import View.Header as Header
 import View.Page as Page exposing (PageUpdateOutput)
-import Update
 
 
 
@@ -85,6 +85,7 @@ type alias Msg =
 
 type ModMsg
     = NoOp
+
 
 
 -- Update --

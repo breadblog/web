@@ -4,10 +4,10 @@ import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
 import Css exposing (absolute, px)
 import Data.General as General exposing (General)
+import Data.Markdown as Markdown exposing (Markdown)
+import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme(..))
-import Data.Problem as Problem exposing (Problem, Description(..))
-import Data.Markdown as Markdown exposing (Markdown)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, id)
@@ -20,13 +20,13 @@ import Page.Donate
 import Page.Home
 import Page.NotFound
 import Page.Post
-import Page.Redirect
 import Page.Problems
+import Page.Redirect
 import Style.Color
 import Style.Font as Font
 import Style.Global
-import Url exposing (Url)
 import Update
+import Url exposing (Url)
 
 
 
@@ -78,9 +78,8 @@ init flags url key =
             General.init key flags
 
         -- TODO: do something with cmd
-
     in
-        changeRoute route <| Redirect general
+    changeRoute route <| Redirect general
 
 
 
@@ -125,7 +124,7 @@ update compound model =
                         cmd =
                             Cmd.map (\c -> Global <| GeneralMsg c) generalCmd
                     in
-                        ( updatedModel, cmd )
+                    ( updatedModel, cmd )
 
                 NoOp ->
                     ( model, Cmd.none )
@@ -149,9 +148,8 @@ update compound model =
 
                         updatedGeneral =
                             General.pushProblem problem general
-
                     in
-                    ( fromGeneral updatedGeneral model , Cmd.none )
+                    ( fromGeneral updatedGeneral model, Cmd.none )
 
 
 type alias Update msg model =
@@ -170,7 +168,7 @@ updatePage transformModel transformMsg modUpdate modModel modMsg model =
         updatedModel =
             fromGeneral output.general <| transformModel output.model
     in
-        ( updatedModel, cmd )
+    ( updatedModel, cmd )
 
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
@@ -308,7 +306,6 @@ viewPage model =
 
         numProblems =
             List.length problems
-
     in
     case numProblems of
         -- No problems
@@ -351,6 +348,7 @@ viewPage model =
                 |> Page.Problems.view
                 |> Html.Styled.map (\c -> Global <| GeneralMsg c)
                 |> List.singleton
+
 
 
 -- Program --

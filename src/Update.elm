@@ -1,8 +1,7 @@
 module Update exposing (Output)
 
-
-import Message exposing (Compound)
 import Data.General exposing (General)
+import Message exposing (Compound)
 
 
 type alias Output msg model =

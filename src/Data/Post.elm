@@ -1,7 +1,7 @@
 module Data.Post exposing (Full, Post, Preview, author, body, description, fullDecoder, fullEncoder, previewDecoder, previewEncoder, title)
 
-import Data.Markdown as Markdown exposing (Markdown)
 import Data.Author as Author exposing (Author)
+import Data.Markdown as Markdown exposing (Markdown)
 import Data.Search as Search exposing (Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.UUID as UUID exposing (UUID)
@@ -19,7 +19,8 @@ type Post extra
     = Post extra Internals
 
 
-type alias Body = Markdown
+type alias Body =
+    Markdown
 
 
 type Full
@@ -88,6 +89,7 @@ date (Post e post) =
     post.date
 
 
+
 {- Util -}
 
 
@@ -104,7 +106,6 @@ toSource msg posts =
 
 
 {- JSON -}
-
 -- Encoders
 
 

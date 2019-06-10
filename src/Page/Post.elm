@@ -3,11 +3,12 @@ module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, vie
 import Config
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
+import Data.Markdown as Markdown exposing (Markdown)
 import Data.Post as Post exposing (Full, Post)
+import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Data.UUID as UUID exposing (UUID)
-import Data.Markdown as Markdown exposing (Markdown)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
@@ -16,9 +17,8 @@ import Http
 import Message exposing (Compound(..), Msg(..))
 import Style.Post
 import Time
-import View.Page as Page exposing (PageUpdateOutput)
 import Update
-import Data.Problem as Problem exposing (Problem, Description(..))
+import View.Page as Page exposing (PageUpdateOutput)
 
 
 
@@ -37,7 +37,6 @@ type Internals
 
 type Failure
     = NoSuchAuthor UUID
-
 
 
 init : UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
@@ -87,12 +86,11 @@ updateMod msg general internals =
             , general = general
             , cmd = Cmd.none
             }
-
     in
     case msg of
         GotPost res ->
             case res of
-                Ok(post) ->
+                Ok post ->
                     let
                         authors =
                             General.authors general
@@ -102,7 +100,6 @@ updateMod msg general internals =
 
                         maybeUsername =
                             Author.usernameFromUUID authorUUID authors
-                        
                     in
                     case maybeUsername of
                         Just username ->
@@ -114,16 +111,17 @@ updateMod msg general internals =
                             , general = general
                             }
 
-                Err(err) ->
+                Err err ->
                     { model = internals
                     , cmd = Cmd.none
-                    , general = General.pushProblem
-                        (Problem.create
-                            "No Such Author"
-                            (HttpError err)
-                            Nothing
-                        )
-                        general
+                    , general =
+                        General.pushProblem
+                            (Problem.create
+                                "No Such Author"
+                                (HttpError err)
+                                Nothing
+                            )
+                            general
                     }
 
 
@@ -157,7 +155,6 @@ viewPost general internals =
     let
         theme =
             General.theme general
-
     in
     case internals of
         Loading ->
@@ -170,9 +167,8 @@ viewPost general internals =
             let
                 authors =
                     General.authors general
-
             in
-                readyView general username post
+            readyView general username post
 
 
 loadingView : Theme -> List (Html (Compound ModMsg))
@@ -206,7 +202,6 @@ readyView general username post =
 
         body =
             Post.body post
-
     in
     [ div
         [ class className
@@ -220,5 +215,3 @@ readyView general username post =
         , Markdown.toHtml "body" postStyle.body body
         ]
     ]
-
-

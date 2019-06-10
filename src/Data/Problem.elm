@@ -1,9 +1,8 @@
-module Data.Problem exposing (Problem, Description(..), create, map)
+module Data.Problem exposing (Description(..), Problem, create, map)
 
-
+import Data.Markdown exposing (Markdown)
 import Http
 import Json.Decode
-import Data.Markdown exposing (Markdown)
 
 
 type Problem handler
@@ -19,14 +18,18 @@ type Description
 type alias Internals handler =
     -- title for the problem
     { title : String
+
     -- a description of the problem (in markdown)
     , description : Description
+
     -- a possible message to trigger, handling the problem
     , reaction : Maybe handler
     }
 
 
+
 {- Accessors -}
+
 
 title : Problem e -> String
 title (Problem internals) =
@@ -43,7 +46,9 @@ reaction (Problem internals) =
     internals.reaction
 
 
+
 {- Constructors -}
+
 
 create : String -> Description -> Maybe e -> Problem e
 create title_ desc handler_ =
@@ -51,26 +56,27 @@ create title_ desc handler_ =
         Internals title_ desc handler_
 
 
+
 {- Util -}
 
 
 map : (a -> b) -> List (Problem a) -> List (Problem b)
 map transform problems =
-    List.map (\(Problem problem) ->
-        let
-            reaction_ =
-                case problem.reaction of
-                    Nothing ->
-                        Nothing
+    List.map
+        (\(Problem problem) ->
+            let
+                reaction_ =
+                    case problem.reaction of
+                        Nothing ->
+                            Nothing
 
-                    Just(h) ->
-                        Just <| transform h
-
-        in
-        { title = problem.title
-        , description = problem.description
-        , reaction = reaction_
-        }
-            |> Problem
-    )
-    problems
+                        Just h ->
+                            Just <| transform h
+            in
+            { title = problem.title
+            , description = problem.description
+            , reaction = reaction_
+            }
+                |> Problem
+        )
+        problems

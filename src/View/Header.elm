@@ -3,8 +3,8 @@ module View.Header exposing (Model, Msg(..), init, update, view)
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
 import Css.Transitions as Transitions exposing (transition)
-import Data.General as General exposing (General, Msg(..))
 import Data.Author as Author exposing (Author)
+import Data.General as General exposing (General, Msg(..))
 import Data.Route as Route exposing (Route(..))
 import Data.Search as Search exposing (Result, Source)
 import Data.Tag as Tag exposing (Tag)
@@ -19,8 +19,8 @@ import Style.Font as Font
 import Style.Screen as Screen exposing (Screen(..))
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes
-import View.Svg as Svg
 import Update
+import View.Svg as Svg
 
 
 
@@ -115,7 +115,6 @@ update msg general model =
             , cmd = Cmd.none
             , general = general
             }
-
     in
     case msg of
         FocusSearch value ->
