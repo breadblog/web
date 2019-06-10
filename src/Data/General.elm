@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, init, key, problems, pushProblem, tags, theme, update, updateAuthors, version, flagsDecoder)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, init, key, problems, pushProblem, tags, theme, update, updateAuthors, version)
 
 import Browser.Navigation exposing (Key)
 import Config

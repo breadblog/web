@@ -3,9 +3,9 @@ module Data.GeneralTest exposing (suite)
 import Data.General as General
 import Data.Version as Version exposing (Version)
 import Expect
+import Json.Decode as Decode
 import Json.Encode as Encode
 import Test exposing (..)
-import Json.Decode as Decode
 
 
 suite : Test
@@ -24,7 +24,6 @@ suite =
                                         ]
                                   )
                                 ]
-
                     in
                     case Version.fromString "0.0.1" of
                         Just currentVersion ->
@@ -37,7 +36,6 @@ suite =
 
                         Nothing ->
                             Expect.fail "invalid version"
-
             , test "succeeds with valid JSON" <|
                 \n ->
                     let
