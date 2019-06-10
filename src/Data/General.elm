@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), cache, init, theme, tags, authors, version, problems, pushProblem)
+port module Data.General exposing (General, Msg(..), init, theme, tags, authors, version, problems, pushProblem, updateAuthors, key, update)
 
 
 import Http
@@ -52,7 +52,7 @@ type alias CacheFlags =
 
 
 init : Key -> Value -> ( General, Cmd Msg )
-init key flags =
+init key_ flags =
     let
         ( cache_, cacheProblems ) =
             case Version.current of
@@ -88,7 +88,7 @@ init key flags =
         general =
             { cache = cache_
             , user = Nothing
-            , key = key
+            , key = key_
             , problems = cacheProblems
             }
                 |> General
@@ -312,6 +312,11 @@ pushProblem : Problem Msg -> General -> General
 pushProblem problem (General general) =
     { general | problems = problem :: general.problems }
         |> General
+
+
+key : General -> Key
+key (General internals) =
+    internals.key
 
 
 

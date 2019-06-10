@@ -4,8 +4,10 @@ import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
 import Css exposing (absolute, px)
 import Data.General as General exposing (General)
-import Data.Route as Route exposing (ProblemPage(..), Route(..))
+import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme(..))
+import Data.Problem as Problem exposing (Problem, Description(..))
+import Data.Markdown as Markdown exposing (Markdown)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, id)
@@ -19,20 +21,19 @@ import Page.Home
 import Page.NotFound
 import Page.Post
 import Page.Redirect
+import Page.Problems
 import Style.Color
 import Style.Font as Font
 import Style.Global
 import Url exposing (Url)
+import Update
 
 
 
 -- Model --
 
 
-type alias Model = PageModel
-
-
-type PageModel
+type Model
     = Redirect General
     | NotFound General
     | Donate Page.Donate.Model
@@ -73,27 +74,13 @@ init flags url key =
         route =
             Route.fromUrl url
 
-        general =
+        ( general, cmd ) =
             General.init key flags
 
+        -- TODO: do something with cmd
 
-        ( model, cmd ) =
-            changeRoute route
-                { problem = None
-                , pageModel =
-                    Redirect <|
-                        General.init session cache
-                }
-
-        cmds =
-            case decoding of
-                Ok ( _, c ) ->
-                    [ c, cmd ]
-
-                Err _ ->
-                    [ cmd ]
     in
-    ( { model | problem = problem }, Cmd.batch cmds )
+        changeRoute route <| Redirect general
 
 
 
@@ -104,13 +91,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update compound model =
     let
         general =
-            toGeneral model.pageModel
+            toGeneral model
 
-        session =
-            General.session general
-
-        cache =
-            General.cache general
+        key =
+            General.key general
     in
     case compound of
         Global msg ->
@@ -118,7 +102,7 @@ update compound model =
                 LinkClicked urlRequest ->
                     case urlRequest of
                         Browser.Internal url ->
-                            ( model, Browser.Navigation.pushUrl session.key (Url.toString url) )
+                            ( model, Browser.Navigation.pushUrl key (Url.toString url) )
 
                         Browser.External href ->
                             ( model, Browser.Navigation.load href )
@@ -130,18 +114,24 @@ update compound model =
                     in
                     changeRoute route model
 
-                CacheMsg cacheMsg ->
+                GeneralMsg generalMsg ->
                     let
-                        ( newCache, cmd ) =
-                            Cache.update cacheMsg cache
+                        ( updatedGeneral, generalCmd ) =
+                            General.update generalMsg general
+
+                        updatedModel =
+                            fromGeneral updatedGeneral model
+
+                        cmd =
+                            Cmd.map (\c -> Global <| GeneralMsg c) generalCmd
                     in
-                    ( { model | pageModel = fromGeneral (General.init session newCache) model.pageModel }, cmd )
+                        ( updatedModel, cmd )
 
                 NoOp ->
                     ( model, Cmd.none )
 
         Mod msg ->
-            case ( model.pageModel, msg ) of
+            case ( model, msg ) of
                 ( Home homeModel, HomeMsg homeMsg ) ->
                     updatePage Home HomeMsg Page.Home.update homeModel homeMsg model
 
@@ -150,30 +140,44 @@ update compound model =
 
                 _ ->
                     -- TODO: Error handling (impossible state)
-                    ( model, Cmd.none )
+                    let
+                        problem =
+                            Problem.create
+                                ""
+                                (MarkdownError <| Markdown.create "")
+                                Nothing
+
+                        updatedGeneral =
+                            General.pushProblem problem general
+
+                    in
+                    ( fromGeneral updatedGeneral model , Cmd.none )
 
 
 type alias Update msg model =
-    msg -> model -> ( model, Cmd msg )
+    msg -> model -> Update.Output msg model
 
 
-updatePage : (modModel -> PageModel) -> (modMsg -> InternalMsg) -> Update modMsg modModel -> modModel -> modMsg -> Model -> ( Model, Cmd Msg )
+updatePage : (modModel -> Model) -> (modMsg -> InternalMsg) -> Update modMsg modModel -> modModel -> modMsg -> Model -> ( Model, Cmd Msg )
 updatePage transformModel transformMsg modUpdate modModel modMsg model =
     let
-        ( newModel, modCmd ) =
+        output =
             modUpdate modMsg modModel
 
         cmd =
-            Cmd.map (\m -> Mod <| transformMsg m) modCmd
+            Cmd.map (Message.map transformMsg) output.cmd
+
+        updatedModel =
+            fromGeneral output.general <| transformModel output.model
     in
-    ( { model | pageModel = transformModel newModel }, cmd )
+        ( updatedModel, cmd )
 
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
 changeRoute route model =
     let
         general =
-            toGeneral model.pageModel
+            toGeneral model
 
         ( pageModel, cmd ) =
             case route of
@@ -195,14 +199,10 @@ changeRoute route model =
                 Route.Changelog ->
                     Page.Changelog.init general Changelog (toMsg ChangelogMsg)
     in
-    ( { pageModel = pageModel
-      , problem = None
-      }
-    , cmd
-    )
+    ( pageModel, cmd )
 
 
-toGeneral : PageModel -> General
+toGeneral : Model -> General
 toGeneral page =
     case page of
         Home model ->
@@ -227,7 +227,7 @@ toGeneral page =
             g
 
 
-fromGeneral : General -> PageModel -> PageModel
+fromGeneral : General -> Model -> Model
 fromGeneral general page =
     case page of
         Home model ->
@@ -276,13 +276,10 @@ body : Model -> List (Html Msg)
 body model =
     let
         general =
-            toGeneral model.pageModel
-
-        cache =
-            General.cache general
+            toGeneral model
 
         theme =
-            Cache.theme cache
+            General.theme general
     in
     [ div
         [ id "app"
@@ -302,17 +299,21 @@ body model =
 
 viewPage : Model -> List (Html Msg)
 viewPage model =
-    case model.problem of
-        InvalidVersion ->
-            Page.Problem.InvalidVersion.view <|
-                Page.Problem.InvalidVersion.init
+    let
+        general =
+            toGeneral model
 
-        CorruptCache msg ->
-            Page.Problem.CorruptCache.view <|
-                Page.Problem.CorruptCache.init msg
+        problems =
+            General.problems general
 
-        None ->
-            case model.pageModel of
+        numProblems =
+            List.length problems
+
+    in
+    case numProblems of
+        -- No problems
+        0 ->
+            case model of
                 NotFound notFound ->
                     Page.NotFound.view notFound
 
@@ -344,6 +345,12 @@ viewPage model =
                         (Html.Styled.map (Message.map ChangelogMsg))
                         (Page.Changelog.view changelog)
 
+        -- Problems exist
+        _ ->
+            problems
+                |> Page.Problems.view
+                |> Html.Styled.map (\c -> Global <| GeneralMsg c)
+                |> List.singleton
 
 
 -- Program --

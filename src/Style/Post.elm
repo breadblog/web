@@ -9,7 +9,7 @@ import Style.Font exposing (firaCode)
 type alias PostStyle =
     { title : List Style
     , author : List Style
-    , content : List Snippet
+    , body : List Snippet
     }
 
 
@@ -29,7 +29,7 @@ darkPostStyle =
         []
     , author =
         []
-    , content =
+    , body =
         [ Css.Global.h1
             [ fontSize (rem 1.5)
             ]
@@ -66,6 +66,6 @@ lightPostStyle =
         []
     , author =
         []
-    , content =
+    , body =
         []
     }

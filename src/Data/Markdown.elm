@@ -1,4 +1,4 @@
-module Data.Markdown exposing (Markdown, toHtml, create, decoder)
+module Data.Markdown exposing (Markdown, toHtml, create, decoder, encode)
 
 import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (Decoder)

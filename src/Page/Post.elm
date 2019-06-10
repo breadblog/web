@@ -2,7 +2,6 @@ module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, vie
 
 import Config
 import Data.Author as Author exposing (Author)
-import Data.Body as Body exposing (Body)
 import Data.General as General exposing (General, Msg(..))
 import Data.Post as Post exposing (Full, Post)
 import Data.Route exposing (Route(..))
@@ -34,7 +33,6 @@ type Internals
     = Loading
     | LoadingAuthors (Post Full)
     | Ready (Post Full) String
-    | Failed Failure
 
 
 type Failure
@@ -112,7 +110,7 @@ updateMod msg general internals =
 
                         Nothing ->
                             { model = LoadingAuthors post
-                            , cmd = Global <| GeneralMsg <| UpdateAuthors
+                            , cmd = Cmd.map (\c -> Global <| GeneralMsg <| c) General.updateAuthors
                             , general = general
                             }
 
@@ -122,7 +120,7 @@ updateMod msg general internals =
                     , general = General.pushProblem
                         (Problem.create
                             "No Such Author"
-                            HttpError err
+                            (HttpError err)
                             Nothing
                         )
                         general
@@ -165,8 +163,8 @@ viewPost general internals =
         Loading ->
             loadingView theme
 
-        Failed err ->
-            failureView theme
+        LoadingAuthors _ ->
+            loadingView theme
 
         Ready post username ->
             let
@@ -179,11 +177,6 @@ viewPost general internals =
 
 loadingView : Theme -> List (Html (Compound ModMsg))
 loadingView theme =
-    []
-
-
-failureView : Theme -> List (Html (Compound ModMsg)) 
-failureView theme =
     []
 
 
@@ -205,17 +198,15 @@ readyView general username post =
         authorUUID =
             Post.author post
 
-        body =
-            Post.body post
-
-        contents =
-            Body.toString body
-
         authors =
             General.authors general
 
         className =
             "post"
+
+        body =
+            Post.body post
+
     in
     [ div
         [ class className
@@ -226,7 +217,7 @@ readyView general username post =
         , h2
             [ class "author" ]
             [ text username ]
-        , Markdown.toHtml className postStyle.content contents
+        , Markdown.toHtml "body" postStyle.body body
         ]
     ]
 

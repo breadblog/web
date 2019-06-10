@@ -1,7 +1,7 @@
 module Data.Post exposing (Full, Post, Preview, author, body, description, fullDecoder, fullEncoder, previewDecoder, previewEncoder, title)
 
+import Data.Markdown as Markdown exposing (Markdown)
 import Data.Author as Author exposing (Author)
-import Data.Body as Body exposing (Body)
 import Data.Search as Search exposing (Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.UUID as UUID exposing (UUID)
@@ -17,6 +17,9 @@ import Time
 
 type Post extra
     = Post extra Internals
+
+
+type alias Body = Markdown
 
 
 type Full
@@ -110,7 +113,7 @@ fullEncoder (Post (Full body_) internals) =
     Encode.object <|
         List.append
             (internalsEncoder internals)
-            [ ( "body", Body.encode body_ ) ]
+            [ ( "body", Markdown.encode body_ ) ]
 
 
 previewEncoder : Post Preview -> Value
@@ -166,5 +169,5 @@ previewDecoder =
 fullDecoder : Decoder (Post Full)
 fullDecoder =
     Decode.succeed Post
-        |> required "body" (Decode.map Full Body.decoder)
+        |> required "body" (Decode.map Full Markdown.decoder)
         |> custom internalsDecoder
