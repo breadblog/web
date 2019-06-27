@@ -14,9 +14,9 @@ type Host
     = Host String
 
 
-url : Host -> String -> String
+url : Host -> String -> Url
 url (Host host) path =
-    host ++ path
+    Url <| host ++ path
 
 
 hostFromMode : Mode -> Host

@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, init, key, problems, pushProblem, tags, theme, update, updateAuthors, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, init, key, problems, pushProblem, tags, theme, update, updateAuthors, version, host)
 
 import Browser.Navigation exposing (Key)
 import Data.Author as Author exposing (Author)
@@ -7,7 +7,7 @@ import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
-import Data.Mode as Mode exposing (Mode)
+import Data.Mode as Mode exposing (Mode(..))
 import Data.Config exposing (Config)
 import Http
 import Json.Decode as Decode exposing (Decoder)
@@ -60,19 +60,19 @@ type alias ICache =
 init : Key -> Value -> ( General, Cmd Msg )
 init key_ flags =
     let
-        ( cache_, cacheProblems ) =
+        ( decoded, cacheProblems ) =
             case Version.current of
                 Just currentVersion ->
                     case Decode.decodeValue (flagsDecoder currentVersion) flags of
-                        Ok c ->
-                            ( c, [] )
+                        Ok d ->
+                            ( d, [] )
 
                         Err err ->
-                            ( Cache <| defaultCache currentVersion
+                            ( defaultFlags currentVersion
                             , [ Problem.create
-                                    "Corrupt Cache"
-                                    (JsonError err)
-                                    Nothing
+                                "Corrupt flags"
+                                (JsonError err)
+                                Nothing
                               ]
                             )
 
@@ -83,7 +83,7 @@ init key_ flags =
                             The current version of the application is invalid. This error is safe to ignore, although we'd appreciate if you open an issue.
                             """
                     in
-                    ( Cache <| defaultCache Data.Version.error
+                    ( defaultFlags Data.Version.error
                     , [ Problem.create
                             "Invalid Version"
                             (MarkdownError <| Markdown.create errorMsg)
@@ -92,33 +92,42 @@ init key_ flags =
                     )
 
         general =
-            { cache = cache_
+            { cache = decoded.cache
             , user = Nothing
             , key = key_
             , problems = cacheProblems
+            , config = initConfig decoded
             }
                 |> General
     in
-    ( general, setCache cache_ )
+    ( general, setCache decoded.cache )
 
 
-defaultCache : Version -> ICache
+defaultCache : Version -> Cache
 defaultCache currentVersion =
     { theme = Dark
     , version = currentVersion
     , tags = []
     , authors = []
     }
+        |> Cache
 
 
-config : Flags -> Config
-config flags =
+defaultFlags : Version -> Flags
+defaultFlags version_ =
+    { cache = defaultCache version_
+    , mode = Production
+    }
+
+
+initConfig : Flags -> Config
+initConfig flags =
     let
-        host =
+        host_ =
             Api.hostFromMode flags.mode
 
     in
-    { host = host
+    { host = host_
     }
 
 
@@ -167,7 +176,7 @@ update msg general =
                     updateCache general { iCache | authors = authors_ }
 
                 UpdateAuthors ->
-                    ( general, [ updateAuthors ] )
+                    ( general, [ updateAuthors general ] )
 
                 GotAuthors res ->
                     case res of
@@ -249,7 +258,7 @@ toggleAuthorList author =
 updateAuthors : General -> Cmd Msg
 updateAuthors (General general) =
     Api.get
-        { url = Api.url general.host
+        { url = Api.url general.config.host "author"
         , expect = Http.expectJson GotAuthors (Decode.list Author.decoder)
         }
 
@@ -334,6 +343,11 @@ key (General internals) =
     internals.key
 
 
+host : General -> Host
+host (General internals) =
+    internals.config.host
+
+
 
 {- Accessors (private) -}
 
@@ -350,8 +364,10 @@ cacheInternals (Cache iCache) =
 flagsDecoder : Version -> Decoder Flags
 flagsDecoder currentVersion =
     Decode.succeed Flags
-        |> required "cache" (Decode.oneOf [ cacheDecoder, defaultDecoder currentVersion ])
         |> required "mode" Mode.decoder
+        |> required "cache" (Decode.oneOf [ cacheDecoder, defaultCacheDecoder currentVersion ])
+
+
 
 
 cacheDecoder : Decoder Cache
@@ -368,9 +384,9 @@ cacheDecoder =
         |> Decode.map Cache
 
 
-defaultDecoder : Version -> Decoder Cache
-defaultDecoder currentVersion =
-    Decode.null (Cache (defaultCache currentVersion))
+defaultCacheDecoder : Version -> Decoder Cache
+defaultCacheDecoder currentVersion =
+    Decode.null (defaultCache currentVersion)
 
 
 encodeCache : Cache -> Value

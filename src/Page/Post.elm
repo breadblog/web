@@ -1,6 +1,5 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
-import Config
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
@@ -19,6 +18,7 @@ import Style.Post
 import Time
 import Update
 import View.Page as Page exposing (PageUpdateOutput)
+import Api
 
 
 
@@ -40,11 +40,12 @@ type Failure
 
 
 init : UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init uuid =
+init uuid general =
     Page.init
         Loading
-        (getPost uuid)
+        (getPost general uuid)
         (Post uuid)
+        general
 
 
 fromGeneral : General -> Model -> Model
@@ -107,7 +108,7 @@ updateMod msg general internals =
 
                         Nothing ->
                             { model = LoadingAuthors post
-                            , cmd = Cmd.map (\c -> Global <| GeneralMsg <| c) General.updateAuthors
+                            , cmd = Cmd.map (\c -> Global <| GeneralMsg <| c) (General.updateAuthors general)
                             , general = general
                             }
 
@@ -129,14 +130,17 @@ updateMod msg general internals =
 -- Util --
 
 
-getPost : UUID -> Cmd ModMsg
-getPost uuid =
+getPost : General -> UUID -> Cmd ModMsg
+getPost general uuid =
     let
         path =
-            UUID.toPath "/post" uuid
+            UUID.toPath "post" uuid
+
+        host =
+            General.host general
     in
-    Http.get
-        { url = Config.apiUrl ++ path
+    Api.get
+        { url = Api.url host path
         , expect = Http.expectJson GotPost Post.fullDecoder
         }
 
