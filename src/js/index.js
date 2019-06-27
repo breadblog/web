@@ -14,8 +14,13 @@ const flags = (function () {
     return JSON.parse(localStorage.getItem('elm-cache'))
   }
 
+  function getMode () {
+    return process.env.MODE
+  }
+
   return {
     cache: getCache(),
+    mode: getMode(),
   }
 })()
 

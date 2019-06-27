@@ -1,6 +1,5 @@
 module Data.Author exposing (Author, bio, decoder, encode, mapWatched, name, username, usernameFromUUID, uuid, watched)
 
-import Config
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
 import Http

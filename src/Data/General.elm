@@ -1,18 +1,20 @@
 port module Data.General exposing (General, Msg(..), authors, flagsDecoder, init, key, problems, pushProblem, tags, theme, update, updateAuthors, version)
 
 import Browser.Navigation exposing (Key)
-import Config
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
+import Data.Mode as Mode exposing (Mode)
+import Data.Config exposing (Config)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import Version
+import Api exposing (Host, Url)
 
 
 
@@ -23,11 +25,18 @@ type General
     = General IGeneral
 
 
+type alias Flags =
+    { mode : Mode
+    , cache : Cache
+    }
+
+
 type alias IGeneral =
     { cache : Cache
     , user : Maybe Author
     , key : Key
     , problems : List (Problem Msg)
+    , config : Config
     }
 
 
@@ -42,10 +51,6 @@ type alias ICache =
     , authors : List Author
     }
 
-
-type alias CacheFlags =
-    { cache : Cache
-    }
 
 
 
@@ -103,6 +108,17 @@ defaultCache currentVersion =
     , version = currentVersion
     , tags = []
     , authors = []
+    }
+
+
+config : Flags -> Config
+config flags =
+    let
+        host =
+            Api.hostFromMode flags.mode
+
+    in
+    { host = host
     }
 
 
@@ -230,10 +246,10 @@ toggleAuthorList author =
 {- HTTP -}
 
 
-updateAuthors : Cmd Msg
-updateAuthors =
-    Http.get
-        { url = Config.apiUrl ++ "/author"
+updateAuthors : General -> Cmd Msg
+updateAuthors (General general) =
+    Api.get
+        { url = Api.url general.host
         , expect = Http.expectJson GotAuthors (Decode.list Author.decoder)
         }
 
@@ -331,11 +347,11 @@ cacheInternals (Cache iCache) =
 {- JSON -}
 
 
-flagsDecoder : Version -> Decoder Cache
+flagsDecoder : Version -> Decoder Flags
 flagsDecoder currentVersion =
-    Decode.succeed CacheFlags
+    Decode.succeed Flags
         |> required "cache" (Decode.oneOf [ cacheDecoder, defaultDecoder currentVersion ])
-        |> Decode.map .cache
+        |> required "mode" Mode.decoder
 
 
 cacheDecoder : Decoder Cache
