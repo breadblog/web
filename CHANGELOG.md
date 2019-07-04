@@ -1,3 +1,7 @@
+## 0.0.13
+
+* Fix author properties being overwritten
+
 ## 0.0.12
 
 * Improve error handling

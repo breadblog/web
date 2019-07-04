@@ -1,4 +1,4 @@
-module Data.Author exposing (Author, bio, decoder, encode, mapWatched, name, username, usernameFromUUID, uuid, watched, compare, mergeFromApi)
+module Data.Author exposing (Author, bio, compare, decoder, encode, mapWatched, mergeFromApi, name, username, usernameFromUUID, uuid, watched)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -100,7 +100,6 @@ usernameFromUUID authorUUID authors =
 compare : Author -> Author -> Bool
 compare (Author a) (Author b) =
     a.uuid == b.uuid
-
 
 
 mergeFromApi : Author -> Author -> Author

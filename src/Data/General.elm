@@ -12,11 +12,11 @@ import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
-import Util
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
+import Util
 import Version
 
 
@@ -207,7 +207,7 @@ update msg general =
 
                 GotAuthors res ->
                     case updateFromApi "authors" Author.compare Author.mergeFromApi res temp.authors of
-                        Ok (maybeUpdatedList, updatedTemp) ->
+                        Ok ( maybeUpdatedList, updatedTemp ) ->
                             case maybeUpdatedList of
                                 Just updatedList ->
                                     updateCache (updateTemp general { temp | authors = updatedTemp }) { iCache | authors = updatedList }
@@ -265,7 +265,7 @@ updateTemp general temp =
     General { internals | temp = temp }
 
 
-updateFromApi : String -> (t -> t -> Bool) -> (t -> t -> t) -> Result Http.Error (List t) -> List t -> Result (Problem Msg) (Maybe (List t), List t)
+updateFromApi : String -> (t -> t -> Bool) -> (t -> t -> t) -> Result Http.Error (List t) -> List t -> Result (Problem Msg) ( Maybe (List t), List t )
 updateFromApi name compare transform res fromTemp =
     case res of
         Ok fromApi ->
@@ -281,7 +281,6 @@ updateFromApi name compare transform res fromTemp =
 
                     updatedTemp =
                         []
-
                 in
                 Ok ( updatedList, updatedTemp )
 
@@ -292,7 +291,6 @@ updateFromApi name compare transform res fromTemp =
 
                     updatedList =
                         Nothing
-
                 in
                 Ok ( updatedList, updatedTemp )
 
