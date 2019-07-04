@@ -12,6 +12,7 @@ import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
+import Util
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
@@ -205,50 +206,17 @@ update msg general =
                     ( general, updateAuthors general )
 
                 GotAuthors res ->
-                    case res of
-                        Ok authors_ ->
-                            if List.isEmpty authors_ then
-                                {-
-                                   FIXME: can't just overwrite existing authors, might
-                                   have properties set by the user (such as "watched")
+                    case updateFromApi "authors" Author.compare Author.mergeFromApi res temp.authors of
+                        Ok (maybeUpdatedList, updatedTemp) ->
+                            case maybeUpdatedList of
+                                Just updatedList ->
+                                    updateCache (updateTemp general { temp | authors = updatedTemp }) { iCache | authors = updatedList }
 
-                                   should merge instead using some form of JOIN that
-                                   takes some properties from right, and some from
-                                   left
-                                -}
-                                let
-                                    ( updatedCacheModel, cacheCmd ) =
-                                        updateCache general { iCache | authors = temp.authors }
+                                Nothing ->
+                                    ( updateTemp general { temp | authors = updatedTemp }, Cmd.none )
 
-                                    ( updatedModel, tempCmd ) =
-                                        updateTemp updatedCacheModel { temp | authors = [] }
-                                in
-                                ( updatedModel, Cmd.batch [ cacheCmd, tempCmd ] )
-
-                            else
-                                let
-                                    ( model, tempCmd ) =
-                                        updateTemp general { temp | authors = temp.authors ++ authors_ }
-
-                                    offset =
-                                        toOffset authors_
-
-                                    triggerUpdateCmd =
-                                        updateAuthorsAt general <| offset + 1
-                                in
-                                ( model, Cmd.batch [ triggerUpdateCmd, tempCmd ] )
-
-                        Err err ->
-                            let
-                                problem =
-                                    Problem.create
-                                        "Failed to Update Authors"
-                                        (HttpError err)
-                                        Nothing
-                            in
-                            ( { internals
-                                | problems = problem :: internals.problems
-                              }
+                        Err problem ->
+                            ( { internals | problems = problem :: internals.problems }
                                 |> General
                             , Cmd.none
                             )
@@ -288,15 +256,52 @@ updateCache general iCache =
     )
 
 
-updateTemp : General -> Temp -> ( General, Cmd Msg )
+updateTemp : General -> Temp -> General
 updateTemp general temp =
     let
         (General internals) =
             general
     in
-    ( General { internals | temp = temp }
-    , Cmd.none
-    )
+    General { internals | temp = temp }
+
+
+updateFromApi : String -> (t -> t -> Bool) -> (t -> t -> t) -> Result Http.Error (List t) -> List t -> Result (Problem Msg) (Maybe (List t), List t)
+updateFromApi name compare transform res fromTemp =
+    case res of
+        Ok fromApi ->
+            if List.isEmpty fromApi then
+                let
+                    updatedList =
+                        Just <|
+                            Util.joinLeftWith
+                                transform
+                                compare
+                                fromApi
+                                fromTemp
+
+                    updatedTemp =
+                        []
+
+                in
+                Ok ( updatedList, updatedTemp )
+
+            else
+                let
+                    updatedTemp =
+                        fromTemp ++ fromApi
+
+                    updatedList =
+                        Nothing
+
+                in
+                Ok ( updatedList, updatedTemp )
+
+        Err err ->
+            Err <|
+                Problem.create
+                    ("Failed to update " ++ name)
+                    (HttpError err)
+                    Nothing
 
 
 toggleTagList : Tag -> List Tag -> List Tag
