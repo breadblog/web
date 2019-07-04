@@ -686,7 +686,10 @@ checkboxDropdownItem name theme value msg =
         [ class "dropdown-item"
         , css
             [ paddingLeft <| px 10
-            , Css.height <| px 50
+            -- fix for brave browser (for some reason "height"
+            -- doesn't seem to work)
+            , maxHeight <| px 50
+            , minHeight <| px 50
             , displayFlex
             , flex2 (num 0) (num 0)
             , alignItems center
