@@ -1,13 +1,12 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
-import Config
+import Api
 import Data.Author as Author exposing (Author)
-import Data.Body as Body exposing (Body)
-import Data.Cache as Cache exposing (Cache)
-import Data.General as General exposing (General)
+import Data.General as General exposing (General, Msg(..))
+import Data.Markdown as Markdown exposing (Markdown)
 import Data.Post as Post exposing (Full, Post)
+import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route exposing (Route(..))
-import Data.Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Data.UUID as UUID exposing (UUID)
 import Html
@@ -18,8 +17,8 @@ import Http
 import Message exposing (Compound(..), Msg(..))
 import Style.Post
 import Time
-import View.Markdown as Markdown
-import View.Page as Page
+import Update
+import View.Page as Page exposing (PageUpdateOutput)
 
 
 
@@ -32,16 +31,21 @@ type alias Model =
 
 type Internals
     = Loading
-    | Ready (Post Full)
-    | Failure Int
+    | LoadingAuthors (Post Full)
+    | Ready (Post Full) String
+
+
+type Failure
+    = NoSuchAuthor UUID
 
 
 init : UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init uuid =
+init uuid general =
     Page.init
         Loading
-        (getPost uuid)
+        (getPost general uuid)
         (Post uuid)
+        general
 
 
 fromGeneral : General -> Model -> Model
@@ -70,30 +74,76 @@ type ModMsg
 -- Update --
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> PageUpdateOutput ModMsg Internals
 update =
     Page.update updateMod
 
 
-updateMod : ModMsg -> s -> c -> Internals -> ( Internals, Cmd ModMsg )
-updateMod msg _ _ internals =
+updateMod : ModMsg -> General -> Internals -> Update.Output ModMsg Internals
+updateMod msg general internals =
+    let
+        simpleOutput model =
+            { model = model
+            , general = general
+            , cmd = Cmd.none
+            }
+    in
     case msg of
-        GotPost _ ->
-            ( internals, Cmd.none )
+        GotPost res ->
+            case res of
+                Ok post ->
+                    let
+                        authors =
+                            General.authors general
+
+                        authorUUID =
+                            Post.author post
+
+                        maybeUsername =
+                            Author.usernameFromUUID authorUUID authors
+                    in
+                    case maybeUsername of
+                        Just username ->
+                            simpleOutput <| Ready post username
+
+                        Nothing ->
+                            { model = LoadingAuthors post
+                            , cmd =
+                                Cmd.map
+                                    (\c -> Global <| GeneralMsg <| c)
+                                    (General.updateAuthors general)
+                            , general = general
+                            }
+
+                Err err ->
+                    { model = internals
+                    , cmd = Cmd.none
+                    , general =
+                        General.pushProblem
+                            (Problem.create
+                                "No Such Author"
+                                (HttpError err)
+                                Nothing
+                            )
+                            general
+                    }
 
 
 
 -- Util --
 
 
-getPost : UUID -> Cmd ModMsg
-getPost uuid =
+getPost : General -> UUID -> Cmd ModMsg
+getPost general uuid =
     let
         path =
-            UUID.toPath "/post" uuid
+            UUID.toPath "/post/public" uuid
+
+        host =
+            General.host general
     in
-    Http.get
-        { url = Config.apiUrl ++ path
+    Api.get
+        { url = Api.url host path
         , expect = Http.expectJson GotPost Post.fullDecoder
         }
 
@@ -107,57 +157,68 @@ view model =
     Page.view model viewPost
 
 
-viewPost : Session -> Cache -> Internals -> List (Html (Compound ModMsg))
-viewPost session cache internals =
+viewPost : General -> Internals -> List (Html (Compound ModMsg))
+viewPost general internals =
     let
         theme =
-            Cache.theme cache
+            General.theme general
     in
     case internals of
         Loading ->
-            [ text "loading" ]
+            loadingView theme
 
-        Failure err ->
-            [ text "error" ]
+        LoadingAuthors _ ->
+            loadingView theme
 
-        Ready post ->
+        Ready post username ->
             let
-                postStyle =
-                    Style.Post.style theme
-
-                title =
-                    Post.title post
-
-                desc =
-                    Post.description post
-
-                authorUUID =
-                    Post.author post
-
-                body =
-                    Post.body post
-
-                contents =
-                    Body.toString body
-
                 authors =
-                    Cache.authors cache
-
-                username =
-                    Author.usernameFromUUID authorUUID authors
-
-                className =
-                    "post"
+                    General.authors general
             in
-            [ div
-                [ class className
-                ]
-                [ h1
-                    [ class "title" ]
-                    [ text title ]
-                , h2
-                    [ class "author" ]
-                    [ text username ]
-                , Markdown.toHtml className postStyle.content contents
-                ]
-            ]
+            readyView general username post
+
+
+loadingView : Theme -> List (Html (Compound ModMsg))
+loadingView theme =
+    []
+
+
+readyView : General -> String -> Post Full -> List (Html (Compound ModMsg))
+readyView general username post =
+    let
+        theme =
+            General.theme general
+
+        postStyle =
+            Style.Post.style theme
+
+        title =
+            Post.title post
+
+        desc =
+            Post.description post
+
+        authorUUID =
+            Post.author post
+
+        authors =
+            General.authors general
+
+        className =
+            "post"
+
+        body =
+            Post.body post
+    in
+    [ div
+        [ class className
+        ]
+        [ h1
+            [ class "title" ]
+            [ text title ]
+        , h2
+            [ class "author" ]
+            [ text username ]
+        , Markdown.toHtml "body" postStyle.body body
+        ]
+    ]

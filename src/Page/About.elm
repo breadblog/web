@@ -1,16 +1,15 @@
 module Page.About exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Css exposing (..)
-import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
 import Data.Route as Route exposing (Route(..))
-import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound)
-import View.Page as Page
+import Update
+import View.Page as Page exposing (PageUpdateOutput)
 
 
 
@@ -56,14 +55,17 @@ type ModMsg
 -- Update --
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> PageUpdateOutput ModMsg Internals
 update =
     Page.update updateMod
 
 
-updateMod : msg -> s -> c -> Internals -> ( Internals, Cmd msg )
-updateMod _ _ _ internals =
-    ( internals, Cmd.none )
+updateMod : msg -> General -> Internals -> Update.Output ModMsg Internals
+updateMod _ general internals =
+    { model = internals
+    , general = general
+    , cmd = Cmd.none
+    }
 
 
 
@@ -75,6 +77,6 @@ view model =
     Page.view model viewAbout
 
 
-viewAbout : Session -> Cache -> Internals -> List (Html (Compound m))
-viewAbout _ _ _ =
+viewAbout : General -> Internals -> List (Html (Compound m))
+viewAbout _ _ =
     []

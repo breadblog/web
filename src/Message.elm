@@ -1,7 +1,7 @@
 module Message exposing (Compound(..), Msg(..), map)
 
 import Browser
-import Data.Cache as Cache
+import Data.General as General exposing (General)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (Html)
 import Url exposing (Url)
@@ -20,7 +20,7 @@ import Url exposing (Url)
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url
-    | CacheMsg Cache.Msg
+    | GeneralMsg General.Msg
     | NoOp
 
 

@@ -1,20 +1,19 @@
 module Page.Home exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Css exposing (..)
-import Data.Cache as Cache exposing (Cache)
 import Data.General as General exposing (General)
 import Data.Post as Post exposing (Post, Preview)
 import Data.Route as Route exposing (Route(..))
-import Data.Session as Session exposing (Session)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound(..))
 import Style.Color as Color
+import Update
 import View.Footer as Footer
 import View.Header as Header
-import View.Page as Page
+import View.Page as Page exposing (PageUpdateOutput)
 
 
 
@@ -92,16 +91,19 @@ type ModMsg
 -- Update --
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> PageUpdateOutput ModMsg Internals
 update =
     Page.update updateMod
 
 
-updateMod : ModMsg -> s -> c -> Internals -> ( Internals, Cmd ModMsg )
-updateMod msg _ _ internals =
+updateMod : ModMsg -> General -> Internals -> Update.Output ModMsg Internals
+updateMod msg general internals =
     case msg of
         NoOp ->
-            ( internals, Cmd.none )
+            { model = internals
+            , cmd = Cmd.none
+            , general = general
+            }
 
 
 
@@ -113,15 +115,15 @@ view model =
     Page.view model viewHome
 
 
-viewHome : Session -> Cache -> Internals -> List (Html (Compound ModMsg))
-viewHome _ cache internals =
+viewHome : General -> Internals -> List (Html (Compound ModMsg))
+viewHome general internals =
     let
         new =
             { posts = internals.posts
             }
 
         theme =
-            Cache.theme cache
+            General.theme general
     in
     [ main_
         [ css

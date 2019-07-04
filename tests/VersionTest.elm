@@ -14,7 +14,7 @@ suite =
                 \n ->
                     case Version.current of
                         Nothing ->
-                            Expect.fail ""
+                            Expect.fail "the current version is invalid"
 
                         Just v ->
                             Expect.pass

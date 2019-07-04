@@ -4,6 +4,7 @@ const HtmlPlugin = require('html-webpack-plugin')
 const ExtractCssPlugin = require('mini-css-extract-plugin')
 const CleanPlugin = require('clean-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
+const { DefinePlugin } = require('webpack')
 
 const {
   src,
@@ -135,6 +136,14 @@ if (build() === 'dev') {
         filename: '[name].css',
         chunkFilename: '[id].css',
       }])
+      .end()
+    .plugin('define')
+      .use(DefinePlugin, [{
+        'process.env': {
+          MODE: JSON.stringify('development'),
+        },
+      }])
+      .end()
 }
 
 // Production
@@ -162,6 +171,13 @@ if (build() === 'prod') {
       .use(ExtractCssPlugin, [{
         filename: '[name].[hash].css',
         chunkFilename: '[id].[hash].css',
+      }])
+      .end()
+    .plugin('define')
+      .use(DefinePlugin, [{
+        'process.env': {
+          MODE: JSON.stringify('production'),
+        },
       }])
       .end()
 }

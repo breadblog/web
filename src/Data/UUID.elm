@@ -1,4 +1,4 @@
-module Data.UUID exposing (UUID, decoder, encode, fromString, toPath, urlParser)
+module Data.UUID exposing (UUID, compare, decoder, encode, fromString, toPath, urlParser)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -22,6 +22,15 @@ import Url.Parser exposing (Parser)
 
 type UUID
     = UUID String
+
+
+
+{- Util -}
+
+
+compare : UUID -> UUID -> Bool
+compare (UUID a) (UUID b) =
+    a == b
 
 
 

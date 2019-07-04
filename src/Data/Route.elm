@@ -1,4 +1,4 @@
-module Data.Route exposing (ProblemPage(..), Route(..), fromUrl, toClass, toName, toPath)
+module Data.Route exposing (Route(..), fromUrl, toClass, toName, toPath)
 
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode
@@ -11,16 +11,9 @@ type Route
     = NotFound
     | Home
     | Post UUID
-    | Profile
     | About
     | Donate
     | Changelog
-
-
-type ProblemPage
-    = None
-    | CorruptCache Decode.Error
-    | InvalidVersion
 
 
 
@@ -40,8 +33,6 @@ urlParser =
         , Parser.map About (s "about")
         , Parser.map Donate (s "donate")
         , Parser.map Changelog (s "changelog")
-
-        -- ErrorPages
         ]
 
 
@@ -98,9 +89,6 @@ toName route =
         Post slug ->
             "Post"
 
-        Profile ->
-            "Profile"
-
         Changelog ->
             "Changelog"
 
@@ -132,9 +120,6 @@ toPath route =
 
         Post uuid ->
             relative [ UUID.toPath "/post" uuid ] []
-
-        Profile ->
-            relative [ "/profile" ] []
 
         About ->
             relative [ "/about" ] []

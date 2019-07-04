@@ -2,6 +2,7 @@ module View.Footer exposing (Model, Msg, init, update, view)
 
 import Css exposing (..)
 import Css.Transitions as Transitions exposing (transition)
+import Data.General as General exposing (General)
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Data.Version exposing (Version)
@@ -11,6 +12,7 @@ import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Svg.Styled.Attributes
+import Update
 import View.Svg as Svg exposing (Icon)
 
 
@@ -62,11 +64,18 @@ type Msg
 -- Update --
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Msg -> General -> Model -> Update.Output Msg Model
+update msg general model =
+    let
+        simpleOutput m =
+            { model = m
+            , cmd = Cmd.none
+            , general = general
+            }
+    in
     case msg of
         SetPage page ->
-            ( { model | page = page }, Cmd.none )
+            simpleOutput { model | page = page }
 
 
 
