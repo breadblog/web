@@ -3,7 +3,8 @@
 * Improve error handling
 * Fix post API link
 * Transition from cache/session to general
-* Setup author API link
+* Setup author API link & endpoint pagination
+* Setup config for development with local instance of core
 
 ## 0.0.11
 

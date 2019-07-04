@@ -8,6 +8,11 @@ import '@font/montserrat'
 
 const { localStorage } = window
 
+function getNetwork () {
+  return window.navigator.onLine
+}
+
+
 // -- Flags
 const flags = (function () {
   function getCache () {
@@ -21,6 +26,7 @@ const flags = (function () {
   return {
     cache: getCache(),
     mode: getMode(),
+    network: getNetwork(),
   }
 })()
 
@@ -30,11 +36,21 @@ const app = Elm.Main.init({
   flags,
 })
 
-// -- Ports
+// -- Port subscriptions
 ;(function () {
-  app.ports.setCache.subscribe(function (data) {
+  app.ports.setCachePort.subscribe(function (data) {
     localStorage.setItem('elm-cache', JSON.stringify(data))
   })
+})()
+
+// -- Port updates
+;(function () {
+  function onNetworkChange () {
+    app.ports.setNetworkPort.send(getNetwork())
+  }
+
+  window.addEventListener('online', onNetworkChange)
+  window.addEventListener('offline', onNetworkChange)
 })()
 
 // -- Highlight

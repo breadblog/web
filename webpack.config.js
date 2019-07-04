@@ -139,7 +139,9 @@ if (build() === 'dev') {
       .end()
     .plugin('define')
       .use(DefinePlugin, [{
-        MODE: 'development',
+        'process.env': {
+          MODE: JSON.stringify('development'),
+        },
       }])
       .end()
 }
@@ -173,7 +175,9 @@ if (build() === 'prod') {
       .end()
     .plugin('define')
       .use(DefinePlugin, [{
-        MODE: 'production',
+        'process.env': {
+          MODE: JSON.stringify('production'),
+        },
       }])
       .end()
 }

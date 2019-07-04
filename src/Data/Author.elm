@@ -120,7 +120,6 @@ encode (Author internals) =
         [ ( "username", Encode.string internals.username )
         , ( "name", Encode.string internals.name )
         , ( "bio", Encode.string internals.bio )
-
-        -- Omit "watched" field because "core don't care"
+        , ( "watched", Encode.bool internals.watched )
         , ( "uuid", UUID.encode internals.uuid )
         ]

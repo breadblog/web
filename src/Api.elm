@@ -1,46 +1,104 @@
-module Api exposing (Url, Host, url, get, put, delete, post, hostFromMode)
+module Api exposing (Url, url, get, put, delete, post)
 
 
-import Http exposing (Expect)
+import Http exposing (Expect, Header)
 import Json.Encode exposing (Value)
 import Data.Mode exposing (Mode(..))
 
 
 type Url
-    = Url String
+    = Url Internals
 
 
-type Host
-    = Host String
+type alias Internals =
+    { mode : Mode
+    , path : String
+    }
 
 
-url : Host -> String -> Url
-url (Host host) path =
-    Url <| host ++ path
+url : Mode -> String -> Url
+url mode path =
+    Url <| Internals mode path
 
 
-hostFromMode : Mode -> Host
-hostFromMode mode =
-    case mode of
+urlToString : Url -> String
+urlToString (Url internals) =
+    let
+        host =
+            case internals.mode of
+                Development ->
+                    "http://localhost:9081"
+
+                Production ->
+                    "https://api.parasrah.com:9091"
+
+        path =
+            internals.path
+                |> ensureRightSlash
+                |> ensureLeftSlash
+
+    in
+    host ++ path
+
+
+-- FIXME: very simplistic, will not work for urls containing \?
+ensureRightSlash : String -> String
+ensureRightSlash path =
+    let
+        containsQuery =
+            String.contains "?" path
+
+        missingSlash =
+            if containsQuery then
+                path
+                    |> String.contains "/?"
+                    |> not
+
+            else
+                path
+                    |> String.left 1
+                    |> (/=) "/"
+
+    in
+    if missingSlash then
+        if containsQuery then
+            path
+                |> String.replace "?" "/?"
+        
+        else
+            path ++ "/"
+
+    else
+        path
+
+
+ensureLeftSlash : String -> String
+ensureLeftSlash path =
+    case String.left 1 path of
+        "/" ->
+            path
+
+        _ ->
+            "/" ++ path
+
+
+urlToHeaders : Url -> List Header
+urlToHeaders (Url internals) =
+    case internals.mode of
         Development ->
-            Host "http://127.0.0.1:9081/"
+            -- [ Http.header "Referrer-Policy" "origin-when-cross-origin" ]
+            []
 
         Production ->
-            Host "https://api.parasrah.com:9091/"
-
+            []
 
 
 get : { expect : Expect msg, url : Url } -> Cmd msg
 get args =
-    let
-        (Url url_) =
-            args.url
-
-    in
     Http.request
         { method = "GET"
-        , headers = []
-        , url = url_
+        , headers = urlToHeaders args.url
+        , url = urlToString args.url
         , body = Http.emptyBody
         , expect = args.expect
         , timeout = Nothing
@@ -50,15 +108,10 @@ get args =
 
 put : { expect : Expect msg, body : Value, url : Url } -> Cmd msg
 put args =
-    let
-        (Url url_) =
-            args.url
-
-    in
     Http.request
         { method = "PUT"
-        , headers = []
-        , url = url_
+        , headers = urlToHeaders args.url
+        , url = urlToString args.url
         , body = Http.jsonBody args.body
         , expect = args.expect
         , timeout = Nothing
@@ -68,15 +121,10 @@ put args =
 
 post : { expect : Expect msg, body : Value, url : Url } -> Cmd msg
 post args =
-    let
-        (Url url_) =
-            args.url
-
-    in
     Http.request
         { method = "POST"
-        , headers = []
-        , url = url_
+        , headers = urlToHeaders args.url
+        , url = urlToString args.url
         , body = Http.jsonBody args.body
         , expect = args.expect
         , timeout = Nothing
@@ -86,15 +134,10 @@ post args =
 
 delete : { expect : Expect msg, url : Url } -> Cmd msg
 delete args =
-    let
-        (Url url_) =
-            args.url
-
-    in
     Http.request
         { method = "DELETE"
-        , headers = []
-        , url = url_
+        , headers = urlToHeaders args.url
+        , url = urlToString args.url
         , body = Http.emptyBody
         , expect = args.expect
         , timeout = Nothing

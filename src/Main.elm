@@ -74,12 +74,25 @@ init flags url key =
         route =
             Route.fromUrl url
 
-        ( general, cmd ) =
+        ( general, generalCmd ) =
             General.init key flags
 
-        -- TODO: do something with cmd
+        ( model, routeCmd ) =
+            changeRoute route <| Redirect general
+
+        cmd =
+            Cmd.batch
+                [ routeCmd
+                , Cmd.map
+                    (\m ->
+                        m
+                            |> GeneralMsg
+                            |> Global
+                        )
+                    generalCmd
+                ]
     in
-    changeRoute route <| Redirect general
+        ( model, cmd )
 
 
 
@@ -256,7 +269,15 @@ fromGeneral general page =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Sub.batch
+        [ Sub.map
+            (\m ->
+                m
+                    |> GeneralMsg
+                    |> Global
+            )
+            General.networkSub
+        ]
 
 
 

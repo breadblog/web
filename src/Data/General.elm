@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, init, key, problems, pushProblem, tags, theme, update, updateAuthors, version, host)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, init, key, problems, pushProblem, tags, theme, update, updateAuthors, version, host, networkSub)
 
 import Browser.Navigation exposing (Key)
 import Data.Author as Author exposing (Author)
@@ -9,12 +9,14 @@ import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
 import Data.Mode as Mode exposing (Mode(..))
 import Data.Config exposing (Config)
+import Data.Network as Network exposing (Network(..))
+import Data.Post as Post exposing (Post, Preview)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import Version
-import Api exposing (Host, Url)
+import Api exposing (Url)
 
 
 
@@ -28,6 +30,7 @@ type General
 type alias Flags =
     { mode : Mode
     , cache : Cache
+    , network : Network
     }
 
 
@@ -37,6 +40,8 @@ type alias IGeneral =
     , key : Key
     , problems : List (Problem Msg)
     , config : Config
+    , network : Network
+    , temp : Temp
     }
 
 
@@ -49,8 +54,14 @@ type alias ICache =
     , theme : Theme
     , tags : List Tag
     , authors : List Author
+    , postPreviews : List (Post Preview)
     }
 
+
+type alias Temp =
+    { postPreviews : List (Post Preview)
+    , authors : List Author
+    }
 
 
 
@@ -97,10 +108,17 @@ init key_ flags =
             , key = key_
             , problems = cacheProblems
             , config = initConfig decoded
+            , network = decoded.network
+            , temp = defaultTemp
             }
                 |> General
     in
-    ( general, setCache decoded.cache )
+    ( general
+    , Cmd.batch
+        [ setCache decoded.cache
+        , updateAuthors general
+        ]
+    )
 
 
 defaultCache : Version -> Cache
@@ -109,25 +127,27 @@ defaultCache currentVersion =
     , version = currentVersion
     , tags = []
     , authors = []
+    , postPreviews = []
     }
         |> Cache
+
+defaultTemp =
+    { postPreviews = []
+    , authors = []
+    }
 
 
 defaultFlags : Version -> Flags
 defaultFlags version_ =
     { cache = defaultCache version_
     , mode = Production
+    , network = Offline
     }
 
 
 initConfig : Flags -> Config
 initConfig flags =
-    let
-        host_ =
-            Api.hostFromMode flags.mode
-
-    in
-    { host = host_
+    { mode = flags.mode
     }
 
 
@@ -141,6 +161,8 @@ type Msg
     | ToggleAuthor Author
     | UpdateAuthors
     | GotAuthors (Result Http.Error (List Author))
+    | UpdateNetwork Network
+    | NetworkProblem Decode.Error
 
 
 
@@ -153,10 +175,12 @@ update msg general =
         (Cache iCache) =
             cache general
 
-        (General iGeneral) =
+        (General internals) =
             general
 
-        ( newGeneral, commands ) =
+        temp = internals.temp
+
+        ( newGeneral, cmd ) =
             case msg of
                 SetTheme theme_ ->
                     updateCache general { iCache | theme = theme_ }
@@ -176,12 +200,46 @@ update msg general =
                     updateCache general { iCache | authors = authors_ }
 
                 UpdateAuthors ->
-                    ( general, [ updateAuthors general ] )
+                    ( general, updateAuthors general )
 
                 GotAuthors res ->
                     case res of
                         Ok authors_ ->
-                            updateCache general { iCache | authors = authors_ }
+                            if List.isEmpty authors_ then
+                                {-
+                                    FIXME: can't just overwrite existing authors, might 
+                                    have properties set by the user (such as "watched")
+
+                                    should merge instead using some form of JOIN that
+                                    takes some properties from right, and some from
+                                    left
+                                -}
+                                let
+                                    ( updatedCacheModel, cacheCmd ) =
+                                        updateCache general { iCache | authors = temp.authors }
+
+                                    ( updatedModel, tempCmd ) =
+                                        updateTemp updatedCacheModel { temp | authors = [] }
+
+                                in
+                                ( updatedModel, Cmd.batch [ cacheCmd, tempCmd ] )
+
+
+
+                            else
+                                let
+                                    ( model, tempCmd ) =
+                                        updateTemp general { temp | authors = temp.authors ++ authors_ }
+
+                                    offset =
+                                        toOffset authors_
+
+                                    triggerUpdateCmd =
+                                        updateAuthorsAt general <| offset + 1
+
+                                in
+                                ( model, Cmd.batch [ triggerUpdateCmd, tempCmd ] )
+
 
                         Err err ->
                             let
@@ -191,31 +249,57 @@ update msg general =
                                         (HttpError err)
                                         Nothing
                             in
-                            ( { iGeneral
-                                | problems = problem :: iGeneral.problems
+                            ( { internals
+                                | problems = problem :: internals.problems
                               }
                                 |> General
-                            , [ Cmd.none ]
+                            , Cmd.none
                             )
+
+                UpdateNetwork network ->
+                    ( General { internals | network = network }
+                    , Cmd.none
+                    )
+
+                NetworkProblem err ->
+                    let
+                        problem =
+                            Problem.create "Network problem" (JsonError err) Nothing
+                    in
+                    ( General { internals | problems = problem :: internals.problems }
+                    , Cmd.none
+                    )
     in
     ( newGeneral
-    , Cmd.batch <|
-        commands
-            ++ [ setCache <| cache newGeneral ]
+    , Cmd.batch
+        [ cmd
+        ]
     )
 
 
-updateCache : General -> ICache -> ( General, List (Cmd Msg) )
+updateCache : General -> ICache -> ( General, Cmd Msg )
 updateCache general iCache =
     let
-        (General iGeneral) =
+        (General internals) =
             general
 
         cache_ =
             Cache iCache
     in
-    ( General { iGeneral | cache = cache_ }
-    , [ setCache <| cache_ ]
+    ( General { internals | cache = cache_ }
+    , setCache <| cache_
+    )
+
+
+updateTemp : General -> Temp -> ( General, Cmd Msg )
+updateTemp general temp =
+    let
+        (General internals) =
+            general
+
+    in
+    ( General { internals | temp = temp }
+    , Cmd.none
     )
 
 
@@ -256,11 +340,40 @@ toggleAuthorList author =
 
 
 updateAuthors : General -> Cmd Msg
-updateAuthors (General general) =
+updateAuthors general =
+    updateAuthorsAt general 0
+
+
+updateAuthorsAt : General -> Int -> Cmd Msg
+updateAuthorsAt (General general) page =
+    let
+        start =
+            page * 10
+
+        path =
+            String.join ""
+                [ "/author/public/"
+                , "?count="
+                , String.fromInt count
+                , "&start="
+                , String.fromInt start
+                ]
+
+    in
     Api.get
-        { url = Api.url general.config.host "author"
+        { url = Api.url general.config.mode path
         , expect = Http.expectJson GotAuthors (Decode.list Author.decoder)
         }
+
+
+count : Int
+count =
+    10
+
+
+toOffset : List a -> Int
+toOffset list =
+    List.length list // count
 
 
 
@@ -275,6 +388,21 @@ setCache c =
     c
         |> encodeCache
         |> setCachePort
+
+
+port getNetworkPort : (Value -> msg) -> Sub msg
+
+
+networkSub : Sub Msg
+networkSub =
+    getNetworkPort (\v ->
+        case Decode.decodeValue Network.decoder v of
+            Ok network ->
+                UpdateNetwork network
+
+            Err err ->
+                NetworkProblem err
+    )
 
 
 
@@ -343,9 +471,9 @@ key (General internals) =
     internals.key
 
 
-host : General -> Host
+host : General -> Mode
 host (General internals) =
-    internals.config.host
+    internals.config.mode
 
 
 
@@ -366,6 +494,7 @@ flagsDecoder currentVersion =
     Decode.succeed Flags
         |> required "mode" Mode.decoder
         |> required "cache" (Decode.oneOf [ cacheDecoder, defaultCacheDecoder currentVersion ])
+        |> required "network" Network.decoder
 
 
 
@@ -380,6 +509,9 @@ cacheDecoder =
             []
         |> optional "authors"
             (Decode.list Author.decoder)
+            []
+        |> optional "postPreviews"
+            (Decode.list Post.previewDecoder)
             []
         |> Decode.map Cache
 

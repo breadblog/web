@@ -1,9 +1,9 @@
 module Data.Config exposing (Config)
 
 
-import Api exposing (Host)
+import Data.Mode exposing (Mode)
 
 
 type alias Config =
-    { host : Host
+    { mode : Mode
     }

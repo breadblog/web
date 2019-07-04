@@ -1,4 +1,4 @@
-module Data.Problem exposing (Description(..), Problem, create, map)
+module Data.Problem exposing (Description(..), Problem, create, map, title, description)
 
 import Data.Markdown exposing (Markdown)
 import Http

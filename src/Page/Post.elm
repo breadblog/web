@@ -108,7 +108,9 @@ updateMod msg general internals =
 
                         Nothing ->
                             { model = LoadingAuthors post
-                            , cmd = Cmd.map (\c -> Global <| GeneralMsg <| c) (General.updateAuthors general)
+                            , cmd = Cmd.map
+                                (\c -> Global <| GeneralMsg <| c)
+                                (General.updateAuthors general)
                             , general = general
                             }
 
@@ -134,7 +136,7 @@ getPost : General -> UUID -> Cmd ModMsg
 getPost general uuid =
     let
         path =
-            UUID.toPath "post" uuid
+            UUID.toPath "/post/public" uuid
 
         host =
             General.host general
