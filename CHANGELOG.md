@@ -1,3 +1,7 @@
+## 0.0.13
+
+* Add robots.txt
+
 ## 0.0.12
 
 * Improve error handling
