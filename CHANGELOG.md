@@ -1,3 +1,7 @@
+## 0.0.15
+
+* Fix dropdown height on Brave Browser
+
 ## 0.0.14
 
 * Fix author properties being overwritten
