@@ -1,6 +1,10 @@
-## 0.0.13
+## 0.0.14
 
 * Fix author properties being overwritten
+
+## 0.0.13
+
+* Add robots.txt
 
 ## 0.0.12
 
