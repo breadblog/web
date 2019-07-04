@@ -23,6 +23,8 @@ suite =
                                         , ( "theme", Encode.string "light" )
                                         ]
                                   )
+                                , ( "mode", Encode.string "production" )
+                                , ( "network", Encode.bool True )
                                 ]
                     in
                     case Version.fromString "0.0.1" of
@@ -47,6 +49,8 @@ suite =
                                         , ( "theme", Encode.string "dark" )
                                         ]
                                   )
+                                , ( "mode", Encode.string "production" )
+                                , ( "network", Encode.bool True )
                                 ]
                     in
                     case Version.fromString "0.0.1" of
