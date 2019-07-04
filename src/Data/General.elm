@@ -1,22 +1,22 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, init, key, problems, pushProblem, tags, theme, update, updateAuthors, version, host, networkSub)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, host, init, key, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, version)
 
+import Api exposing (Url)
 import Browser.Navigation exposing (Key)
 import Data.Author as Author exposing (Author)
+import Data.Config exposing (Config)
 import Data.Markdown as Markdown
+import Data.Mode as Mode exposing (Mode(..))
+import Data.Network as Network exposing (Network(..))
+import Data.Post as Post exposing (Post, Preview)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Version exposing (Version)
-import Data.Mode as Mode exposing (Mode(..))
-import Data.Config exposing (Config)
-import Data.Network as Network exposing (Network(..))
-import Data.Post as Post exposing (Post, Preview)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import Version
-import Api exposing (Url)
 
 
 
@@ -81,9 +81,9 @@ init key_ flags =
                         Err err ->
                             ( defaultFlags currentVersion
                             , [ Problem.create
-                                "Corrupt flags"
-                                (JsonError err)
-                                Nothing
+                                    "Corrupt flags"
+                                    (JsonError err)
+                                    Nothing
                               ]
                             )
 
@@ -130,6 +130,7 @@ defaultCache currentVersion =
     , postPreviews = []
     }
         |> Cache
+
 
 defaultTemp =
     { postPreviews = []
@@ -178,7 +179,8 @@ update msg general =
         (General internals) =
             general
 
-        temp = internals.temp
+        temp =
+            internals.temp
 
         ( newGeneral, cmd ) =
             case msg of
@@ -207,12 +209,12 @@ update msg general =
                         Ok authors_ ->
                             if List.isEmpty authors_ then
                                 {-
-                                    FIXME: can't just overwrite existing authors, might 
-                                    have properties set by the user (such as "watched")
+                                   FIXME: can't just overwrite existing authors, might
+                                   have properties set by the user (such as "watched")
 
-                                    should merge instead using some form of JOIN that
-                                    takes some properties from right, and some from
-                                    left
+                                   should merge instead using some form of JOIN that
+                                   takes some properties from right, and some from
+                                   left
                                 -}
                                 let
                                     ( updatedCacheModel, cacheCmd ) =
@@ -220,11 +222,8 @@ update msg general =
 
                                     ( updatedModel, tempCmd ) =
                                         updateTemp updatedCacheModel { temp | authors = [] }
-
                                 in
                                 ( updatedModel, Cmd.batch [ cacheCmd, tempCmd ] )
-
-
 
                             else
                                 let
@@ -236,10 +235,8 @@ update msg general =
 
                                     triggerUpdateCmd =
                                         updateAuthorsAt general <| offset + 1
-
                                 in
                                 ( model, Cmd.batch [ triggerUpdateCmd, tempCmd ] )
-
 
                         Err err ->
                             let
@@ -296,7 +293,6 @@ updateTemp general temp =
     let
         (General internals) =
             general
-
     in
     ( General { internals | temp = temp }
     , Cmd.none
@@ -358,7 +354,6 @@ updateAuthorsAt (General general) page =
                 , "&start="
                 , String.fromInt start
                 ]
-
     in
     Api.get
         { url = Api.url general.config.mode path
@@ -395,14 +390,15 @@ port getNetworkPort : (Value -> msg) -> Sub msg
 
 networkSub : Sub Msg
 networkSub =
-    getNetworkPort (\v ->
-        case Decode.decodeValue Network.decoder v of
-            Ok network ->
-                UpdateNetwork network
+    getNetworkPort
+        (\v ->
+            case Decode.decodeValue Network.decoder v of
+                Ok network ->
+                    UpdateNetwork network
 
-            Err err ->
-                NetworkProblem err
-    )
+                Err err ->
+                    NetworkProblem err
+        )
 
 
 
@@ -495,8 +491,6 @@ flagsDecoder currentVersion =
         |> required "mode" Mode.decoder
         |> required "cache" (Decode.oneOf [ cacheDecoder, defaultCacheDecoder currentVersion ])
         |> required "network" Network.decoder
-
-
 
 
 cacheDecoder : Decoder Cache

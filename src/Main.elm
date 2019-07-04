@@ -88,11 +88,11 @@ init flags url key =
                         m
                             |> GeneralMsg
                             |> Global
-                        )
+                    )
                     generalCmd
                 ]
     in
-        ( model, cmd )
+    ( model, cmd )
 
 
 

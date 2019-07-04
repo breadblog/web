@@ -12,7 +12,6 @@ function getNetwork () {
   return window.navigator.onLine
 }
 
-
 // -- Flags
 const flags = (function () {
   function getCache () {

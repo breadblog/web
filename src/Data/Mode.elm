@@ -1,6 +1,5 @@
 module Data.Mode exposing (Mode(..), decoder)
 
-
 import Json.Decode as Decode exposing (Decoder)
 
 

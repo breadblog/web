@@ -1,28 +1,30 @@
 module Page.Problems exposing (view)
 
-import Html.Styled exposing (..)
 import Css exposing (..)
 import Data.General exposing (Msg)
-import Data.Problem as Problem exposing (Problem, Description(..))
 import Data.Markdown as Markdown
+import Data.Problem as Problem exposing (Description(..), Problem)
+import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
-import Json.Decode
 import Http exposing (Error(..))
+import Json.Decode
 
 
 view : List (Problem Msg) -> Html Msg
 view problems =
     div
         [ class "problems" ]
-        <| List.map
-            (\p -> 
+    <|
+        List.map
+            (\p ->
                 let
                     title =
                         div [ class "title" ] [ text <| Problem.title p ]
 
                     description =
-                        let contents =
+                        let
+                            contents =
                                 case Problem.description p of
                                     JsonError err ->
                                         [ text <| Json.Decode.errorToString err ]
@@ -42,18 +44,14 @@ view problems =
                                                 [ text "No internet" ]
 
                                             BadStatus code ->
-                                                [ text <| (String.fromInt code) ++ " HTTP Response" ]
+                                                [ text <| String.fromInt code ++ " HTTP Response" ]
 
                                             BadBody body ->
                                                 [ text <| "Bad Body " ++ body ]
-
-
                         in
                         div [ class "description" ] contents
 
-
                     -- TODO: setup reaction
-
                 in
                 div
                     [ class "problem" ]

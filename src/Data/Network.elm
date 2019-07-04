@@ -1,6 +1,5 @@
 module Data.Network exposing (Network(..), decoder)
 
-
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 
@@ -10,7 +9,9 @@ type Network
     | Online
 
 
+
 {- JSON -}
+
 
 decoder : Decoder Network
 decoder =
@@ -27,13 +28,13 @@ decoder =
 
 encode : Network -> Value
 encode network =
-    let bool =
+    let
+        bool =
             case network of
                 Online ->
                     True
 
                 Offline ->
                     False
-
     in
     Encode.bool bool

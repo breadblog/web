@@ -1,5 +1,6 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
+import Api
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
@@ -18,7 +19,6 @@ import Style.Post
 import Time
 import Update
 import View.Page as Page exposing (PageUpdateOutput)
-import Api
 
 
 
@@ -108,9 +108,10 @@ updateMod msg general internals =
 
                         Nothing ->
                             { model = LoadingAuthors post
-                            , cmd = Cmd.map
-                                (\c -> Global <| GeneralMsg <| c)
-                                (General.updateAuthors general)
+                            , cmd =
+                                Cmd.map
+                                    (\c -> Global <| GeneralMsg <| c)
+                                    (General.updateAuthors general)
                             , general = general
                             }
 

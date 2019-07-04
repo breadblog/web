@@ -1,9 +1,8 @@
-module Api exposing (Url, url, get, put, delete, post)
+module Api exposing (Url, delete, get, post, put, url)
 
-
+import Data.Mode exposing (Mode(..))
 import Http exposing (Expect, Header)
 import Json.Encode exposing (Value)
-import Data.Mode exposing (Mode(..))
 
 
 type Url
@@ -36,12 +35,14 @@ urlToString (Url internals) =
             internals.path
                 |> ensureRightSlash
                 |> ensureLeftSlash
-
     in
     host ++ path
 
 
+
 -- FIXME: very simplistic, will not work for urls containing \?
+
+
 ensureRightSlash : String -> String
 ensureRightSlash path =
     let
@@ -58,13 +59,12 @@ ensureRightSlash path =
                 path
                     |> String.left 1
                     |> (/=) "/"
-
     in
     if missingSlash then
         if containsQuery then
             path
                 |> String.replace "?" "/?"
-        
+
         else
             path ++ "/"
 
