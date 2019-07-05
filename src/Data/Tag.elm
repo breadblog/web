@@ -1,7 +1,7 @@
-module Data.Tag exposing (Tag, decoder, encode, mapWatched, name, toSource, watched, compare, mergeFromApi)
+module Data.Tag exposing (Tag, compare, decoder, encode, mapWatched, mergeFromApi, name, toSource, watched)
 
-import Data.UUID as UUID exposing (UUID)
 import Data.Search as Search exposing (Source)
+import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
