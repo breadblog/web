@@ -1,3 +1,8 @@
+## 0.0.16
+
+* Setup post previews API link
+* Fix authors API link
+
 ## 0.0.15
 
 * Fix dropdown height on Brave Browser
