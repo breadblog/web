@@ -285,22 +285,30 @@ updateTemp general temp =
 
 type alias UpdateResourceInfo t =
     -- Used to compare if two "t" values are equivalent
-    { compare : (t -> t -> Bool)
+    { compare : t -> t -> Bool
+
     -- Used to merge two t values (left api, right cache)
-    , transform : (t -> t -> t)
+    , transform : t -> t -> t
+
     -- response from API
     , res : Result Http.Error (List t)
     , general : General
+
     -- trigger new update for resource
     , triggerUpdate : General -> Int -> Cmd Msg
+
     -- set resource list in temp
     , setInTemp : List t -> Temp -> Temp
+
     -- set resource list in cache
     , setInCache : List t -> ICache -> ICache
+
     -- get resource list from temp
     , getFromTemp : Temp -> List t
+
     -- get resource list from cache
     , getFromCache : ICache -> List t
+
     -- name of resource
     , name : String
     }
@@ -319,7 +327,6 @@ updateResource info =
 
                 fromTemp =
                     info.getFromTemp temp
-
             in
             if List.isEmpty fromApi then
                 -- If list is empty, then we have retrieved all of
@@ -342,7 +349,6 @@ updateResource info =
 
                     updatedTempGeneral =
                         updateTemp info.general (info.setInTemp [] temp)
-
                 in
                 updateCache updatedTempGeneral (info.setInCache updatedCacheList iCache)
 
@@ -360,7 +366,6 @@ updateResource info =
                         updatedTempList
                             |> toOffset
                             |> (+) 1
-
                 in
                 ( updatedGeneral, info.triggerUpdate updatedGeneral offset )
 
@@ -374,7 +379,6 @@ updateResource info =
 
                 updatedGeneral =
                     pushProblem problem info.general
-
             in
             ( updatedGeneral, Cmd.none )
 

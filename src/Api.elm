@@ -1,4 +1,4 @@
-module Api exposing (Url, delete, get, post, put, url, count)
+module Api exposing (Url, count, delete, get, post, put, url)
 
 import Data.Mode exposing (Mode(..))
 import Http exposing (Expect, Header)

@@ -1,4 +1,4 @@
-module Data.Post exposing (Full, Post, Preview, author, body, description, fullDecoder, encodeFull, previewDecoder, encodePreview, title, compare, mergeFromApi)
+module Data.Post exposing (Full, Post, Preview, author, body, compare, description, encodeFull, encodePreview, fullDecoder, mergeFromApi, previewDecoder, title)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
@@ -6,7 +6,7 @@ import Data.Search as Search exposing (Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (custom, hardcoded, required, optional)
+import Json.Decode.Pipeline exposing (custom, hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
 import Time
 
