@@ -1,6 +1,7 @@
-module Data.Tag exposing (Tag, decoder, encode, mapWatched, name, toSource, watched)
+module Data.Tag exposing (Tag, compare, decoder, encode, mapWatched, mergeFromApi, name, toSource, watched)
 
 import Data.Search as Search exposing (Source)
+import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
@@ -18,6 +19,7 @@ type alias Internals =
     { name : String
     , description : String
     , watched : Bool
+    , uuid : UUID
     }
 
 
@@ -57,6 +59,16 @@ toSource msg tags =
         msg
 
 
+compare : Tag -> Tag -> Bool
+compare (Tag a) (Tag b) =
+    a.uuid == b.uuid
+
+
+mergeFromApi : Tag -> Tag -> Tag
+mergeFromApi (Tag fromApi) (Tag fromCache) =
+    Tag { fromApi | watched = fromCache.watched }
+
+
 
 {- JSON -}
 
@@ -67,6 +79,7 @@ decoder =
         |> required "name" Decode.string
         |> required "description" Decode.string
         |> optional "watched" Decode.bool True
+        |> required "uuid" UUID.decoder
         |> Decode.map Tag
 
 
@@ -76,4 +89,5 @@ encode (Tag tag) =
         [ ( "name", Encode.string tag.name )
         , ( "description", Encode.string tag.description )
         , ( "watched", Encode.bool tag.watched )
+        , ( "uuid", UUID.encode tag.uuid )
         ]

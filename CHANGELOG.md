@@ -1,3 +1,7 @@
+## 0.0.17
+
+* Setup tags API link
+
 ## 0.0.16
 
 * Setup post previews API link

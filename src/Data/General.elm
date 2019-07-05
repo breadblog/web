@@ -62,6 +62,7 @@ type alias ICache =
 type alias Temp =
     { postPreviews : List (Post Preview)
     , authors : List Author
+    , tags : List Tag
     }
 
 
@@ -119,6 +120,7 @@ init key_ flags =
         [ setCache decoded.cache
         , updateAuthors general
         , updatePosts general
+        , updateTags general
         ]
     )
 
@@ -137,6 +139,7 @@ defaultCache currentVersion =
 defaultTemp =
     { postPreviews = []
     , authors = []
+    , tags = []
     }
 
 
@@ -168,6 +171,8 @@ type Msg
     | GotAuthors (Result Http.Error (List Author))
     | UpdatePosts
     | GotPosts (Result Http.Error (List (Post Preview)))
+    | UpdateTags
+    | GotTags (Result Http.Error (List Tag))
 
 
 
@@ -251,6 +256,23 @@ update msg general =
                         , getFromTemp = .postPreviews
                         , getFromCache = .postPreviews
                         , name = "post"
+                        }
+
+                UpdateTags ->
+                    ( general, updateTags general )
+
+                GotTags res ->
+                    updateResource
+                        { compare = Tag.compare
+                        , transform = Tag.mergeFromApi
+                        , res = res
+                        , general = general
+                        , triggerUpdate = updateTagsAt
+                        , setInTemp = \tags_ temp_ -> { temp_ | tags = tags_ }
+                        , setInCache = \tags_ iCache_ -> { iCache | tags = tags_ }
+                        , getFromTemp = .tags
+                        , getFromCache = .tags
+                        , name = "tag"
                         }
     in
     ( newGeneral
@@ -468,6 +490,32 @@ updatePostsAt (General general) page =
     Api.get
         { url = Api.url general.config.mode path
         , expect = Http.expectJson GotPosts (Decode.list Post.previewDecoder)
+        }
+
+
+updateTags : General -> Cmd Msg
+updateTags general =
+    updateTagsAt general 0
+
+
+updateTagsAt : General -> Int -> Cmd Msg
+updateTagsAt (General general) page =
+    let
+        start =
+            page * 10
+
+        path =
+            String.join ""
+                [ "/tag/public/"
+                , "?count="
+                , String.fromInt Api.count
+                , "&start="
+                , String.fromInt start
+                ]
+    in
+    Api.get
+        { url = Api.url general.config.mode path
+        , expect = Http.expectJson GotTags (Decode.list Tag.decoder)
         }
 
 
