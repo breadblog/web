@@ -118,6 +118,7 @@ init key_ flags =
     , Cmd.batch
         [ setCache decoded.cache
         , updateAuthors general
+        , updatePosts general
         ]
     )
 
@@ -161,10 +162,12 @@ type Msg
     = SetTheme Theme
     | ToggleTag Tag
     | ToggleAuthor Author
-    | UpdateAuthors
-    | GotAuthors (Result Http.Error (List Author))
     | UpdateNetwork Network
     | NetworkProblem Decode.Error
+    | UpdateAuthors
+    | GotAuthors (Result Http.Error (List Author))
+    | UpdatePosts
+    | GotPosts (Result Http.Error (List (Post Preview)))
 
 
 
@@ -202,25 +205,6 @@ update msg general =
                     in
                     updateCache general { iCache | authors = authors_ }
 
-                UpdateAuthors ->
-                    ( general, updateAuthors general )
-
-                GotAuthors res ->
-                    case updateFromApi "authors" Author.compare Author.mergeFromApi res temp.authors of
-                        Ok ( maybeUpdatedList, updatedTemp ) ->
-                            case maybeUpdatedList of
-                                Just updatedList ->
-                                    updateCache (updateTemp general { temp | authors = updatedTemp }) { iCache | authors = updatedList }
-
-                                Nothing ->
-                                    ( updateTemp general { temp | authors = updatedTemp }, Cmd.none )
-
-                        Err problem ->
-                            ( { internals | problems = problem :: internals.problems }
-                                |> General
-                            , Cmd.none
-                            )
-
                 UpdateNetwork network ->
                     ( General { internals | network = network }
                     , Cmd.none
@@ -234,6 +218,40 @@ update msg general =
                     ( General { internals | problems = problem :: internals.problems }
                     , Cmd.none
                     )
+
+                UpdateAuthors ->
+                    ( general, updateAuthors general )
+
+                GotAuthors res ->
+                    updateResource
+                        { compare = Author.compare
+                        , transform = Author.mergeFromApi
+                        , res = res
+                        , general = general
+                        , triggerUpdate = updateAuthorsAt
+                        , setInTemp = \authors_ temp_ -> { temp_ | authors = authors_ }
+                        , setInCache = \authors_ iCache_ -> { iCache_ | authors = authors_ }
+                        , getFromTemp = .authors
+                        , getFromCache = .authors
+                        , name = "author"
+                        }
+
+                UpdatePosts ->
+                    ( general, updatePosts general )
+
+                GotPosts res ->
+                    updateResource
+                        { compare = Post.compare
+                        , transform = Post.mergeFromApi
+                        , res = res
+                        , general = general
+                        , triggerUpdate = updatePostsAt
+                        , setInTemp = \postPreviews temp_ -> { temp_ | postPreviews = postPreviews }
+                        , setInCache = \postPreviews iCache_ -> { iCache_ | postPreviews = postPreviews }
+                        , getFromTemp = .postPreviews
+                        , getFromCache = .postPreviews
+                        , name = "post"
+                        }
     in
     ( newGeneral
     , Cmd.batch
@@ -265,41 +283,100 @@ updateTemp general temp =
     General { internals | temp = temp }
 
 
-updateFromApi : String -> (t -> t -> Bool) -> (t -> t -> t) -> Result Http.Error (List t) -> List t -> Result (Problem Msg) ( Maybe (List t), List t )
-updateFromApi name compare transform res fromTemp =
-    case res of
-        Ok fromApi ->
-            if List.isEmpty fromApi then
-                let
-                    updatedList =
-                        Just <|
-                            Util.joinLeftWith
-                                transform
-                                compare
-                                fromApi
-                                fromTemp
+type alias UpdateResourceInfo t =
+    -- Used to compare if two "t" values are equivalent
+    { compare : (t -> t -> Bool)
+    -- Used to merge two t values (left api, right cache)
+    , transform : (t -> t -> t)
+    -- response from API
+    , res : Result Http.Error (List t)
+    , general : General
+    -- trigger new update for resource
+    , triggerUpdate : General -> Int -> Cmd Msg
+    -- set resource list in temp
+    , setInTemp : List t -> Temp -> Temp
+    -- set resource list in cache
+    , setInCache : List t -> ICache -> ICache
+    -- get resource list from temp
+    , getFromTemp : Temp -> List t
+    -- get resource list from cache
+    , getFromCache : ICache -> List t
+    -- name of resource
+    , name : String
+    }
 
-                    updatedTemp =
-                        []
+
+updateResource : UpdateResourceInfo t -> ( General, Cmd Msg )
+updateResource info =
+    case info.res of
+        Ok fromApi ->
+            let
+                (General internals) =
+                    info.general
+
+                temp =
+                    internals.temp
+
+                fromTemp =
+                    info.getFromTemp temp
+
+            in
+            if List.isEmpty fromApi then
+                -- If list is empty, then we have retrieved all of
+                -- the values, and it's time to update the cache
+                let
+                    (Cache iCache) =
+                        internals.cache
+
+                    fromCache =
+                        info.getFromCache iCache
+
+                    updatedCacheList =
+                        Util.joinLeftWith
+                            info.transform
+                            info.compare
+                            -- fromTemp is aggregated resources from API (primary data)
+                            fromTemp
+                            -- fromCache is old resources from Cache (secondary data)
+                            fromCache
+
+                    updatedTempGeneral =
+                        updateTemp info.general (info.setInTemp [] temp)
+
                 in
-                Ok ( updatedList, updatedTemp )
+                updateCache updatedTempGeneral (info.setInCache updatedCacheList iCache)
 
             else
+                -- If list is not empty should append to temp list and
+                -- retrieve more resources from API (pagination)
                 let
-                    updatedTemp =
+                    updatedTempList =
                         fromTemp ++ fromApi
 
-                    updatedList =
-                        Nothing
+                    updatedGeneral =
+                        updateTemp info.general (info.setInTemp updatedTempList temp)
+
+                    offset =
+                        updatedTempList
+                            |> toOffset
+                            |> (+) 1
+
                 in
-                Ok ( updatedList, updatedTemp )
+                ( updatedGeneral, info.triggerUpdate updatedGeneral offset )
 
         Err err ->
-            Err <|
-                Problem.create
-                    ("Failed to update " ++ name)
-                    (HttpError err)
-                    Nothing
+            let
+                message =
+                    "Failed to update list of " ++ info.name ++ "s"
+
+                problem =
+                    Problem.create message (HttpError err) Nothing
+
+                updatedGeneral =
+                    pushProblem problem info.general
+
+            in
+            ( updatedGeneral, Cmd.none )
 
 
 toggleTagList : Tag -> List Tag -> List Tag
@@ -353,7 +430,7 @@ updateAuthorsAt (General general) page =
             String.join ""
                 [ "/author/public/"
                 , "?count="
-                , String.fromInt count
+                , String.fromInt Api.count
                 , "&start="
                 , String.fromInt start
                 ]
@@ -364,14 +441,35 @@ updateAuthorsAt (General general) page =
         }
 
 
-count : Int
-count =
-    10
+updatePosts : General -> Cmd Msg
+updatePosts general =
+    updatePostsAt general 0
+
+
+updatePostsAt : General -> Int -> Cmd Msg
+updatePostsAt (General general) page =
+    let
+        start =
+            page * 10
+
+        path =
+            String.join ""
+                [ "/post/public/"
+                , "?count="
+                , String.fromInt Api.count
+                , "&start="
+                , String.fromInt start
+                ]
+    in
+    Api.get
+        { url = Api.url general.config.mode path
+        , expect = Http.expectJson GotPosts (Decode.list Post.previewDecoder)
+        }
 
 
 toOffset : List a -> Int
 toOffset list =
-    List.length list // count
+    List.length list // Api.count
 
 
 
@@ -525,4 +623,5 @@ encodeCache (Cache c) =
         , ( "theme", Theme.encode c.theme )
         , ( "tags", Encode.list Tag.encode c.tags )
         , ( "authors", Encode.list Author.encode c.authors )
+        , ( "postPreviews", Encode.list Post.encodePreview c.postPreviews )
         ]

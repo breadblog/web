@@ -1,4 +1,4 @@
-module Api exposing (Url, delete, get, post, put, url)
+module Api exposing (Url, delete, get, post, put, url, count)
 
 import Data.Mode exposing (Mode(..))
 import Http exposing (Expect, Header)
@@ -37,6 +37,11 @@ urlToString (Url internals) =
                 |> ensureLeftSlash
     in
     host ++ path
+
+
+count : Int
+count =
+    10
 
 
 

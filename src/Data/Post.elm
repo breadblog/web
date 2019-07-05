@@ -1,4 +1,4 @@
-module Data.Post exposing (Full, Post, Preview, author, body, description, fullDecoder, fullEncoder, previewDecoder, previewEncoder, title)
+module Data.Post exposing (Full, Post, Preview, author, body, description, fullDecoder, encodeFull, previewDecoder, encodePreview, title, compare, mergeFromApi)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
@@ -6,7 +6,7 @@ import Data.Search as Search exposing (Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (custom, hardcoded, required)
+import Json.Decode.Pipeline exposing (custom, hardcoded, required, optional)
 import Json.Encode as Encode exposing (Value)
 import Time
 
@@ -35,9 +35,10 @@ type alias Internals =
     { uuid : UUID
     , title : String
     , description : String
-    , tags : List Tag
+    , tags : List UUID
     , author : UUID
     , date : Time.Posix
+    , published : Bool
     , favorite : Bool
     }
 
@@ -104,21 +105,31 @@ toSource msg posts =
         msg
 
 
+compare : Post e -> Post e -> Bool
+compare (Post _ a) (Post _ b) =
+    a.uuid == b.uuid
+
+
+mergeFromApi : Post Preview -> Post Preview -> Post Preview
+mergeFromApi (Post _ a) (Post _ b) =
+    Post Preview { a | favorite = b.favorite }
+
+
 
 {- JSON -}
 -- Encoders
 
 
-fullEncoder : Post Full -> Value
-fullEncoder (Post (Full body_) internals) =
+encodeFull : Post Full -> Value
+encodeFull (Post (Full body_) internals) =
     Encode.object <|
         List.append
             (internalsEncoder internals)
             [ ( "body", Markdown.encode body_ ) ]
 
 
-previewEncoder : Post Preview -> Value
-previewEncoder (Post Preview internals) =
+encodePreview : Post Preview -> Value
+encodePreview (Post Preview internals) =
     Encode.object <|
         internalsEncoder internals
 
@@ -128,9 +139,10 @@ internalsEncoder internals =
     [ ( "uuid", UUID.encode internals.uuid )
     , ( "title", Encode.string internals.title )
     , ( "description", Encode.string internals.description )
-    , ( "tags", Encode.list Tag.encode internals.tags )
+    , ( "tags", Encode.list UUID.encode internals.tags )
     , ( "author", UUID.encode internals.author )
     , ( "date", Encode.int (Time.posixToMillis internals.date) )
+    , ( "published", Encode.bool internals.published )
     , ( "favorite", Encode.bool internals.favorite )
     ]
 
@@ -145,10 +157,11 @@ internalsDecoder =
         |> required "uuid" UUID.decoder
         |> required "title" Decode.string
         |> required "description" Decode.string
-        |> required "tags" (Decode.list Tag.decoder)
+        |> required "tags" (Decode.list UUID.decoder)
         |> required "author" UUID.decoder
         |> required "date" timeDecoder
-        |> required "favorite" Decode.bool
+        |> required "published" Decode.bool
+        |> optional "favorite" Decode.bool True
 
 
 timeDecoder : Decoder Time.Posix
