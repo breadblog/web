@@ -13,12 +13,14 @@ import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
+import Css exposing (..)
 import Http
 import Message exposing (Compound(..), Msg(..))
 import Style.Post
 import Time
 import Update
 import View.Page as Page exposing (PageUpdateOutput)
+import View.Loading
 
 
 
@@ -43,7 +45,8 @@ init : UUID -> General -> Page.TransformModel Internals mainModel -> Page.Transf
 init uuid general =
     Page.init
         Loading
-        (getPost general uuid)
+        Cmd.none
+        -- (getPost general uuid)
         (Post uuid)
         general
 
@@ -162,25 +165,47 @@ viewPost general internals =
     let
         theme =
             General.theme general
+
+        contents =
+            case internals of
+                Loading ->
+                    loadingView theme
+
+                LoadingAuthors _ ->
+                    loadingView theme
+
+                Ready post username ->
+                    let
+                        authors =
+                            General.authors general
+                    in
+                    readyView general username post
+
     in
-    case internals of
-        Loading ->
-            loadingView theme
-
-        LoadingAuthors _ ->
-            loadingView theme
-
-        Ready post username ->
-            let
-                authors =
-                    General.authors general
-            in
-            readyView general username post
+        [ div
+            [ css
+                [ displayFlex
+                , flexDirection column
+                , flexGrow <| num 1
+                ]
+            ]
+            contents
+        ]
 
 
 loadingView : Theme -> List (Html (Compound ModMsg))
 loadingView theme =
-    []
+    [ div
+        [ css
+            [ displayFlex
+            , justifyContent center
+            , alignItems center
+            , Css.height <| pct 100
+            , Css.width <| pct 100
+            ]
+        ]
+        [ View.Loading.toHtml ]
+    ]
 
 
 readyView : General -> String -> Post Full -> List (Html (Compound ModMsg))
