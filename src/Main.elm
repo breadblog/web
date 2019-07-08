@@ -14,11 +14,11 @@ import Html.Styled.Attributes exposing (css, id)
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Message exposing (Compound(..), Msg(..))
-import Page.Login
 import Page.About
 import Page.Changelog
 import Page.Donate
 import Page.Home
+import Page.Login
 import Page.NotFound
 import Page.Post
 import Page.Problems

@@ -1,20 +1,20 @@
 module Page.Login exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
-
-import Http
+import Api
 import Css exposing (..)
+import Data.General as General exposing (General)
+import Data.Login
+import Data.Password as Password exposing (Password)
+import Data.Route as Route exposing (Route(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events as Events exposing (onClick, onInput)
-import Update
+import Http
 import Message exposing (Compound(..))
-import Data.Password as Password exposing (Password)
-import Data.Login
-import Data.General as General exposing (General)
-import Data.Route as Route exposing (Route(..))
-import View.Page as Page exposing (PageUpdateOutput)
 import Style.Color as Color
-import Api
+import Update
+import View.Page as Page exposing (PageUpdateOutput)
+
 
 
 {- Model -}
@@ -31,7 +31,7 @@ type alias Internals =
     }
 
 
-init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> (model, Cmd msg)
+init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
 init =
     Page.init initInternals Cmd.none Login
 
@@ -54,6 +54,7 @@ fromGeneral =
     Page.fromGeneral
 
 
+
 {- Message -}
 
 
@@ -66,6 +67,7 @@ type ModMsg
     | TryLogin
     | UpdateUsername String
     | UpdatePassword Password
+
 
 
 {- Update -}
@@ -95,7 +97,8 @@ updateMod msg general internals =
 
         TryLogin ->
             let
-                mode = General.mode general
+                mode =
+                    General.mode general
 
                 cmd =
                     Api.post
@@ -103,12 +106,11 @@ updateMod msg general internals =
                         , body = Data.Login.encode <| Data.Login.Request internals.username internals.password
                         , url = Api.url mode "/login/"
                         }
-
             in
-                { model = internals
-                , general = general
-                , cmd = cmd
-                }
+            { model = internals
+            , general = general
+            , cmd = cmd
+            }
 
         UpdateUsername username ->
             { model = { internals | username = username }
@@ -137,7 +139,6 @@ viewLogin general internals =
     let
         theme =
             General.theme general
-
     in
     [ div
         [ class "login"

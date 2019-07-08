@@ -1,14 +1,14 @@
-module Data.Password exposing (Password, encode, create)
-
+module Data.Password exposing (Password, create, encode)
 
 import Json.Encode as Encode exposing (Value)
+
 
 
 {- Model -}
 
 
-type Password =
-    Password String
+type Password
+    = Password String
 
 
 
@@ -18,6 +18,7 @@ type Password =
 create : String -> Password
 create str =
     Password str
+
 
 
 {- JSON -}

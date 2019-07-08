@@ -1,14 +1,14 @@
 module Data.Login exposing (Request, encode)
 
-
-import Json.Encode as Encode exposing (Value)
 import Data.Password as Password exposing (Password)
+import Json.Encode as Encode exposing (Value)
 
 
 type alias Request =
     { username : String
     , password : Password
     }
+
 
 
 {- JSON -}

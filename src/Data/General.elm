@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, mode, init, key, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, init, key, mode, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
