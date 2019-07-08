@@ -14,6 +14,7 @@ type Route
     | About
     | Donate
     | Changelog
+    | Login
 
 
 
@@ -25,6 +26,7 @@ urlParser =
     oneOf
         -- Common
         [ Parser.map Home top
+        , Parser.map Login (s "login")
 
         -- Posts
         , Parser.map Post (s "post" </> UUID.urlParser)
@@ -80,6 +82,9 @@ toName route =
         Home ->
             "Home"
 
+        Login ->
+            "Login"
+
         About ->
             "About"
 
@@ -117,6 +122,9 @@ toPath route =
     case route of
         Home ->
             relative [ "/" ] []
+
+        Login ->
+            relative [ "/login" ] []
 
         Post uuid ->
             relative [ UUID.toPath "/post" uuid ] []

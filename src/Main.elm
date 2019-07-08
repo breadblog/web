@@ -14,6 +14,7 @@ import Html.Styled.Attributes exposing (css, id)
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Message exposing (Compound(..), Msg(..))
+import Page.Login
 import Page.About
 import Page.Changelog
 import Page.Donate
@@ -39,6 +40,7 @@ type Model
     | Donate Page.Donate.Model
     | About Page.About.Model
     | Home Page.Home.Model
+    | Login Page.Login.Model
     | Post Page.Post.Model
     | Changelog Page.Changelog.Model
 
@@ -53,6 +55,7 @@ type alias Msg =
 
 type InternalMsg
     = HomeMsg Page.Home.Msg
+    | LoginMsg Page.Login.Msg
     | PostMsg Page.Post.Msg
     | DonateMsg Page.Donate.Msg
     | AboutMsg Page.About.Msg
@@ -192,6 +195,12 @@ changeRoute route model =
 
         ( pageModel, cmd ) =
             case route of
+                Route.Home ->
+                    Page.Home.init general Home (toMsg HomeMsg)
+
+                Route.Login ->
+                    Page.Login.init general Login (toMsg LoginMsg)
+
                 Route.NotFound ->
                     ( NotFound general, Cmd.none )
 
@@ -200,9 +209,6 @@ changeRoute route model =
 
                 Route.About ->
                     Page.About.init general About (toMsg AboutMsg)
-
-                Route.Home ->
-                    Page.Home.init general Home (toMsg HomeMsg)
 
                 Route.Post uuid ->
                     Page.Post.init uuid general Post (toMsg PostMsg)
@@ -218,6 +224,9 @@ toGeneral page =
     case page of
         Home model ->
             Page.Home.toGeneral model
+
+        Login model ->
+            Page.Login.toGeneral model
 
         Post model ->
             Page.Post.toGeneral model
@@ -243,6 +252,9 @@ fromGeneral general page =
     case page of
         Home model ->
             Home <| Page.Home.fromGeneral general model
+
+        Login model ->
+            Login <| Page.Login.fromGeneral general model
 
         Post model ->
             Post <| Page.Post.fromGeneral general model
@@ -352,6 +364,11 @@ viewPage model =
                     List.map
                         (Html.Styled.map (Message.map HomeMsg))
                         (Page.Home.view home)
+
+                Login login ->
+                    List.map
+                        (Html.Styled.map (Message.map LoginMsg))
+                        (Page.Login.view login)
 
                 Post post ->
                     List.map

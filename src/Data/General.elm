@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, host, init, key, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, mode, init, key, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
@@ -629,8 +629,8 @@ key (General internals) =
     internals.key
 
 
-host : General -> Mode
-host (General internals) =
+mode : General -> Mode
+mode (General internals) =
     internals.config.mode
 
 
