@@ -13,29 +13,63 @@ import Svg.Styled.Attributes as Attr exposing (..)
 import Html.Styled exposing (Html)
 
 
-toHtml : Html msg
-toHtml =
+multiplySize : Int -> Float -> (String -> attr) -> attr
+multiplySize baseSize multiplier transform =
+    baseSize
+        |> toFloat
+        |> (*) multiplier
+        |> String.fromFloat
+        |> transform
+
+
+multiplyTime : Float -> Int -> (String -> attr) -> attr
+multiplyTime baseTime multiplier transform =
+    multiplier
+        |> toFloat
+        |> (*) baseTime
+        |> String.fromFloat
+        |> \s -> s ++ "s"
+        |> transform
+
+
+toHtml : { timing : Int, size : Float } -> Html msg
+toHtml { timing, size } =
     svg
-        [ width "44"
-        , height "44"
-        , viewBox "0 0 44 44"
+        [ multiplySize 44 size width
+        , multiplySize 44 size height
+        , size
+            |> (*) 44
+            |> String.fromFloat
+            |> List.repeat 2
+            |> List.append ["0", "0"]
+            |> String.join " "
+            |> viewBox
         , stroke "#fff"
         ]
         [ g
             [ fill "none"
             , fillRule "evenodd"
-            , strokeWidth "2"
+            -- strokeWidth
+            , size
+                |> (*) 0.8
+                |> (+) 1.2
+                |> String.fromFloat
+                |> strokeWidth
             ]
             [ circle
-                [ cx "22"
-                , cy "22"
-                , r "1"
+                [ multiplySize 22 size cx
+                , multiplySize 22 size cy
+                , multiplySize 1 size r
                 ]
                 [ animate
                     [ attributeName "r"
                     , begin "0s"
-                    , dur "3s"
-                    , values "1; 20"
+                    , multiplyTime 1 timing dur
+                    , size
+                        |> (*) 20
+                        |> String.fromFloat
+                        |> \i -> "1; " ++ i
+                        |> values
                     , calcMode "spline"
                     , keyTimes "0; 1"
                     , keySplines "0.165, 0.84, 0.44, 1"
@@ -45,7 +79,7 @@ toHtml =
                 , animate
                     [ attributeName "stroke-opacity"
                     , begin "0s"
-                    , dur "3s"
+                    , multiplyTime 1 timing dur
                     , values "1; 0"
                     , calcMode "spline"
                     , keyTimes "0; 1"
@@ -55,15 +89,19 @@ toHtml =
                     []
                 ]
             , circle
-                [ cx "22"
-                , cy "22"
-                , r "2"
+                [ multiplySize 22 size cx
+                , multiplySize 22 size cy
+                , multiplySize 2 size r
                 ]
                 [ animate
                     [ attributeName "r"
-                    , begin "-1.5s"
-                    , dur "3s"
-                    , values "1; 20"
+                    , multiplyTime -0.5 timing begin
+                    , multiplyTime 1 timing dur
+                    , size
+                        |> (*) 20
+                        |> String.fromFloat
+                        |> \i -> "1; " ++ i
+                        |> values
                     , calcMode "spline"
                     , keyTimes "0; 1"
                     , keySplines "0.165, 0.84, 0.44, 1"
@@ -72,8 +110,8 @@ toHtml =
                     []
                 , animate
                     [ attributeName "stroke-opacity"
-                    , begin "-1.5s"
-                    , dur "3s"
+                    , multiplyTime -0.5 timing begin
+                    , multiplyTime 1 timing dur
                     , values "1; 0"
                     , calcMode "spline"
                     , keyTimes "0; 1"
@@ -81,30 +119,6 @@ toHtml =
                     , repeatCount "indefinite"
                     ]
                     []
-                -- TODO: add another circle
-                -- TODO: make the animation larger
                 ]
             ]
         ]
-
-
-{- TODO: Complete
-    Learning Corner
-    ===============
-
-
-    How do animations work?
-    -----------------------
-
-
-    What is calcMode?
-    -----------------
-
-
-    What are key splines?
-    ---------------------
-
-
-    What are animation values?
-    --------------------------
--}

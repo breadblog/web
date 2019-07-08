@@ -1,4 +1,4 @@
-module Style.Color exposing (accent, background, danger, drawer, dropdown, dropdownActive, dropdownContrast, overlay, primary, primaryFont, secondary, secondaryFont, tertiaryFont)
+module Style.Color exposing (accent, background, danger, drawer, dropdown, dropdownActive, dropdownContrast, overlay, primary, primaryFont, secondary, secondaryFont, tertiaryFont, card)
 
 import Css exposing (..)
 import Data.Theme exposing (Theme(..))
@@ -50,6 +50,16 @@ accent theme =
 
 
 -- Element Specific
+
+
+card : Theme -> Color
+card theme =
+    case theme of
+        Dark ->
+            hex "484848"
+
+        Light ->
+            hex "fff"
 
 
 drawer : Theme -> Color

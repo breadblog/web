@@ -21,6 +21,7 @@ import Time
 import Update
 import View.Page as Page exposing (PageUpdateOutput)
 import View.Loading
+import Style.Color as Color
 
 
 
@@ -45,8 +46,7 @@ init : UUID -> General -> Page.TransformModel Internals mainModel -> Page.Transf
 init uuid general =
     Page.init
         Loading
-        Cmd.none
-        -- (getPost general uuid)
+        (getPost general uuid)
         (Post uuid)
         general
 
@@ -107,7 +107,10 @@ updateMod msg general internals =
                     in
                     case maybeUsername of
                         Just username ->
-                            simpleOutput <| Ready post username
+                            { model = Ready post username
+                            , general = general
+                            , cmd = General.highlightBlock readyClass
+                            }
 
                         Nothing ->
                             { model = LoadingAuthors post
@@ -204,7 +207,11 @@ loadingView theme =
             , Css.width <| pct 100
             ]
         ]
-        [ View.Loading.toHtml ]
+        [ View.Loading.toHtml
+            { timing = 3
+            , size = 1.5
+            }
+        ]
     ]
 
 
@@ -229,21 +236,46 @@ readyView general username post =
         authors =
             General.authors general
 
-        className =
-            "post"
-
         body =
             Post.body post
     in
     [ div
-        [ class className
+        [ classList
+            [ ( readyClass, True )
+            , ( "animated", True )
+            , ( "fadeIn", True )
+            ]
+        , css
+            [ Css.height <| pct 100
+            , Css.width <| pct 100
+            , displayFlex
+            , justifyContent center
+            , alignItems center
+            , flexDirection column
+            ]
         ]
-        [ h1
-            [ class "title" ]
-            [ text title ]
-        , h2
-            [ class "author" ]
-            [ text username ]
-        , Markdown.toHtml "body" postStyle.body body
+        [ div
+            [ class "card"
+            , css
+                [ marginTop <| px 50
+                , marginBottom <| px 50
+                , backgroundColor <| Color.card theme
+                , maxWidth <| pct 60
+                , flexGrow <| num 1
+                ]
+            ]
+            [ h1
+                [ class "title" ]
+                [ text title ]
+            , h2
+                [ class "author" ]
+                [ text username ]
+            , Markdown.toHtml "body" postStyle.body body
+            ]
         ]
     ]
+
+
+readyClass : String
+readyClass =
+    "post"
