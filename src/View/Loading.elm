@@ -1,16 +1,14 @@
 module View.Loading exposing (toHtml)
 
-
 {-
-    Thanks to Sam Herbert for providing the base for this
-    svg, which is a tweaked version of his "puff" svg
-    found on github.com/SamHerbert/SVG-Loaders
+   Thanks to Sam Herbert for providing the base for this
+   svg, which is a tweaked version of his "puff" svg
+   found on github.com/SamHerbert/SVG-Loaders
 -}
 
-
+import Html.Styled exposing (Html)
 import Svg.Styled as Svg exposing (..)
 import Svg.Styled.Attributes as Attr exposing (..)
-import Html.Styled exposing (Html)
 
 
 multiplySize : Int -> Float -> (String -> attr) -> attr
@@ -28,8 +26,11 @@ multiplyTime baseTime multiplier transform =
         |> toFloat
         |> (*) baseTime
         |> String.fromFloat
-        |> \s -> s ++ "s"
-        |> transform
+        |> (\s ->
+                s
+                    ++ "s"
+                    |> transform
+           )
 
 
 toHtml : { timing : Int, size : Float } -> Html msg
@@ -41,7 +42,7 @@ toHtml { timing, size } =
             |> (*) 44
             |> String.fromFloat
             |> List.repeat 2
-            |> List.append ["0", "0"]
+            |> List.append [ "0", "0" ]
             |> String.join " "
             |> viewBox
         , stroke "#fff"
@@ -49,6 +50,7 @@ toHtml { timing, size } =
         [ g
             [ fill "none"
             , fillRule "evenodd"
+
             -- strokeWidth
             , size
                 |> (*) 0.8
@@ -68,8 +70,11 @@ toHtml { timing, size } =
                     , size
                         |> (*) 20
                         |> String.fromFloat
-                        |> \i -> "1; " ++ i
-                        |> values
+                        |> (\i ->
+                                "1; "
+                                    ++ i
+                                    |> values
+                           )
                     , calcMode "spline"
                     , keyTimes "0; 1"
                     , keySplines "0.165, 0.84, 0.44, 1"
@@ -100,8 +105,11 @@ toHtml { timing, size } =
                     , size
                         |> (*) 20
                         |> String.fromFloat
-                        |> \i -> "1; " ++ i
-                        |> values
+                        |> (\i ->
+                                "1; "
+                                    ++ i
+                                    |> values
+                           )
                     , calcMode "spline"
                     , keyTimes "0; 1"
                     , keySplines "0.165, 0.84, 0.44, 1"

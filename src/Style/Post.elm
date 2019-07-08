@@ -3,8 +3,8 @@ module Style.Post exposing (PostStyle, style)
 import Css exposing (..)
 import Css.Global exposing (Snippet)
 import Data.Theme exposing (Theme(..))
-import Style.Font exposing (firaCode)
 import Style.Color as Color
+import Style.Font exposing (firaCode)
 
 
 type alias PostStyle =

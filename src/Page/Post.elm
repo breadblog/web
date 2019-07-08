@@ -1,6 +1,7 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Api
+import Css exposing (..)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
@@ -13,15 +14,14 @@ import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
-import Css exposing (..)
 import Http
 import Message exposing (Compound(..), Msg(..))
+import Style.Color as Color
 import Style.Post
 import Time
 import Update
-import View.Page as Page exposing (PageUpdateOutput)
 import View.Loading
-import Style.Color as Color
+import View.Page as Page exposing (PageUpdateOutput)
 
 
 
@@ -183,17 +183,16 @@ viewPost general internals =
                             General.authors general
                     in
                     readyView general username post
-
     in
-        [ div
-            [ css
-                [ displayFlex
-                , flexDirection column
-                , flexGrow <| num 1
-                ]
+    [ div
+        [ css
+            [ displayFlex
+            , flexDirection column
+            , flexGrow <| num 1
             ]
-            contents
         ]
+        contents
+    ]
 
 
 loadingView : Theme -> List (Html (Compound ModMsg))
