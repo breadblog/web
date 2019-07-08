@@ -58,7 +58,9 @@
     "last 10 chrome versions",
     "last 5 firefox versions"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "animate.css": "^3.7.2"
+  },
   "engines": {
     "node": ">=10.16.0",
     "npm": ">=6.10.0"

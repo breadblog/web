@@ -1,3 +1,7 @@
+## 0.0.18
+
+* Display post on posts page
+
 ## 0.0.17
 
 * Setup tags API link

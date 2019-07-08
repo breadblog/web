@@ -3,6 +3,7 @@ module Style.Post exposing (PostStyle, style)
 import Css exposing (..)
 import Css.Global exposing (Snippet)
 import Data.Theme exposing (Theme(..))
+import Style.Color as Color
 import Style.Font exposing (firaCode)
 
 
@@ -51,8 +52,8 @@ darkPostStyle =
 
         -- Code block containers
         , Css.Global.pre
-            [ backgroundColor (hex "282828")
-            , color (hex "ebdbb2")
+            [ backgroundColor <| Color.card Dark
+            , color <| Color.secondaryFont Dark
             , borderRadius (px 20)
             , padding (px 20)
             ]

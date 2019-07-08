@@ -1,7 +1,8 @@
 import 'highlight.js/styles/gruvbox-dark'
+import 'animate.css'
 
 import { Elm } from '@main'
-import highlight from '@js/highlight'
+import { highlight } from '@js/highlight'
 import '@font/firacode'
 import '@font/indieflower'
 import '@font/montserrat'
@@ -40,6 +41,10 @@ const app = Elm.Main.init({
   app.ports.setCachePort.subscribe(function (data) {
     localStorage.setItem('elm-cache', JSON.stringify(data))
   })
+
+  app.ports.highlightBlock.subscribe(function (className) {
+    highlight(className)
+  })
 })()
 
 // -- Port updates
@@ -51,6 +56,3 @@ const app = Elm.Main.init({
   window.addEventListener('online', onNetworkChange)
   window.addEventListener('offline', onNetworkChange)
 })()
-
-// -- Highlight
-document.addEventListener('DOMContentLoaded', highlight)

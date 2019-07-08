@@ -1,6 +1,7 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
 import Api
+import Css exposing (..)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
@@ -15,9 +16,11 @@ import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events
 import Http
 import Message exposing (Compound(..), Msg(..))
+import Style.Color as Color
 import Style.Post
 import Time
 import Update
+import View.Loading
 import View.Page as Page exposing (PageUpdateOutput)
 
 
@@ -104,7 +107,10 @@ updateMod msg general internals =
                     in
                     case maybeUsername of
                         Just username ->
-                            simpleOutput <| Ready post username
+                            { model = Ready post username
+                            , general = general
+                            , cmd = General.highlightBlock readyClass
+                            }
 
                         Nothing ->
                             { model = LoadingAuthors post
@@ -162,25 +168,50 @@ viewPost general internals =
     let
         theme =
             General.theme general
+
+        contents =
+            case internals of
+                Loading ->
+                    loadingView theme
+
+                LoadingAuthors _ ->
+                    loadingView theme
+
+                Ready post username ->
+                    let
+                        authors =
+                            General.authors general
+                    in
+                    readyView general username post
     in
-    case internals of
-        Loading ->
-            loadingView theme
-
-        LoadingAuthors _ ->
-            loadingView theme
-
-        Ready post username ->
-            let
-                authors =
-                    General.authors general
-            in
-            readyView general username post
+    [ div
+        [ css
+            [ displayFlex
+            , flexDirection column
+            , flexGrow <| num 1
+            ]
+        ]
+        contents
+    ]
 
 
 loadingView : Theme -> List (Html (Compound ModMsg))
 loadingView theme =
-    []
+    [ div
+        [ css
+            [ displayFlex
+            , justifyContent center
+            , alignItems center
+            , Css.height <| pct 100
+            , Css.width <| pct 100
+            ]
+        ]
+        [ View.Loading.toHtml
+            { timing = 3
+            , size = 1.5
+            }
+        ]
+    ]
 
 
 readyView : General -> String -> Post Full -> List (Html (Compound ModMsg))
@@ -204,21 +235,46 @@ readyView general username post =
         authors =
             General.authors general
 
-        className =
-            "post"
-
         body =
             Post.body post
     in
     [ div
-        [ class className
+        [ classList
+            [ ( readyClass, True )
+            , ( "animated", True )
+            , ( "fadeIn", True )
+            ]
+        , css
+            [ Css.height <| pct 100
+            , Css.width <| pct 100
+            , displayFlex
+            , justifyContent center
+            , alignItems center
+            , flexDirection column
+            ]
         ]
-        [ h1
-            [ class "title" ]
-            [ text title ]
-        , h2
-            [ class "author" ]
-            [ text username ]
-        , Markdown.toHtml "body" postStyle.body body
+        [ div
+            [ class "card"
+            , css
+                [ marginTop <| px 50
+                , marginBottom <| px 50
+                , backgroundColor <| Color.card theme
+                , maxWidth <| pct 60
+                , flexGrow <| num 1
+                ]
+            ]
+            [ h1
+                [ class "title" ]
+                [ text title ]
+            , h2
+                [ class "author" ]
+                [ text username ]
+            , Markdown.toHtml "body" postStyle.body body
+            ]
         ]
     ]
+
+
+readyClass : String
+readyClass =
+    "post"

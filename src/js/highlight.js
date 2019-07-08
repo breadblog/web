@@ -24,6 +24,13 @@ hljs.registerLanguage('ini', ini)
 hljs.registerLanguage('html', xml)
 hljs.registerLanguage('xml', xml)
 
-export default () => {
+function highlight (className) {
+  const elements = document.querySelectorAll(`.${className} pre>code`)
+  elements.forEach(el => hljs.highlightBlock(el))
+}
+
+function highlightAll () {
   hljs.initHighlighting()
 }
+
+export { highlightAll, highlight }

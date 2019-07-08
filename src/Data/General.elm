@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, host, init, key, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, host, init, key, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
@@ -173,6 +173,7 @@ type Msg
     | GotPosts (Result Http.Error (List (Post Preview)))
     | UpdateTags
     | GotTags (Result Http.Error (List Tag))
+    | Highlight String
 
 
 
@@ -274,6 +275,11 @@ update msg general =
                         , getFromCache = .tags
                         , name = "tag"
                         }
+
+                Highlight class ->
+                    ( general
+                    , highlightBlock class
+                    )
     in
     ( newGeneral
     , Cmd.batch
@@ -526,6 +532,9 @@ toOffset list =
 
 
 {- Ports -}
+
+
+port highlightBlock : String -> Cmd msg
 
 
 port setCachePort : Value -> Cmd msg
