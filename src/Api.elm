@@ -1,7 +1,7 @@
 module Api exposing (Url, count, delete, get, post, put, url)
 
 import Data.Mode exposing (Mode(..))
-import Http exposing (Expect, Header, Body)
+import Http exposing (Body, Expect, Header)
 import Json.Encode exposing (Value)
 
 

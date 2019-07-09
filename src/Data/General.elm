@@ -1,9 +1,8 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, init, key, mode, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, version, mapUser, user)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, init, key, mapUser, mode, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
 import Data.Author as Author exposing (Author)
-import Data.UUID as UUID exposing (UUID)
 import Data.Config exposing (Config)
 import Data.Markdown as Markdown
 import Data.Mode as Mode exposing (Mode(..))
@@ -12,6 +11,7 @@ import Data.Post as Post exposing (Post, Preview)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
+import Data.UUID as UUID exposing (UUID)
 import Data.Version exposing (Version)
 import Http
 import Json.Decode as Decode exposing (Decoder)
@@ -299,7 +299,6 @@ update msg general =
                                         "Failed to logout"
                                         (HttpError err)
                                         Nothing
-
                             in
                             ( pushProblem problem general
                             , Cmd.none
@@ -559,10 +558,9 @@ tryLogout general =
     let
         url =
             Api.url (mode general) "/logout/"
-        
+
         expect =
             Http.expectWhatever OnLogout
-
     in
     Api.post
         { url = url
@@ -658,9 +656,9 @@ mapUser user_ general =
     let
         (General internals) =
             general
+
         (Cache iCache) =
             internals.cache
-
     in
     updateCache general { iCache | user = Just user_ }
 
@@ -740,10 +738,10 @@ encodeCache (Cache c) =
         , ( "postPreviews", Encode.list Post.encodePreview c.postPreviews )
         , ( "user"
           , case c.user of
-              Just uuid ->
-                  UUID.encode uuid
+                Just uuid ->
+                    UUID.encode uuid
 
-              Nothing ->
-                  Encode.null
+                Nothing ->
+                    Encode.null
           )
         ]

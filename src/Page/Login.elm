@@ -1,7 +1,6 @@
 module Page.Login exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
-import Http
-import Json.Decode
+import Api
 import Css exposing (..)
 import Data.General as General exposing (General, Msg(..))
 import Data.Login
@@ -10,11 +9,12 @@ import Data.Route as Route exposing (Route(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events as Events exposing (onClick, onInput)
+import Http
+import Json.Decode
 import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
-import View.Page as Page exposing (PageUpdateOutput)
 import Update
-import Api
+import View.Page as Page exposing (PageUpdateOutput)
 
 
 
@@ -93,13 +93,13 @@ updateMod msg general internals =
 
                 Ok info ->
                     {-
-                        TODO: login problem
+                       TODO: login problem
 
-                        both general (cache) and the login page care about this event.
-                        if we change the cache we must also send the port cmd.
-                        we could trigger a message that is listened for in both
-                        or we could expose `updateCache` which would require
-                        a Cmd.map in the module
+                       both general (cache) and the login page care about this event.
+                       if we change the cache we must also send the port cmd.
+                       we could trigger a message that is listened for in both
+                       or we could expose `updateCache` which would require
+                       a Cmd.map in the module
                     -}
                     { model = internals
                     , general = General.mapUser info.uuid general
@@ -138,7 +138,6 @@ updateMod msg general internals =
 
                         _ ->
                             Cmd.none
-
             in
             { model = internals
             , general = general
@@ -153,19 +152,19 @@ attemptLogin general username password =
             General.mode general
 
         msg =
-            \r -> r
-                |> OnLogin
-                |> Mod
-
+            \r ->
+                r
+                    |> OnLogin
+                    |> Mod
     in
     Api.post
         { expect = Http.expectJson msg <| Data.Login.decodeResponse
-        , body = Http.jsonBody
-            <| Data.Login.encodeRequest
-            <| Data.Login.Request username password
+        , body =
+            Http.jsonBody <|
+                Data.Login.encodeRequest <|
+                    Data.Login.Request username password
         , url = Api.url mode "/login/"
         }
-
 
 
 
@@ -241,6 +240,6 @@ viewLogin general internals =
     ]
 
 
-onKeyUp : (Int -> (Compound ModMsg)) -> Attribute (Compound ModMsg)
+onKeyUp : (Int -> Compound ModMsg) -> Attribute (Compound ModMsg)
 onKeyUp tagger =
     Events.on "keyup" <| Json.Decode.map tagger Events.keyCode

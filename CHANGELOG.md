@@ -1,6 +1,7 @@
 ## 0.0.19
 
 * Add login page
+* Logout functionality
 
 ## 0.0.18
 
