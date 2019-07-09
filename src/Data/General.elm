@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, host, init, key, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, init, key, mapUser, mode, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
@@ -11,6 +11,7 @@ import Data.Post as Post exposing (Post, Preview)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
+import Data.UUID as UUID exposing (UUID)
 import Data.Version exposing (Version)
 import Http
 import Json.Decode as Decode exposing (Decoder)
@@ -37,7 +38,6 @@ type alias Flags =
 
 type alias IGeneral =
     { cache : Cache
-    , user : Maybe Author
     , key : Key
     , problems : List (Problem Msg)
     , config : Config
@@ -56,6 +56,7 @@ type alias ICache =
     , tags : List Tag
     , authors : List Author
     , postPreviews : List (Post Preview)
+    , user : Maybe UUID
     }
 
 
@@ -106,7 +107,6 @@ init key_ flags =
 
         general =
             { cache = decoded.cache
-            , user = Nothing
             , key = key_
             , problems = cacheProblems
             , config = initConfig decoded
@@ -132,6 +132,7 @@ defaultCache currentVersion =
     , tags = []
     , authors = []
     , postPreviews = []
+    , user = Nothing
     }
         |> Cache
 
@@ -174,6 +175,8 @@ type Msg
     | UpdateTags
     | GotTags (Result Http.Error (List Tag))
     | Highlight String
+    | TryLogout
+    | OnLogout (Result Http.Error ())
 
 
 
@@ -280,6 +283,26 @@ update msg general =
                     ( general
                     , highlightBlock class
                     )
+
+                TryLogout ->
+                    ( general, tryLogout general )
+
+                OnLogout res ->
+                    case res of
+                        Ok _ ->
+                            updateCache general { iCache | user = Nothing }
+
+                        Err err ->
+                            let
+                                problem =
+                                    Problem.create
+                                        "Failed to logout"
+                                        (HttpError err)
+                                        Nothing
+                            in
+                            ( pushProblem problem general
+                            , Cmd.none
+                            )
     in
     ( newGeneral
     , Cmd.batch
@@ -299,6 +322,13 @@ updateCache general iCache =
     in
     ( General { internals | cache = cache_ }
     , setCache <| cache_
+    )
+
+
+mapCache : Cache -> General -> ( General, Cmd msg )
+mapCache cache_ (General general_) =
+    ( General { general_ | cache = cache_ }
+    , setCache cache_
     )
 
 
@@ -530,6 +560,22 @@ toOffset list =
     List.length list // Api.count
 
 
+tryLogout : General -> Cmd Msg
+tryLogout general =
+    let
+        url =
+            Api.url (mode general) "/logout/"
+
+        expect =
+            Http.expectWhatever OnLogout
+    in
+    Api.post
+        { url = url
+        , expect = expect
+        , body = Http.emptyBody
+        }
+
+
 
 {- Ports -}
 
@@ -604,13 +650,24 @@ authors general =
         |> .authors
 
 
+user : General -> Maybe UUID
+user general =
+    general
+        |> cache
+        |> cacheInternals
+        |> .user
 
--- TODO: Change to User type
 
+mapUser : UUID -> General -> ( General, Cmd msg )
+mapUser uuid general =
+    let
+        (General internals) =
+            general
 
-user : General -> Maybe Author
-user (General general) =
-    general.user
+        (Cache iCache) =
+            internals.cache
+    in
+    mapCache (Cache { iCache | user = Just uuid }) general
 
 
 problems : General -> List (Problem Msg)
@@ -629,8 +686,8 @@ key (General internals) =
     internals.key
 
 
-host : General -> Mode
-host (General internals) =
+mode : General -> Mode
+mode (General internals) =
     internals.config.mode
 
 
@@ -669,6 +726,7 @@ cacheDecoder =
         |> optional "postPreviews"
             (Decode.list Post.previewDecoder)
             []
+        |> optional "user" (Decode.nullable UUID.decoder) Nothing
         |> Decode.map Cache
 
 
@@ -685,4 +743,12 @@ encodeCache (Cache c) =
         , ( "tags", Encode.list Tag.encode c.tags )
         , ( "authors", Encode.list Author.encode c.authors )
         , ( "postPreviews", Encode.list Post.encodePreview c.postPreviews )
+        , ( "user"
+          , case c.user of
+                Just uuid ->
+                    UUID.encode uuid
+
+                Nothing ->
+                    Encode.null
+          )
         ]

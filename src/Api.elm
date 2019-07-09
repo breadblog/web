@@ -1,7 +1,7 @@
 module Api exposing (Url, count, delete, get, post, put, url)
 
 import Data.Mode exposing (Mode(..))
-import Http exposing (Expect, Header)
+import Http exposing (Body, Expect, Header)
 import Json.Encode exposing (Value)
 
 
@@ -111,26 +111,26 @@ get args =
         }
 
 
-put : { expect : Expect msg, body : Value, url : Url } -> Cmd msg
+put : { expect : Expect msg, body : Body, url : Url } -> Cmd msg
 put args =
     Http.request
         { method = "PUT"
         , headers = urlToHeaders args.url
         , url = urlToString args.url
-        , body = Http.jsonBody args.body
+        , body = args.body
         , expect = args.expect
         , timeout = Nothing
         , tracker = Nothing
         }
 
 
-post : { expect : Expect msg, body : Value, url : Url } -> Cmd msg
+post : { expect : Expect msg, body : Body, url : Url } -> Cmd msg
 post args =
     Http.request
         { method = "POST"
         , headers = urlToHeaders args.url
         , url = urlToString args.url
-        , body = Http.jsonBody args.body
+        , body = args.body
         , expect = args.expect
         , timeout = Nothing
         , tracker = Nothing

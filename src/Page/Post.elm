@@ -145,11 +145,11 @@ getPost general uuid =
         path =
             UUID.toPath "/post/public" uuid
 
-        host =
-            General.host general
+        mode =
+            General.mode general
     in
     Api.get
-        { url = Api.url host path
+        { url = Api.url mode path
         , expect = Http.expectJson GotPost Post.fullDecoder
         }
 
