@@ -153,13 +153,16 @@ update compound model =
                 ( Post postModel, PostMsg postMsg ) ->
                     updatePage Post PostMsg Page.Post.update postModel postMsg model
 
+                ( Login loginModel, LoginMsg loginMsg ) ->
+                    updatePage Login LoginMsg Page.Login.update loginModel loginMsg model
+
                 _ ->
                     -- TODO: Error handling (impossible state)
                     let
                         problem =
                             Problem.create
-                                ""
-                                (MarkdownError <| Markdown.create "")
+                                "Failed to Forward"
+                                (MarkdownError <| Markdown.create "Failed to forward `ModMsg` in `Main.elm`")
                                 Nothing
 
                         updatedGeneral =

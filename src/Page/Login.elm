@@ -1,19 +1,20 @@
 module Page.Login exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
-import Api
+import Http
+import Json.Decode
 import Css exposing (..)
-import Data.General as General exposing (General)
+import Data.General as General exposing (General, Msg(..))
 import Data.Login
 import Data.Password as Password exposing (Password)
 import Data.Route as Route exposing (Route(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events as Events exposing (onClick, onInput)
-import Http
-import Message exposing (Compound(..))
+import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
-import Update
 import View.Page as Page exposing (PageUpdateOutput)
+import Update
+import Api
 
 
 
@@ -63,10 +64,11 @@ type alias Msg =
 
 
 type ModMsg
-    = OnLogin (Result Http.Error ())
+    = OnLogin (Result Http.Error Data.Login.Response)
     | TryLogin
     | UpdateUsername String
     | UpdatePassword Password
+    | InputKeyUp Int
 
 
 
@@ -89,23 +91,25 @@ updateMod msg general internals =
                     , cmd = Cmd.none
                     }
 
-                Ok _ ->
+                Ok info ->
+                    {-
+                        TODO: login problem
+
+                        both general (cache) and the login page care about this event.
+                        if we change the cache we must also send the port cmd.
+                        we could trigger a message that is listened for in both
+                        or we could expose `updateCache` which would require
+                        a Cmd.map in the module
+                    -}
                     { model = internals
-                    , general = general
+                    , general = General.mapUser info.uuid general
                     , cmd = Cmd.none
                     }
 
         TryLogin ->
             let
-                mode =
-                    General.mode general
-
                 cmd =
-                    Api.post
-                        { expect = Http.expectWhatever <| \r -> Mod (OnLogin r)
-                        , body = Data.Login.encode <| Data.Login.Request internals.username internals.password
-                        , url = Api.url mode "/login/"
-                        }
+                    attemptLogin general internals.username internals.password
             in
             { model = internals
             , general = general
@@ -123,6 +127,45 @@ updateMod msg general internals =
             , general = general
             , cmd = Cmd.none
             }
+
+        InputKeyUp code ->
+            let
+                cmd =
+                    case code of
+                        -- enter
+                        13 ->
+                            attemptLogin general internals.username internals.password
+
+                        _ ->
+                            Cmd.none
+
+            in
+            { model = internals
+            , general = general
+            , cmd = cmd
+            }
+
+
+attemptLogin : General -> String -> Password -> Cmd (Compound ModMsg)
+attemptLogin general username password =
+    let
+        mode =
+            General.mode general
+
+        msg =
+            \r -> r
+                |> OnLogin
+                |> Mod
+
+    in
+    Api.post
+        { expect = Http.expectJson msg <| Data.Login.decodeResponse
+        , body = Http.jsonBody
+            <| Data.Login.encodeRequest
+            <| Data.Login.Request username password
+        , url = Api.url mode "/login/"
+        }
+
 
 
 
@@ -167,17 +210,37 @@ viewLogin general internals =
             , input
                 [ type_ "text"
                 , onInput (\u -> Mod <| UpdateUsername u)
+                , onKeyUp (\i -> Mod <| InputKeyUp i)
                 ]
                 []
             , input
                 [ type_ "password"
                 , onInput (\p -> Mod <| UpdatePassword <| Password.create p)
+                , onKeyUp (\i -> Mod <| InputKeyUp i)
                 ]
                 []
-            , button
-                [ onClick <| Mod TryLogin
+            , div
+                [ class "buttons"
+                , css
+                    [ displayFlex
+                    , flexDirection row
+                    , justifyContent spaceBetween
+                    ]
                 ]
-                []
+                [ button
+                    [ onClick <| Global <| GeneralMsg <| TryLogout
+                    ]
+                    [ text "logout" ]
+                , button
+                    [ onClick <| Mod TryLogin
+                    ]
+                    [ text "submit" ]
+                ]
             ]
         ]
     ]
+
+
+onKeyUp : (Int -> (Compound ModMsg)) -> Attribute (Compound ModMsg)
+onKeyUp tagger =
+    Events.on "keyup" <| Json.Decode.map tagger Events.keyCode
