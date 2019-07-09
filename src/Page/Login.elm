@@ -95,7 +95,6 @@ updateMod msg general internals =
                     let
                         ( updated, cmd ) =
                             General.mapUser info.uuid general
-
                     in
                     { model = internals
                     , general = updated

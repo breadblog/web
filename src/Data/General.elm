@@ -666,10 +666,8 @@ mapUser uuid general =
 
         (Cache iCache) =
             internals.cache
-
     in
     mapCache (Cache { iCache | user = Just uuid }) general
-
 
 
 problems : General -> List (Problem Msg)
