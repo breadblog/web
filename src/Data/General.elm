@@ -325,6 +325,13 @@ updateCache general iCache =
     )
 
 
+mapCache : Cache -> General -> ( General, Cmd msg )
+mapCache cache_ (General general_) =
+    ( General { general_ | cache = cache_ }
+    , setCache cache_
+    )
+
+
 updateTemp : General -> Temp -> General
 updateTemp general temp =
     let
@@ -651,16 +658,18 @@ user general =
         |> .user
 
 
-mapUser : UUID -> General -> ( General, Cmd Msg )
-mapUser user_ general =
+mapUser : UUID -> General -> ( General, Cmd msg )
+mapUser uuid general =
     let
         (General internals) =
             general
 
         (Cache iCache) =
             internals.cache
+
     in
-    updateCache general { iCache | user = Just user_ }
+    mapCache (Cache { iCache | user = Just uuid }) general
+
 
 
 problems : General -> List (Problem Msg)

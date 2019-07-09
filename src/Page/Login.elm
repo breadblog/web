@@ -92,18 +92,14 @@ updateMod msg general internals =
                     }
 
                 Ok info ->
-                    {-
-                       TODO: login problem
+                    let
+                        ( updated, cmd ) =
+                            General.mapUser info.uuid general
 
-                       both general (cache) and the login page care about this event.
-                       if we change the cache we must also send the port cmd.
-                       we could trigger a message that is listened for in both
-                       or we could expose `updateCache` which would require
-                       a Cmd.map in the module
-                    -}
+                    in
                     { model = internals
-                    , general = General.mapUser info.uuid general
-                    , cmd = Cmd.none
+                    , general = updated
+                    , cmd = cmd
                     }
 
         TryLogin ->
