@@ -7,7 +7,7 @@ import Data.Config exposing (Config)
 import Data.Markdown as Markdown
 import Data.Mode as Mode exposing (Mode(..))
 import Data.Network as Network exposing (Network(..))
-import Data.Post as Post exposing (Post, Preview)
+import Data.Post as Post exposing (Post, Preview, Core)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
@@ -55,13 +55,13 @@ type alias ICache =
     , theme : Theme
     , tags : List Tag
     , authors : List Author
-    , postPreviews : List (Post Preview)
+    , postPreviews : List (Post Core Preview)
     , user : Maybe UUID
     }
 
 
 type alias Temp =
-    { postPreviews : List (Post Preview)
+    { postPreviews : List (Post Core Preview)
     , authors : List Author
     , tags : List Tag
     }
@@ -171,7 +171,7 @@ type Msg
     | UpdateAuthors
     | GotAuthors (Result Http.Error (List Author))
     | UpdatePosts
-    | GotPosts (Result Http.Error (List (Post Preview)))
+    | GotPosts (Result Http.Error (List (Post Core Preview)))
     | UpdateTags
     | GotTags (Result Http.Error (List Tag))
     | Highlight String

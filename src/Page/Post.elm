@@ -5,7 +5,7 @@ import Css exposing (..)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
-import Data.Post as Post exposing (Full, Post)
+import Data.Post as Post exposing (Full, Post, Core, Client)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route exposing (Route(..))
 import Data.Theme exposing (Theme)
@@ -34,21 +34,29 @@ type alias Model =
 
 type Internals
     = Loading
-    | LoadingAuthors (Post Full)
-    | Ready (Post Full) String
+    | LoadingAuthors (Post Core Full)
+    | Ready (Post Core Full) String
+    | Preview (Post Core Full)
+    | Edit (Post Core Full)
+    | Create (Post Client Full)
 
 
-type Failure
-    = NoSuchAuthor UUID
+init : Maybe UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
+init maybeUUID general =
+    case maybeUUID of
+        Just uuid ->
+            Page.init
+                Loading
+                (getPost general uuid)
+                (Post maybeUUID)
+                general
 
-
-init : UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init uuid general =
-    Page.init
-        Loading
-        (getPost general uuid)
-        (Post uuid)
-        general
+        Nothing ->
+            Page.init
+                (Create Post.empty)
+                Cmd.none
+                (Post maybeUUID)
+                general
 
 
 fromGeneral : General -> Model -> Model
@@ -70,7 +78,7 @@ type alias Msg =
 
 
 type ModMsg
-    = GotPost (Result Http.Error (Post Full))
+    = GotPost (Result Http.Error (Post Core Full))
 
 
 
@@ -214,7 +222,7 @@ loadingView theme =
     ]
 
 
-readyView : General -> String -> Post Full -> List (Html (Compound ModMsg))
+readyView : General -> String -> Post Core Full -> List (Html (Compound ModMsg))
 readyView general username post =
     let
         theme =

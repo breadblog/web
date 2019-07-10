@@ -1,4 +1,4 @@
-module Data.Post exposing (Full, Post, Preview, author, body, compare, description, encodeFull, encodePreview, fullDecoder, mergeFromApi, previewDecoder, title)
+module Data.Post exposing (Full, Post, Preview, Core, Client, author, body, compare, description, encodeFull, encodePreview, fullDecoder, mergeFromApi, previewDecoder, title, empty)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
@@ -11,33 +11,59 @@ import Json.Encode as Encode exposing (Value)
 import Time
 
 
-
 {- Model -}
 
 
-type Post extra
-    = Post extra Internals
+-- Represents a Post
+-- location: where the post is stored (client/server)
+-- fields: what fields post contains (preview/full)
+type Post location fields
+    = Post location fields Internals
 
 
-type alias Body =
-    Markdown
+-- For posts stored on core
+type Core
+    = Core CoreInternals
 
 
+type alias CoreInternals =
+    { uuid : UUID
+    , date : Time.Posix
+    }
+
+
+-- For posts stored on client (hasn't been created on server yet)
+type Client
+    = Client
+
+
+-- For posts containing all data
 type Full
-    = Full Body
+    = Full FullInternals
 
 
+type alias FullInternals =
+    { body : Markdown
+    }
+
+
+-- For posts only containing low-storage data
 type Preview
     = Preview
 
 
-type alias Internals =
+type alias Existing =
     { uuid : UUID
-    , title : String
+    , date : Time.Posix
+    }
+
+
+-- fields contained by ALL posts
+type alias Internals =
+    { title : String
     , description : String
     , tags : List UUID
     , author : UUID
-    , date : Time.Posix
     , published : Bool
     , favorite : Bool
     }
@@ -47,54 +73,110 @@ type alias Internals =
 {- Accessors -}
 
 
-uuid : Post e -> UUID
-uuid (Post e post) =
-    post.uuid
+uuid : Post Core f -> UUID
+uuid post =
+    accessCore .uuid post
 
 
-description : Post e -> String
-description (Post e post) =
-    post.description
+description : Post l f -> String
+description post =
+    accessInternals .description post
 
 
-title : Post e -> String
-title (Post e post) =
-    post.title
+title : Post l f -> String
+title post =
+    accessInternals .title post
+
+mapTitle : (String -> String) -> Post l f -> Post l f
+mapTitle transform post =
+    mapInternals (\i -> { i | title = transform i.title }) post
 
 
-mapTitle : (String -> String) -> Post e -> Post e
-mapTitle fn (Post e post) =
-    Post e
-        { post | title = fn post.title }
+body : Post l Full -> Markdown
+body post =
+    accessFull .body post
 
 
-body : Post Full -> Body
-body (Post (Full body_) post) =
-    body_
+mapBody : (Markdown -> Markdown) -> Post l Full -> Post l Full
+mapBody transform post =
+    mapFull (\f -> { f | body = transform f.body }) post
 
 
-mapBody : (Body -> Body) -> Post Full -> Post Full
-mapBody fn (Post (Full body_) post) =
-    Post
-        (Full (fn body_))
-        post
+author : Post l f -> UUID
+author post =
+    accessInternals .author post
 
 
-author : Post e -> UUID
-author (Post e post) =
-    post.author
+date : Post Core f -> Time.Posix
+date post =
+    accessCore .date post
 
 
-date : Post e -> Time.Posix
-date (Post e post) =
-    post.date
+favorite : Post l f -> Bool
+favorite post =
+    accessInternals .favorite post
+
+
+mapFavorite : (Bool -> Bool) -> Post l f -> Post l f
+mapFavorite transform post =
+    mapInternals (\i -> { i | favorite = transform i.favorite }) post
 
 
 
 {- Util -}
 
 
-toSource : msg -> List (Post e) -> Source msg
+accessInternals : (Internals -> a) -> Post l f -> a
+accessInternals accessor (Post l f internals) =
+    internals
+        |> accessor
+
+
+mapInternals : (Internals -> Internals) -> Post l f -> Post l f
+mapInternals transform (Post l f internals) =
+    Post l f <| transform internals
+
+
+accessCore : (CoreInternals -> a) -> Post Core f -> a
+accessCore accessor (Post (Core core) _ _) =
+    core
+        |> accessor
+
+
+mapCore : (CoreInternals -> CoreInternals) -> Post Core f -> Post Core f
+mapCore transform (Post (Core core) f i) =
+    Post (Core <| transform core) f i
+
+
+accessFull : (FullInternals -> a) -> Post l Full -> a
+accessFull accessor (Post _ (Full full) _) =
+    full
+        |> accessor
+
+
+mapFull : (FullInternals -> FullInternals) -> Post l Full -> Post l Full
+mapFull transform (Post l (Full full) i) =
+    Post l (Full <| transform full) i
+
+
+empty : UUID -> Post Client Full
+empty userUUID =
+    Post
+        (Client)
+        (Full
+            { body = Markdown.create ""
+            }
+        )
+        { title = ""
+        , description = ""
+        , tags = []
+        , author = userUUID
+        , published = False
+        , favorite = False
+        }
+
+
+toSource : msg -> List (Post l f) -> Source msg
 toSource msg posts =
     Search.source
         (List.map
@@ -105,14 +187,14 @@ toSource msg posts =
         msg
 
 
-compare : Post e -> Post e -> Bool
-compare (Post _ a) (Post _ b) =
-    a.uuid == b.uuid
+compare : Post Core f -> Post Core f -> Bool
+compare a b =
+    (uuid a) == (uuid b)
 
 
-mergeFromApi : Post Preview -> Post Preview -> Post Preview
-mergeFromApi (Post _ a) (Post _ b) =
-    Post Preview { a | favorite = b.favorite }
+mergeFromApi : Post Core Preview -> Post Core Preview -> Post Core Preview
+mergeFromApi fromAPI (Post _ _ fromCache) =
+    mapFavorite (\_ -> fromCache.favorite) fromAPI
 
 
 
@@ -120,31 +202,56 @@ mergeFromApi (Post _ a) (Post _ b) =
 -- Encoders
 
 
-encodeFull : Post Full -> Value
-encodeFull (Post (Full body_) internals) =
-    Encode.object <|
-        List.append
-            (internalsEncoder internals)
-            [ ( "body", Markdown.encode body_ ) ]
-
-
-encodePreview : Post Preview -> Value
-encodePreview (Post Preview internals) =
-    Encode.object <|
-        internalsEncoder internals
-
-
-internalsEncoder : Internals -> List ( String, Value )
-internalsEncoder internals =
-    [ ( "uuid", UUID.encode internals.uuid )
-    , ( "title", Encode.string internals.title )
-    , ( "description", Encode.string internals.description )
-    , ( "tags", Encode.list UUID.encode internals.tags )
-    , ( "author", UUID.encode internals.author )
-    , ( "date", Encode.int (Time.posixToMillis internals.date) )
-    , ( "published", Encode.bool internals.published )
-    , ( "favorite", Encode.bool internals.favorite )
+encodeInternalsHelper : Internals -> List ( String, Value )
+encodeInternalsHelper i =
+    [ ( "title", Encode.string i.title )
+    , ( "description", Encode.string i.description )
+    , ( "tags", Encode.list UUID.encode i.tags )
+    , ( "author", UUID.encode i.author )
+    , ( "published", Encode.bool i.published )
+    , ( "favorite", Encode.bool i.favorite )
     ]
+
+
+encodeFullHelper : FullInternals -> List ( String, Value )
+encodeFullHelper i =
+    [ ( "body", Markdown.encode i.body )
+    ]
+
+
+encodeCoreHelper : CoreInternals -> List ( String, Value )
+encodeCoreHelper i =
+    [ ( "date", Encode.int <| Time.posixToMillis i.date )
+    , ( "uuid", UUID.encode i.uuid )
+    ]
+
+
+encodeFull : Post Core Full -> Value
+encodeFull (Post (Core coreInternals) (Full fullInternals) internals) =
+    Encode.object
+        ([]
+            |> (++) (encodeInternalsHelper internals)
+            |> (++) (encodeFullHelper fullInternals)
+            |> (++) (encodeCoreHelper coreInternals)
+        )
+
+
+encodePreview : Post Core Preview -> Value
+encodePreview (Post (Core coreInternals) _ internals) =
+    Encode.object
+        ([]
+            |> (++) (encodeInternalsHelper internals)
+            |> (++) (encodeCoreHelper coreInternals)
+        )
+
+
+encodeFreshFull : Post Client Full -> Value
+encodeFreshFull (Post _ (Full fullInternals) internals) =
+    Encode.object
+        ([]
+            |> (++) (encodeInternalsHelper internals)
+            |> (++) (encodeFullHelper fullInternals)
+        )
 
 
 
@@ -154,14 +261,27 @@ internalsEncoder internals =
 internalsDecoder : Decoder Internals
 internalsDecoder =
     Decode.succeed Internals
-        |> required "uuid" UUID.decoder
         |> required "title" Decode.string
         |> required "description" Decode.string
         |> required "tags" (Decode.list UUID.decoder)
         |> required "author" UUID.decoder
-        |> required "date" timeDecoder
         |> required "published" Decode.bool
         |> optional "favorite" Decode.bool True
+
+
+coreDecodeHelper : Decoder Core
+coreDecodeHelper =
+    Decode.succeed CoreInternals
+        |> required "uuid" UUID.decoder
+        |> required "date" timeDecoder
+        |> Decode.map Core
+
+
+fullDecodeHelper : Decoder Full
+fullDecodeHelper =
+    Decode.succeed FullInternals
+        |> required "body" Markdown.decoder
+        |> Decode.map Full
 
 
 timeDecoder : Decoder Time.Posix
@@ -173,15 +293,17 @@ timeDecoder =
             )
 
 
-previewDecoder : Decoder (Post Preview)
+previewDecoder : Decoder (Post Core Preview)
 previewDecoder =
     Decode.succeed Post
+        |> custom coreDecodeHelper
         |> hardcoded Preview
         |> custom internalsDecoder
 
 
-fullDecoder : Decoder (Post Full)
+fullDecoder : Decoder (Post Core Full)
 fullDecoder =
     Decode.succeed Post
-        |> required "body" (Decode.map Full Markdown.decoder)
+        |> custom coreDecodeHelper
+        |> custom fullDecodeHelper
         |> custom internalsDecoder
