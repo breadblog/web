@@ -1,3 +1,7 @@
+## 0.0.20
+
+* Refactor Data.Post to account for client side posts
+
 ## 0.0.19
 
 * Add login page

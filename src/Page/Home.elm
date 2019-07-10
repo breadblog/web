@@ -2,7 +2,7 @@ module Page.Home exposing (Model, Msg, fromGeneral, init, toGeneral, update, vie
 
 import Css exposing (..)
 import Data.General as General exposing (General)
-import Data.Post as Post exposing (Post, Preview, Core)
+import Data.Post as Post exposing (Core, Post, Preview)
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)

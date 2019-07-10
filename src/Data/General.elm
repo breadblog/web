@@ -7,7 +7,7 @@ import Data.Config exposing (Config)
 import Data.Markdown as Markdown
 import Data.Mode as Mode exposing (Mode(..))
 import Data.Network as Network exposing (Network(..))
-import Data.Post as Post exposing (Post, Preview, Core)
+import Data.Post as Post exposing (Core, Post, Preview)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))

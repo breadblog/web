@@ -1,4 +1,4 @@
-module Data.Post exposing (Full, Post, Preview, Core, Client, author, body, compare, description, encodeFull, encodePreview, fullDecoder, mergeFromApi, previewDecoder, title, empty)
+module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFull, encodePreview, fullDecoder, mergeFromApi, previewDecoder, title)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
@@ -11,17 +11,21 @@ import Json.Encode as Encode exposing (Value)
 import Time
 
 
+
 {- Model -}
-
-
 -- Represents a Post
 -- location: where the post is stored (client/server)
 -- fields: what fields post contains (preview/full)
+
+
 type Post location fields
     = Post location fields Internals
 
 
+
 -- For posts stored on core
+
+
 type Core
     = Core CoreInternals
 
@@ -32,12 +36,18 @@ type alias CoreInternals =
     }
 
 
+
 -- For posts stored on client (hasn't been created on server yet)
+
+
 type Client
     = Client
 
 
+
 -- For posts containing all data
+
+
 type Full
     = Full FullInternals
 
@@ -47,7 +57,10 @@ type alias FullInternals =
     }
 
 
+
 -- For posts only containing low-storage data
+
+
 type Preview
     = Preview
 
@@ -58,7 +71,10 @@ type alias Existing =
     }
 
 
+
 -- fields contained by ALL posts
+
+
 type alias Internals =
     { title : String
     , description : String
@@ -86,6 +102,7 @@ description post =
 title : Post l f -> String
 title post =
     accessInternals .title post
+
 
 mapTitle : (String -> String) -> Post l f -> Post l f
 mapTitle transform post =
@@ -162,7 +179,7 @@ mapFull transform (Post l (Full full) i) =
 empty : UUID -> Post Client Full
 empty userUUID =
     Post
-        (Client)
+        Client
         (Full
             { body = Markdown.create ""
             }
@@ -189,7 +206,7 @@ toSource msg posts =
 
 compare : Post Core f -> Post Core f -> Bool
 compare a b =
-    (uuid a) == (uuid b)
+    uuid a == uuid b
 
 
 mergeFromApi : Post Core Preview -> Post Core Preview -> Post Core Preview
