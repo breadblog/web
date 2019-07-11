@@ -25,7 +25,7 @@ import View.Page as Page exposing (PageUpdateOutput)
 
 
 
--- Model --
+{- Model -}
 
 
 type alias Model =
@@ -33,30 +33,63 @@ type alias Model =
 
 
 type Internals
+    {------------------ Public States ---------------------}
+    -- loading state for when we are fetching post info
     = Loading
+    -- loading state when we are waiting on authors update
     | LoadingAuthors (Post Core Full)
+    -- we are now ready to display an existing post
     | Ready (Post Core Full) String
-    | Preview (Post Core Full)
+    {------------------ User Only States ------------------}
+    -- "sneak peek" of what a post will look like
+    -- referred to as "preview" in UI, but "Peek"
+    -- in code to avoid conflicts
+    | Peek (Post Core Full)
+    -- the following two states are very similar, just one
+    -- doesn't have info from core (such as uuid)
     | Edit (Post Core Full)
     | Create (Post Client Full)
+    {------------------------------------------------------}
 
 
 init : Maybe UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init maybeUUID general =
-    case maybeUUID of
-        Just uuid ->
+init maybePostUUID general =
+    let
+        maybeUserUUID =
+            General.user general
+
+    in
+    case maybePostUUID of
+        Just postUUID ->
             Page.init
                 Loading
-                (getPost general uuid)
-                (Post maybeUUID)
+                (getPost general postUUID)
+                (Post <| Just postUUID)
                 general
 
         Nothing ->
-            Page.init
-                (Create Post.empty)
-                Cmd.none
-                (Post maybeUUID)
-                general
+            case maybeUserUUID of
+                Just userUUID ->
+                    Page.init
+                        (Create <| Post.empty userUUID)
+                        Cmd.none
+                        (Post Nothing)
+                        general
+
+                Nothing ->
+                    let
+                        problem =
+                            Problem.create
+                                "Not Logged In"
+                                (MarkdownError <| Markdown.create "you must be logged in to create a post")
+                                Nothing
+
+                    in
+                    Page.init
+                        Loading
+                        Cmd.none
+                        (Post Nothing)
+                        (General.pushProblem problem general)
 
 
 fromGeneral : General -> Model -> Model
@@ -70,7 +103,7 @@ toGeneral =
 
 
 
--- Message --
+{- Message -}
 
 
 type alias Msg =
@@ -82,7 +115,7 @@ type ModMsg
 
 
 
--- Update --
+{- Update -}
 
 
 update : Msg -> Model -> PageUpdateOutput ModMsg Internals
@@ -144,7 +177,7 @@ updateMod msg general internals =
 
 
 
--- Util --
+{- Util -}
 
 
 getPost : General -> UUID -> Cmd ModMsg
@@ -163,7 +196,7 @@ getPost general uuid =
 
 
 
--- View --
+{- View -}
 
 
 view : Model -> Page.ViewResult ModMsg
@@ -191,12 +224,24 @@ viewPost general internals =
                             General.authors general
                     in
                     readyView general username post
+
+                Peek post ->
+                    peekView general post
+
+                Edit post ->
+                    editView general post
+
+                Create post ->
+                    createView general post
     in
     [ div
-        [ css
+        [ class "page post-page"
+        , css
             [ displayFlex
             , flexDirection column
             , flexGrow <| num 1
+            , overflowY auto
+            , alignItems center
             ]
         ]
         contents
@@ -220,6 +265,39 @@ loadingView theme =
             }
         ]
     ]
+
+
+peekView : General -> Post Core Full -> List (Html (Compound ModMsg))
+peekView general post =
+    let
+        theme =
+            General.theme general
+    in
+    [  ]
+        |> sheet general
+        |> List.singleton
+
+
+editView : General -> Post Core Full -> List (Html (Compound ModMsg))
+editView general post =
+    let
+        theme =
+            General.theme general
+    in
+    [  ]
+        |> sheet general
+        |> List.singleton
+
+
+createView : General -> Post Client Full -> List (Html (Compound ModMsg))
+createView general post =
+    let
+        theme =
+            General.theme general
+    in
+    [  ]
+        |> sheet general
+        |> List.singleton
 
 
 readyView : General -> String -> Post Core Full -> List (Html (Compound ModMsg))
@@ -281,6 +359,53 @@ readyView general username post =
             ]
         ]
     ]
+
+
+{- View Helpers -}
+
+
+readonlyHeader : String -> String -> Html (Compound ModMsg)
+readonlyHeader username title =
+    text ""
+
+
+writableHeader : String -> String -> Html (Compound ModMsg)
+writableHeader username title =
+    div
+        [ class "header edit"
+        , css
+            [ displayFlex
+            , marginTop <| px 15
+            , marginBottom <| px 15
+            , alignSelf flexStart
+            ]
+        ]
+        [ a
+            [ class "author" ]
+            [  ]
+        ]
+
+
+sheet : General -> List (Html msg) -> Html msg
+sheet general contents =
+    let
+        theme =
+            General.theme general
+
+    in
+    div
+        [ class "sheet"
+        , css
+            [ marginBottom <| px 50
+            , backgroundColor <| Color.card theme
+            , Css.width <| pct 60
+            , flexGrow <| num 1
+            , displayFlex
+            , flexDirection column
+            , borderRadius <| px 7
+            ]
+        ]
+        contents
 
 
 readyClass : String

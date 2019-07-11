@@ -10,7 +10,7 @@ import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, to
 type Route
     = NotFound
     | Home
-    | Post UUID
+    | Post (Maybe UUID)
     | About
     | Donate
     | Changelog
@@ -29,7 +29,8 @@ urlParser =
         , Parser.map Login (s "login")
 
         -- Posts
-        , Parser.map Post (s "post" </> UUID.urlParser)
+        , Parser.map (Post Nothing) (s "post" </> s "create")
+        , Parser.map (\uuid -> Post (Just uuid)) (s "post" </> UUID.urlParser)
 
         -- Info
         , Parser.map About (s "about")
@@ -126,8 +127,13 @@ toPath route =
         Login ->
             relative [ "/login" ] []
 
-        Post uuid ->
-            relative [ UUID.toPath "/post" uuid ] []
+        Post maybePostUUID ->
+            case maybePostUUID of
+                Just postUUID ->
+                    relative [ UUID.toPath "/post" postUUID ] []
+
+                Nothing ->
+                    relative [ "/post/create" ] []
 
         About ->
             relative [ "/about" ] []
