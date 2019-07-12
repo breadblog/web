@@ -1,7 +1,8 @@
 module Page.Problems exposing (view)
 
 import Css exposing (..)
-import Data.General exposing (Msg)
+import Css.Transitions as Transitions exposing (transition)
+import Data.General exposing (Msg(..))
 import Data.Markdown as Markdown
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Html.Styled exposing (..)
@@ -14,6 +15,7 @@ import Style.Color as Color
 import Style.Font as Font
 import View.Svg as Svg
 import Svg.Styled.Attributes as SvgAttr
+import Style.Shadow as Shadow
 
 
 view : List (Problem Msg) -> Html Msg
@@ -59,8 +61,8 @@ view problems =
                 ]
             ]
             <|
-                List.map
-                    (\p ->
+                List.indexedMap
+                    (\i p ->
                         let
                             title =
                                 Problem.title p
@@ -106,24 +108,59 @@ view problems =
                                 , displayFlex
                                 , flexDirection column
                                 , alignItems center
+                                , Shadow.dp6
                                 ]
                             ]
                             [ h1
                                 [ class "title"
                                 , css
                                     [ margin <| px 8
-                                    , textDecoration underline
                                     ]
                                 ]
                                 [ text title
                                 ]
+                            , div
+                                [ css
+                                    [ Css.width <| pct 90
+                                    , Css.height <| px 1
+                                    , backgroundColor <| Color.tertiaryFont Dark
+                                    ]
+                                ]
+                                []
                             , description
                             , div
                                 [ class "buttons"
+                                , css
+                                    [ margin2 (px 5) (px 0) ]
                                 ]
                                 [ button
-                                    [ class "report" ]
-                                    []
+                                    [ onClick <| ReportErr p
+                                    , css
+                                        [ buttonStyle
+                                        , backgroundColor <| Color.primary Dark
+                                        ]
+                                    ]
+                                    [ text "Report" ]
+                                , case Problem.handler p of
+                                    Just handler ->
+                                        button
+                                            [ onClick <| WithDismiss i <| Problem.handlerMsg handler
+                                            , css
+                                                [ buttonStyle
+                                                , backgroundColor <| hex "006400"
+                                                ]
+                                            ]
+                                            [ Problem.handlerText handler ]
+
+                                    Nothing ->
+                                        button
+                                            [ onClick <| DismissProblem i
+                                            , css
+                                                [ buttonStyle
+                                                , backgroundColor <| hex "006400"
+                                                ]
+                                            ]
+                                            []
                                 ]
                             ]
                     )
@@ -156,4 +193,22 @@ view problems =
         ]
 
 
--- <a rel="nofollow" >Free Vector Design by: vecteezy.com</a>
+buttonStyle : Style
+buttonStyle =
+    Css.batch
+        [ padding <| px 7
+        , fontFamilies Font.montserrat
+        , borderRadius <| px 4
+        , margin2 (px 0) (px 20)
+        , fontSize <| rem 1
+        , fontWeight (int 500)
+        , Shadow.dp2
+        , border <| px 0
+        , cursor pointer
+        , color <| Color.secondaryFont Dark
+        , transition
+            [ Transitions.boxShadow 300 ]
+        , hover
+            [ Shadow.dp4 ]
+        -- , transition box shadow and hover
+        ]

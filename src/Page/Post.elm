@@ -97,11 +97,7 @@ function () {
                                 (Create (Post.empty userUUID) author)
                                 Cmd.none
                                 (Post Nothing)
-                                (General.pushProblem
-                                    (Problem.create "Junk Problem" (MarkdownError <| Markdown.create junk
-                                    ) Nothing)
-                                    general
-                                )
+                                general
 
                         Nothing ->
                             Page.init
@@ -116,7 +112,7 @@ function () {
                             Problem.create
                                 "Not Logged In"
                                 (MarkdownError <| Markdown.create "you must be logged in to create a post")
-                                Nothing
+                                (Just <| Problem.createHandler "Log In" (NavigateTo Login))
 
                     in
                     Page.init

@@ -1,8 +1,9 @@
-module Data.Problem exposing (Description(..), Handler, Problem, create, description, map, title, handler, onClick, handlerText)
+module Data.Problem exposing (Description(..), Handler, Problem, create, description, map, title, handler, handlerMsg, handlerText, createHandler, encode)
 
-import Data.Markdown exposing (Markdown)
-import Http
-import Json.Decode
+import Data.Markdown as Markdown exposing (Markdown)
+import Http exposing (Error(..))
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
 import Html.Styled.Events
 import Html.Styled exposing (Attribute, Html)
 
@@ -12,7 +13,7 @@ type Problem msg
 
 
 type Description
-    = JsonError Json.Decode.Error
+    = JsonError Decode.Error
     | MarkdownError Markdown
     | HttpError Http.Error
 
@@ -53,9 +54,9 @@ description (Problem internals) =
     internals.description
 
 
-onClick : Handler msg -> Attribute msg
-onClick (Handler internals) =
-    Html.Styled.Events.onClick internals.msg
+handlerMsg : Handler msg -> msg
+handlerMsg (Handler internals) =
+    internals.msg
 
 
 handlerText : Handler msg -> Html e
@@ -76,6 +77,11 @@ create : String -> Description -> Maybe (Handler msg) -> Problem msg
 create title_ desc handler_ =
     Problem <|
         Internals title_ desc handler_
+
+
+createHandler : String -> msg -> Handler msg
+createHandler label msg =
+    Handler <| IHandler label msg
 
 
 
@@ -105,3 +111,60 @@ map transform problems =
                 |> Problem
         )
         problems
+
+
+isBodySafe : String -> Bool
+isBodySafe str =
+    let
+        checks =
+            [ String.contains "password"
+            , String.contains "Password"
+            , String.contains "hash"
+            , String.contains "Hash"
+            ]
+
+    in
+    not <| List.any (\c -> c str) checks
+
+
+
+
+{- JSON -}
+
+
+encode : Problem msg -> Value
+encode (Problem internals) =
+    Encode.object
+        [ ( "title", Encode.string internals.title )
+        , ( "description", encodeDesc internals.description )
+        ]
+
+
+encodeDesc : Description -> Value
+encodeDesc desc =
+    case desc of
+        MarkdownError err ->
+            Markdown.encode err
+
+        JsonError err ->
+            Encode.string <| Decode.errorToString err
+
+        HttpError err ->
+            case err of
+                BadUrl str ->
+                    Encode.string <| "bad url: " ++ str
+
+                Timeout ->
+                    Encode.string "request timeout"
+
+                NetworkError ->
+                    Encode.string "network error"
+
+                BadStatus int ->
+                    Encode.string <| "bad status: " ++ (String.fromInt int)
+
+                BadBody str ->
+                    if isBodySafe str then
+                        Encode.string <| "bad body: " ++ str
+                    else
+                        Encode.string "bad body (unsafe contents)"

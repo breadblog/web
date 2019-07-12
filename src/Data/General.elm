@@ -1,10 +1,12 @@
 port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, init, key, mapUser, mode, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
 
 import Api exposing (Url)
+import List.Extra
 import Browser.Navigation exposing (Key)
 import Data.Author as Author exposing (Author)
 import Data.Config exposing (Config)
 import Data.Markdown as Markdown
+import Data.Route as Route exposing (Route(..))
 import Data.Mode as Mode exposing (Mode(..))
 import Data.Network as Network exposing (Network(..))
 import Data.Post as Post exposing (Core, Post, Preview)
@@ -177,6 +179,10 @@ type Msg
     | Highlight String
     | TryLogout
     | OnLogout (Result Http.Error ())
+    | NavigateTo Route
+    | ReportErr (Problem Msg)
+    | DismissProblem Int
+    | WithDismiss Int Msg
 
 
 
@@ -303,6 +309,19 @@ update msg general =
                             ( pushProblem problem general
                             , Cmd.none
                             )
+
+                NavigateTo route ->
+                    navigateTo route general
+
+                ReportErr _ ->
+                    ( general , Cmd.none )
+
+                DismissProblem index ->
+                    ( dismissProblem index general, Cmd.none )
+
+                WithDismiss index nestedMsg ->
+                    update nestedMsg <| dismissProblem index general
+
     in
     ( newGeneral
     , Cmd.batch
@@ -322,6 +341,18 @@ updateCache general iCache =
     in
     ( General { internals | cache = cache_ }
     , setCache <| cache_
+    )
+
+
+dismissProblem : Int -> General -> General
+dismissProblem index (General internals) =
+    General { internals | problems = List.Extra.removeAt index internals.problems }
+
+
+navigateTo : Route -> General -> ( General, Cmd msg )
+navigateTo route general =
+    ( general
+    , Browser.Navigation.pushUrl (key general) (Route.toPath route)
     )
 
 
