@@ -57,9 +57,6 @@ type Internals
     {------------------------------------------------------}
 
 
--- TODO: What if you load authors and the author for the post is still missing?
-
-
 init : Maybe UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
 init maybePostUUID general =
     let
@@ -68,6 +65,19 @@ init maybePostUUID general =
 
         authors =
             General.authors general
+
+        junk =
+            -- TODO: Remove
+            """
+There was a problem here:
+
+```
+function () {
+    console.log('hahahaha')
+}
+```
+
+            """
 
     in
     case maybePostUUID of
@@ -88,18 +98,7 @@ init maybePostUUID general =
                                 Cmd.none
                                 (Post Nothing)
                                 (General.pushProblem
-                                    (Problem.create "Fake Problem" (MarkdownError <| Markdown.create
-                                    """
-                                    # Description
-
-                                    There was a problem here:
-
-                                    ```
-                                    function () {
-                                        console.log('hahahaha')
-                                    }
-                                    ```
-                                    """
+                                    (Problem.create "Junk Problem" (MarkdownError <| Markdown.create junk
                                     ) Nothing)
                                     general
                                 )

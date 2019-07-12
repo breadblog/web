@@ -99,20 +99,32 @@ view problems =
                         div
                             [ class "problem"
                             , css
-                                [ Css.width <| pct 60
+                                [ Css.width <| pct 30
                                 , backgroundColor <| Color.card Dark
                                 , padding <| px 10
                                 , borderRadius <| px 6
+                                , displayFlex
+                                , flexDirection column
+                                , alignItems center
                                 ]
                             ]
                             [ h1
                                 [ class "title"
                                 , css
-                                    []
+                                    [ margin <| px 8
+                                    , textDecoration underline
+                                    ]
                                 ]
                                 [ text title
                                 ]
                             , description
+                            , div
+                                [ class "buttons"
+                                ]
+                                [ button
+                                    [ class "report" ]
+                                    []
+                                ]
                             ]
                     )
                     problems

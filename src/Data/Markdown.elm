@@ -25,7 +25,7 @@ toHtml className styles (Markdown content) =
             MD.toHtml
                 [ Html.Attributes.class (markdownClass className)
                 ]
-                content
+                <| Debug.log "content" content
 
         styledMarkdown =
             Html.Styled.fromUnstyled markdown
