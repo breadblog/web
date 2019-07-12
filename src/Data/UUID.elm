@@ -1,11 +1,3 @@
-module Data.UUID exposing (UUID, compare, decoder, encode, fromString, toPath, urlParser)
-
-import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode exposing (Value)
-import Url.Parser exposing (Parser)
-
-
-
 {--
     
     Because the web client does not (at time of writing this) create UUID's
@@ -17,6 +9,14 @@ import Url.Parser exposing (Parser)
     NOTE: SHOULD NEVER CREATE UUID's FOR DATABASE ON WEB CLIENT
 
 --}
+module Data.UUID exposing (UUID, compare, decoder, encode, toPath, urlParser)
+
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
+import Url.Parser exposing (Parser)
+
+
+
 {- Model -}
 
 
@@ -61,12 +61,3 @@ decoder =
 encode : UUID -> Value
 encode (UUID str) =
     Encode.string str
-
-
-
-{- TODO: remove. Mock data -}
-
-
-fromString : String -> UUID
-fromString str =
-    UUID str

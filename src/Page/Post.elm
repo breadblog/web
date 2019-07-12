@@ -2,12 +2,14 @@ module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, vie
 
 import Api
 import Css exposing (..)
+import Browser.Navigation as Navigation
+import Data.Username as Username exposing (Username)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.Post as Post exposing (Client, Core, Full, Post)
 import Data.Problem as Problem exposing (Description(..), Problem)
-import Data.Route exposing (Route(..))
+import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Data.UUID as UUID exposing (UUID)
 import Html
@@ -32,24 +34,30 @@ type alias Model =
     Page.PageModel Internals
 
 
+
+
 type Internals
     {------------------ Public States ---------------------}
     -- loading state for when we are fetching post info
     = Loading
-    -- loading state when we are waiting on authors update
-    | LoadingAuthors (Post Core Full)
     -- we are now ready to display an existing post
-    | Ready (Post Core Full) String
-    {------------------ User Only States ------------------}
+    | Ready (Post Core Full) Author
+    -- page shown when failure occurs, waiting for redirect
+    -- to home page
+    | Redirect
+    {------------------ Private States --------------------}
     -- "sneak peek" of what a post will look like
     -- referred to as "preview" in UI, but "Peek"
     -- in code to avoid conflicts
-    | Peek (Post Core Full)
+    | Peek (Post Core Full) Author
     -- the following two states are very similar, just one
     -- doesn't have info from core (such as uuid)
-    | Edit (Post Core Full)
-    | Create (Post Client Full)
+    | Edit (Post Core Full) Author
+    | Create (Post Client Full) Author
     {------------------------------------------------------}
+
+
+-- TODO: What if you load authors and the author for the post is still missing?
 
 
 init : Maybe UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
@@ -57,6 +65,9 @@ init maybePostUUID general =
     let
         maybeUserUUID =
             General.user general
+
+        authors =
+            General.authors general
 
     in
     case maybePostUUID of
@@ -70,11 +81,35 @@ init maybePostUUID general =
         Nothing ->
             case maybeUserUUID of
                 Just userUUID ->
-                    Page.init
-                        (Create <| Post.empty userUUID)
-                        Cmd.none
-                        (Post Nothing)
-                        general
+                    case Author.fromUUID userUUID authors of
+                        Just author ->
+                            Page.init
+                                (Create (Post.empty userUUID) author)
+                                Cmd.none
+                                (Post Nothing)
+                                (General.pushProblem
+                                    (Problem.create "Fake Problem" (MarkdownError <| Markdown.create
+                                    """
+                                    # Description
+
+                                    There was a problem here:
+
+                                    ```
+                                    function () {
+                                        console.log('hahahaha')
+                                    }
+                                    ```
+                                    """
+                                    ) Nothing)
+                                    general
+                                )
+
+                        Nothing ->
+                            Page.init
+                                Redirect
+                                (redirectHome general)
+                                (Post Nothing)
+                                general
 
                 Nothing ->
                     let
@@ -143,36 +178,27 @@ updateMod msg general internals =
                         authorUUID =
                             Post.author post
 
-                        maybeUsername =
-                            Author.usernameFromUUID authorUUID authors
+                        maybeAuthor =
+                            Author.fromUUID authorUUID authors
                     in
-                    case maybeUsername of
-                        Just username ->
-                            { model = Ready post username
+                    case maybeAuthor of
+                        Just author ->
+                            { model = Ready post author
                             , general = general
                             , cmd = General.highlightBlock readyClass
                             }
 
                         Nothing ->
-                            { model = LoadingAuthors post
-                            , cmd =
-                                Cmd.map
-                                    (\c -> Global <| GeneralMsg <| c)
-                                    (General.updateAuthors general)
+                            { model = Redirect
+                            , cmd = redirectHome general
                             , general = general
                             }
 
                 Err err ->
+                    -- TODO: handle error properly (might be offline etc)
                     { model = internals
-                    , cmd = Cmd.none
-                    , general =
-                        General.pushProblem
-                            (Problem.create
-                                "No Such Author"
-                                (HttpError err)
-                                Nothing
-                            )
-                            general
+                    , cmd = redirectHome general
+                    , general = general
                     }
 
 
@@ -196,6 +222,12 @@ getPost general uuid =
 
 
 
+redirectHome : General -> Cmd msg
+redirectHome general =
+    Navigation.pushUrl (General.key general) (Route.toPath Home)
+
+
+
 {- View -}
 
 
@@ -215,24 +247,24 @@ viewPost general internals =
                 Loading ->
                     loadingView theme
 
-                LoadingAuthors _ ->
-                    loadingView theme
+                Redirect ->
+                    [ div [ css [ flexGrow <| num 1 ] ] [] ]
 
-                Ready post username ->
+                Ready post author ->
                     let
                         authors =
                             General.authors general
                     in
-                    readyView general username post
+                    readyView general post author
 
-                Peek post ->
+                Peek post author ->
                     peekView general post
 
-                Edit post ->
+                Edit post author ->
                     editView general post
 
-                Create post ->
-                    createView general post
+                Create post author ->
+                    createView general post author
     in
     [ div
         [ class "page post-page"
@@ -274,7 +306,7 @@ peekView general post =
             General.theme general
     in
     [  ]
-        |> sheet general
+        |> sheet theme
         |> List.singleton
 
 
@@ -285,23 +317,32 @@ editView general post =
             General.theme general
     in
     [  ]
-        |> sheet general
+        |> sheet theme
         |> List.singleton
 
 
-createView : General -> Post Client Full -> List (Html (Compound ModMsg))
-createView general post =
+createView : General -> Post Client Full -> Author -> List (Html (Compound ModMsg))
+createView general post author =
     let
         theme =
             General.theme general
     in
-    [  ]
-        |> sheet general
-        |> List.singleton
+    [ sheet theme
+        [ heading theme
+            [ authorLink author
+            ]
+        , input
+            []
+            []
+        , input
+            []
+            []
+        ]
+    ]
 
 
-readyView : General -> String -> Post Core Full -> List (Html (Compound ModMsg))
-readyView general username post =
+readyView : General -> Post Core Full -> Author -> List (Html (Compound ModMsg))
+readyView general post author =
     let
         theme =
             General.theme general
@@ -314,12 +355,6 @@ readyView general username post =
 
         desc =
             Post.description post
-
-        authorUUID =
-            Post.author post
-
-        authors =
-            General.authors general
 
         body =
             Post.body post
@@ -354,7 +389,7 @@ readyView general username post =
                 [ text title ]
             , h2
                 [ class "author" ]
-                [ text username ]
+                [ text <| Username.toString <| Author.username author ]
             , Markdown.toHtml "body" postStyle.body body
             ]
         ]
@@ -364,45 +399,45 @@ readyView general username post =
 {- View Helpers -}
 
 
-readonlyHeader : String -> String -> Html (Compound ModMsg)
-readonlyHeader username title =
+authorLink : Author -> Html (Compound ModMsg)
+authorLink author =
     text ""
 
 
-writableHeader : String -> String -> Html (Compound ModMsg)
-writableHeader username title =
+divider : Html msg
+divider =
+    span
+        []
+        [ text "/" ]
+
+
+heading : Theme -> List (Html msg) -> Html msg
+heading theme contents =
     div
-        [ class "header edit"
+        [ class "heading"
         , css
-            [ displayFlex
-            , marginTop <| px 15
-            , marginBottom <| px 15
-            , alignSelf flexStart
+            [ borderRadius4 sheetRadius sheetRadius (pct 0) (pct 0)
+            , displayFlex
+            , Css.height <| px 50
+            , backgroundColor <| Color.cardHeading theme
             ]
         ]
-        [ a
-            [ class "author" ]
-            [  ]
-        ]
+        contents
 
 
-sheet : General -> List (Html msg) -> Html msg
-sheet general contents =
-    let
-        theme =
-            General.theme general
-
-    in
+sheet : Theme -> List (Html msg) -> Html msg
+sheet theme contents =
     div
         [ class "sheet"
         , css
             [ marginBottom <| px 50
+            , marginTop <| px 50
             , backgroundColor <| Color.card theme
             , Css.width <| pct 60
             , flexGrow <| num 1
             , displayFlex
             , flexDirection column
-            , borderRadius <| px 7
+            , borderRadius <| sheetRadius
             ]
         ]
         contents
@@ -411,3 +446,8 @@ sheet general contents =
 readyClass : String
 readyClass =
     "post"
+
+
+sheetRadius : Px
+sheetRadius =
+    px 5

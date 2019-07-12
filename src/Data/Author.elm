@@ -1,11 +1,13 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, mapWatched, mergeFromApi, name, username, usernameFromUUID, uuid, watched)
+module Data.Author exposing (Author, bio, compare, decoder, encode, mapWatched, mergeFromApi, name, username, fromUUID, uuid, watched)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
+import Data.Username as Username exposing (Username)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
+import Util
 
 
 
@@ -17,7 +19,7 @@ type Author
 
 
 type alias Internals =
-    { username : String
+    { username : Username
     , name : String
     , bio : String
     , watched : Bool
@@ -29,7 +31,7 @@ type alias Internals =
 {- Accessors -}
 
 
-username : Author -> String
+username : Author -> Username
 username (Author internals) =
     internals.username
 
@@ -67,34 +69,24 @@ toSource : msg -> List Author -> Source msg
 toSource msg authors =
     Search.source
         (List.map
-            (\(Author a) -> a.username)
+            (\(Author a) -> a
+                |> .username
+                |> Username.toString
+            )
             authors
         )
         "author"
         msg
 
 
-usernameFromUUID : UUID -> List Author -> Maybe String
-usernameFromUUID authorUUID authors =
-    let
-        ( valid, _ ) =
-            List.partition
-                (\author ->
-                    author
-                        |> uuid
-                        |> UUID.compare authorUUID
-                )
-                authors
-
-        found =
-            List.head valid
-    in
-    case found of
-        Just author ->
-            Just <| username author
-
-        Nothing ->
-            Nothing
+fromUUID : UUID -> List Author -> Maybe Author
+fromUUID authorUUID list =
+    Util.find
+        (\a -> a
+            |> uuid
+            |> UUID.compare authorUUID
+        )
+        list
 
 
 compare : Author -> Author -> Bool
@@ -114,7 +106,7 @@ mergeFromApi (Author a) (Author b) =
 decoder : Decoder Author
 decoder =
     Decode.succeed Internals
-        |> required "username" Decode.string
+        |> required "username" Username.decoder
         |> required "name" Decode.string
         |> required "bio" Decode.string
         -- Default "watched" because core doesn't provide
@@ -127,7 +119,7 @@ decoder =
 encode : Author -> Value
 encode (Author internals) =
     Encode.object
-        [ ( "username", Encode.string internals.username )
+        [ ( "username", Username.encode internals.username )
         , ( "name", Encode.string internals.name )
         , ( "bio", Encode.string internals.bio )
         , ( "watched", Encode.bool internals.watched )

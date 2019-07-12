@@ -1,3 +1,8 @@
+## 0.0.21
+
+* Add create post implementation
+* Style problem page
+
 ## 0.0.20
 
 * Refactor Data.Post to account for client side posts

@@ -3,6 +3,7 @@ module View.Header exposing (Model, Msg(..), init, update, view)
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
 import Css.Transitions as Transitions exposing (transition)
+import Data.Username as Username exposing (Username)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Route as Route exposing (Route(..))
@@ -435,7 +436,7 @@ tagsContent theme =
 authorsContent : Theme -> List Author -> List (Html (Compound Msg))
 authorsContent theme =
     List.map
-        (\a -> checkboxDropdownItem (Author.username a) theme (Author.watched a) (Global <| GeneralMsg <| ToggleAuthor a))
+        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (Global <| GeneralMsg <| ToggleAuthor a))
 
 
 
