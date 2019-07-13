@@ -1,4 +1,4 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, mapWatched, mergeFromApi, name, username, fromUUID, uuid, watched)
+module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, mapWatched, mergeFromApi, name, username, uuid, watched)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -69,9 +69,10 @@ toSource : msg -> List Author -> Source msg
 toSource msg authors =
     Search.source
         (List.map
-            (\(Author a) -> a
-                |> .username
-                |> Username.toString
+            (\(Author a) ->
+                a
+                    |> .username
+                    |> Username.toString
             )
             authors
         )
@@ -82,9 +83,10 @@ toSource msg authors =
 fromUUID : UUID -> List Author -> Maybe Author
 fromUUID authorUUID list =
     Util.find
-        (\a -> a
-            |> uuid
-            |> UUID.compare authorUUID
+        (\a ->
+            a
+                |> uuid
+                |> UUID.compare authorUUID
         )
         list
 

@@ -1,4 +1,4 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFull, encodePreview, fullDecoder, mergeFromApi, previewDecoder, title)
+module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFull, encodePreview, fullDecoder, mergeFromApi, previewDecoder, title, mapDescription, mapBody, mapTitle, encodeFreshFull)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
@@ -97,6 +97,11 @@ uuid post =
 description : Post l f -> String
 description post =
     accessInternals .description post
+
+
+mapDescription : (String -> String) -> Post l f -> Post l f
+mapDescription transform post =
+    mapInternals (\i -> { i | description = transform i.description }) post
 
 
 title : Post l f -> String

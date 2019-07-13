@@ -1,4 +1,4 @@
-module Style.Color exposing (accent, background, card, danger, drawer, dropdown, dropdownActive, dropdownContrast, overlay, primary, primaryFont, secondary, secondaryFont, tertiaryFont, cardHeading, slothBackground)
+module Style.Color exposing (accent, background, card, cardHeading, danger, drawer, dropdown, dropdownActive, dropdownContrast, overlay, primary, primaryFont, secondary, secondaryFont, slothBackground, tertiaryFont)
 
 import Css exposing (..)
 import Data.Theme exposing (Theme(..))

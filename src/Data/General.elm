@@ -1,16 +1,15 @@
 port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, init, key, mapUser, mode, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
 
 import Api exposing (Url)
-import List.Extra
 import Browser.Navigation exposing (Key)
 import Data.Author as Author exposing (Author)
 import Data.Config exposing (Config)
 import Data.Markdown as Markdown
-import Data.Route as Route exposing (Route(..))
 import Data.Mode as Mode exposing (Mode(..))
 import Data.Network as Network exposing (Network(..))
 import Data.Post as Post exposing (Core, Post, Preview)
 import Data.Problem as Problem exposing (Description(..), Problem)
+import Data.Route as Route exposing (Route(..))
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.UUID as UUID exposing (UUID)
@@ -19,6 +18,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
+import List.Extra
 import Util
 import Version
 
@@ -314,14 +314,13 @@ update msg general =
                     navigateTo route general
 
                 ReportErr _ ->
-                    ( general , Cmd.none )
+                    ( general, Cmd.none )
 
                 DismissProblem index ->
                     ( dismissProblem index general, Cmd.none )
 
                 WithDismiss index nestedMsg ->
                     update nestedMsg <| dismissProblem index general
-
     in
     ( newGeneral
     , Cmd.batch

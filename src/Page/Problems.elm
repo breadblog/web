@@ -5,17 +5,18 @@ import Css.Transitions as Transitions exposing (transition)
 import Data.General exposing (Msg(..))
 import Data.Markdown as Markdown
 import Data.Problem as Problem exposing (Description(..), Problem)
+import Data.Theme as Theme exposing (Theme(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
-import Data.Theme as Theme exposing (Theme(..))
 import Http exposing (Error(..))
 import Json.Decode
 import Style.Color as Color
 import Style.Font as Font
-import View.Svg as Svg
-import Svg.Styled.Attributes as SvgAttr
 import Style.Shadow as Shadow
+import Svg.Styled.Attributes as SvgAttr
+import View.Svg as Svg
+import Style.Button
 
 
 view : List (Problem Msg) -> Html Msg
@@ -60,111 +61,111 @@ view problems =
                 , alignItems center
                 ]
             ]
-            <|
-                List.indexedMap
-                    (\i p ->
-                        let
-                            title =
-                                Problem.title p
+          <|
+            List.indexedMap
+                (\i p ->
+                    let
+                        title =
+                            Problem.title p
 
-                            description =
-                                let
-                                    contents =
-                                        case Problem.description p of
-                                            JsonError err ->
-                                                [ text <| Json.Decode.errorToString err ]
+                        description =
+                            let
+                                contents =
+                                    case Problem.description p of
+                                        JsonError err ->
+                                            [ text <| Json.Decode.errorToString err ]
 
-                                            MarkdownError err ->
-                                                [ Markdown.toHtml "problem" [] err ]
+                                        MarkdownError err ->
+                                            [ Markdown.toHtml "problem" [] err ]
 
-                                            HttpError err ->
-                                                case err of
-                                                    BadUrl url ->
-                                                        [ text <| "Bad URL: " ++ url ]
+                                        HttpError err ->
+                                            case err of
+                                                BadUrl url ->
+                                                    [ text <| "Bad URL: " ++ url ]
 
-                                                    Timeout ->
-                                                        [ text "HTTP request timed out" ]
+                                                Timeout ->
+                                                    [ text "HTTP request timed out" ]
 
-                                                    NetworkError ->
-                                                        [ text "No internet" ]
+                                                NetworkError ->
+                                                    [ text "No internet" ]
 
-                                                    BadStatus code ->
-                                                        [ text <| String.fromInt code ++ " HTTP Response" ]
+                                                BadStatus code ->
+                                                    [ text <| String.fromInt code ++ " HTTP Response" ]
 
-                                                    BadBody body ->
-                                                        [ text <| "Bad Body " ++ body ]
-                                in
-                                div [ class "description" ] contents
+                                                BadBody body ->
+                                                    [ text <| "Bad Body " ++ body ]
+                            in
+                            div [ class "description" ] contents
 
-                            -- TODO: setup reaction
-                        in
-                        div
-                            [ class "problem"
+                        -- TODO: setup reaction
+                    in
+                    div
+                        [ class "problem"
+                        , css
+                            [ Css.width <| pct 30
+                            , backgroundColor <| Color.card Dark
+                            , padding <| px 10
+                            , borderRadius <| px 6
+                            , displayFlex
+                            , flexDirection column
+                            , alignItems center
+                            , Shadow.dp6
+                            ]
+                        ]
+                        [ h1
+                            [ class "title"
                             , css
-                                [ Css.width <| pct 30
-                                , backgroundColor <| Color.card Dark
-                                , padding <| px 10
-                                , borderRadius <| px 6
-                                , displayFlex
-                                , flexDirection column
-                                , alignItems center
-                                , Shadow.dp6
+                                [ margin <| px 8
                                 ]
                             ]
-                            [ h1
-                                [ class "title"
+                            [ text title
+                            ]
+                        , div
+                            [ css
+                                [ Css.width <| pct 90
+                                , Css.height <| px 1
+                                , backgroundColor <| Color.tertiaryFont Dark
+                                ]
+                            ]
+                            []
+                        , description
+                        , div
+                            [ class "buttons"
+                            , css
+                                [ margin2 (px 5) (px 0) ]
+                            ]
+                            [ button
+                                [ onClick <| ReportErr p
                                 , css
-                                    [ margin <| px 8
+                                    [ buttonStyle
+                                    , backgroundColor <| Color.primary Dark
                                     ]
                                 ]
-                                [ text title
-                                ]
-                            , div
-                                [ css
-                                    [ Css.width <| pct 90
-                                    , Css.height <| px 1
-                                    , backgroundColor <| Color.tertiaryFont Dark
-                                    ]
-                                ]
-                                []
-                            , description
-                            , div
-                                [ class "buttons"
-                                , css
-                                    [ margin2 (px 5) (px 0) ]
-                                ]
-                                [ button
-                                    [ onClick <| ReportErr p
-                                    , css
-                                        [ buttonStyle
-                                        , backgroundColor <| Color.primary Dark
+                                [ text "Report" ]
+                            , case Problem.handler p of
+                                Just handler ->
+                                    button
+                                        [ onClick <| WithDismiss i <| Problem.handlerMsg handler
+                                        , css
+                                            [ buttonStyle
+                                            , Style.Button.submit
+                                            ]
                                         ]
-                                    ]
-                                    [ text "Report" ]
-                                , case Problem.handler p of
-                                    Just handler ->
-                                        button
-                                            [ onClick <| WithDismiss i <| Problem.handlerMsg handler
-                                            , css
-                                                [ buttonStyle
-                                                , backgroundColor <| hex "006400"
-                                                ]
-                                            ]
-                                            [ Problem.handlerText handler ]
+                                        [ Problem.handlerText handler ]
 
-                                    Nothing ->
-                                        button
-                                            [ onClick <| DismissProblem i
-                                            , css
-                                                [ buttonStyle
-                                                , backgroundColor <| hex "006400"
-                                                ]
+                                Nothing ->
+                                    button
+                                        [ onClick <| DismissProblem i
+                                        , css
+                                            [ buttonStyle
+                                            , Style.Button.submit
                                             ]
-                                            []
-                                ]
+                                        ]
+                                        []
                             ]
-                    )
-                    problems
+                        ]
+                )
+                problems
         , a
             [ rel "nofollow"
             , href "https://www.vecteezy.com"
@@ -196,19 +197,6 @@ view problems =
 buttonStyle : Style
 buttonStyle =
     Css.batch
-        [ padding <| px 7
-        , fontFamilies Font.montserrat
-        , borderRadius <| px 4
-        , margin2 (px 0) (px 20)
-        , fontSize <| rem 1
-        , fontWeight (int 500)
-        , Shadow.dp2
-        , border <| px 0
-        , cursor pointer
-        , color <| Color.secondaryFont Dark
-        , transition
-            [ Transitions.boxShadow 300 ]
-        , hover
-            [ Shadow.dp4 ]
-        -- , transition box shadow and hover
+        [ margin2 (px 0) (px 20)
+        , Style.Button.default
         ]

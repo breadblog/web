@@ -1,12 +1,11 @@
-module Data.Username exposing (Username, toString, decoder, encode)
-
+module Data.Username exposing (Username, decoder, encode, toString)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 
 
-type Username =
-    Username String
+type Username
+    = Username String
 
 
 toString : Username -> String

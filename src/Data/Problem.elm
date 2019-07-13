@@ -1,11 +1,11 @@
-module Data.Problem exposing (Description(..), Handler, Problem, create, description, map, title, handler, handlerMsg, handlerText, createHandler, encode)
+module Data.Problem exposing (Description(..), Handler, Problem, create, createHandler, description, encode, handler, handlerMsg, handlerText, map, title)
 
 import Data.Markdown as Markdown exposing (Markdown)
+import Html.Styled exposing (Attribute, Html)
+import Html.Styled.Events
 import Http exposing (Error(..))
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
-import Html.Styled.Events
-import Html.Styled exposing (Attribute, Html)
 
 
 type Problem msg
@@ -30,8 +30,8 @@ type alias Internals msg =
     }
 
 
-type Handler msg =
-    Handler (IHandler msg)
+type Handler msg
+    = Handler (IHandler msg)
 
 
 type alias IHandler msg =
@@ -99,10 +99,11 @@ map transform problems =
                             Nothing
 
                         Just (Handler h) ->
-                            Just <| Handler
-                                { label = h.label
-                                , msg = transform h.msg
-                                }
+                            Just <|
+                                Handler
+                                    { label = h.label
+                                    , msg = transform h.msg
+                                    }
             in
             { title = problem.title
             , description = problem.description
@@ -122,10 +123,8 @@ isBodySafe str =
             , String.contains "hash"
             , String.contains "Hash"
             ]
-
     in
     not <| List.any (\c -> c str) checks
-
 
 
 
@@ -161,10 +160,11 @@ encodeDesc desc =
                     Encode.string "network error"
 
                 BadStatus int ->
-                    Encode.string <| "bad status: " ++ (String.fromInt int)
+                    Encode.string <| "bad status: " ++ String.fromInt int
 
                 BadBody str ->
                     if isBodySafe str then
                         Encode.string <| "bad body: " ++ str
+
                     else
                         Encode.string "bad body (unsafe contents)"
