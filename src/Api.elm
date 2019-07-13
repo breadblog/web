@@ -100,7 +100,7 @@ urlToHeaders (Url internals) =
 
 get : { expect : Expect msg, url : Url } -> Cmd msg
 get args =
-    Http.request
+    Http.riskyRequest
         { method = "GET"
         , headers = urlToHeaders args.url
         , url = urlToString args.url
@@ -113,7 +113,7 @@ get args =
 
 put : { expect : Expect msg, body : Body, url : Url } -> Cmd msg
 put args =
-    Http.request
+    Http.riskyRequest
         { method = "PUT"
         , headers = urlToHeaders args.url
         , url = urlToString args.url
@@ -126,7 +126,7 @@ put args =
 
 post : { expect : Expect msg, body : Body, url : Url } -> Cmd msg
 post args =
-    Http.request
+    Http.riskyRequest
         { method = "POST"
         , headers = urlToHeaders args.url
         , url = urlToString args.url
@@ -139,7 +139,7 @@ post args =
 
 delete : { expect : Expect msg, url : Url } -> Cmd msg
 delete args =
-    Http.request
+    Http.riskyRequest
         { method = "DELETE"
         , headers = urlToHeaders args.url
         , url = urlToString args.url

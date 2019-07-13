@@ -7,8 +7,9 @@ import Data.Config exposing (Config)
 import Data.Markdown as Markdown
 import Data.Mode as Mode exposing (Mode(..))
 import Data.Network as Network exposing (Network(..))
-import Data.Post as Post exposing (Post, Preview)
+import Data.Post as Post exposing (Core, Post, Preview)
 import Data.Problem as Problem exposing (Description(..), Problem)
+import Data.Route as Route exposing (Route(..))
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.UUID as UUID exposing (UUID)
@@ -17,6 +18,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
+import List.Extra
 import Util
 import Version
 
@@ -55,13 +57,13 @@ type alias ICache =
     , theme : Theme
     , tags : List Tag
     , authors : List Author
-    , postPreviews : List (Post Preview)
+    , postPreviews : List (Post Core Preview)
     , user : Maybe UUID
     }
 
 
 type alias Temp =
-    { postPreviews : List (Post Preview)
+    { postPreviews : List (Post Core Preview)
     , authors : List Author
     , tags : List Tag
     }
@@ -171,12 +173,16 @@ type Msg
     | UpdateAuthors
     | GotAuthors (Result Http.Error (List Author))
     | UpdatePosts
-    | GotPosts (Result Http.Error (List (Post Preview)))
+    | GotPosts (Result Http.Error (List (Post Core Preview)))
     | UpdateTags
     | GotTags (Result Http.Error (List Tag))
     | Highlight String
     | TryLogout
     | OnLogout (Result Http.Error ())
+    | NavigateTo Route
+    | ReportErr (Problem Msg)
+    | DismissProblem Int
+    | WithDismiss Int Msg
 
 
 
@@ -303,6 +309,18 @@ update msg general =
                             ( pushProblem problem general
                             , Cmd.none
                             )
+
+                NavigateTo route ->
+                    navigateTo route general
+
+                ReportErr _ ->
+                    ( general, Cmd.none )
+
+                DismissProblem index ->
+                    ( dismissProblem index general, Cmd.none )
+
+                WithDismiss index nestedMsg ->
+                    update nestedMsg <| dismissProblem index general
     in
     ( newGeneral
     , Cmd.batch
@@ -322,6 +340,18 @@ updateCache general iCache =
     in
     ( General { internals | cache = cache_ }
     , setCache <| cache_
+    )
+
+
+dismissProblem : Int -> General -> General
+dismissProblem index (General internals) =
+    General { internals | problems = List.Extra.removeAt index internals.problems }
+
+
+navigateTo : Route -> General -> ( General, Cmd msg )
+navigateTo route general =
+    ( general
+    , Browser.Navigation.pushUrl (key general) (Route.toPath route)
     )
 
 

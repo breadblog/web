@@ -115,16 +115,17 @@ footerLeft theme version =
             []
         ]
         [ a
-            [ href <| Route.toPath Changelog
-            , css
+            -- [ href <| Route.toPath Changelog
+            [ css
                 [ textDecoration none
                 , fontSize <| rem 1.1
                 , letterSpacing <| px 1.5
                 , margin (px 15)
                 , color <| Color.secondaryFont theme
-                , hover
-                    [ color <| Color.primaryFont theme
-                    ]
+
+                -- , hover
+                --     [ color <| Color.primaryFont theme
+                --     ]
                 ]
             ]
             [ text <| Data.Version.toString version

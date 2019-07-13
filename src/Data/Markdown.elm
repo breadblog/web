@@ -1,4 +1,4 @@
-module Data.Markdown exposing (Markdown, create, decoder, encode, toHtml)
+module Data.Markdown exposing (Markdown, create, decoder, encode, toHtml, toValue)
 
 import Css.Global exposing (Snippet, descendants, global)
 import Html.Attributes
@@ -43,6 +43,11 @@ toHtml className styles (Markdown content) =
 markdownClass : String -> String
 markdownClass className =
     className ++ "-markdown"
+
+
+toValue : Markdown -> Attribute msg
+toValue (Markdown md) =
+    Html.Styled.Attributes.value md
 
 
 

@@ -1,21 +1,24 @@
-module Data.Problem exposing (Description(..), Problem, create, description, map, title)
+module Data.Problem exposing (Description(..), Handler, Problem, create, createHandler, description, encode, handler, handlerMsg, handlerText, map, title)
 
-import Data.Markdown exposing (Markdown)
-import Http
-import Json.Decode
+import Data.Markdown as Markdown exposing (Markdown)
+import Html.Styled exposing (Attribute, Html)
+import Html.Styled.Events
+import Http exposing (Error(..))
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
 
 
-type Problem handler
-    = Problem (Internals handler)
+type Problem msg
+    = Problem (Internals msg)
 
 
 type Description
-    = JsonError Json.Decode.Error
+    = JsonError Decode.Error
     | MarkdownError Markdown
     | HttpError Http.Error
 
 
-type alias Internals handler =
+type alias Internals msg =
     -- title for the problem
     { title : String
 
@@ -23,7 +26,17 @@ type alias Internals handler =
     , description : Description
 
     -- a possible message to trigger, handling the problem
-    , reaction : Maybe handler
+    , handler : Maybe (Handler msg)
+    }
+
+
+type Handler msg
+    = Handler (IHandler msg)
+
+
+type alias IHandler msg =
+    { label : String
+    , msg : msg
     }
 
 
@@ -41,19 +54,34 @@ description (Problem internals) =
     internals.description
 
 
-reaction : Problem e -> Maybe e
-reaction (Problem internals) =
-    internals.reaction
+handlerMsg : Handler msg -> msg
+handlerMsg (Handler internals) =
+    internals.msg
+
+
+handlerText : Handler msg -> Html e
+handlerText (Handler internals) =
+    Html.Styled.text internals.label
+
+
+handler : Problem msg -> Maybe (Handler msg)
+handler (Problem internals) =
+    internals.handler
 
 
 
 {- Constructors -}
 
 
-create : String -> Description -> Maybe e -> Problem e
+create : String -> Description -> Maybe (Handler msg) -> Problem msg
 create title_ desc handler_ =
     Problem <|
         Internals title_ desc handler_
+
+
+createHandler : String -> msg -> Handler msg
+createHandler label msg =
+    Handler <| IHandler label msg
 
 
 
@@ -65,18 +93,78 @@ map transform problems =
     List.map
         (\(Problem problem) ->
             let
-                reaction_ =
-                    case problem.reaction of
+                handler_ =
+                    case problem.handler of
                         Nothing ->
                             Nothing
 
-                        Just h ->
-                            Just <| transform h
+                        Just (Handler h) ->
+                            Just <|
+                                Handler
+                                    { label = h.label
+                                    , msg = transform h.msg
+                                    }
             in
             { title = problem.title
             , description = problem.description
-            , reaction = reaction_
+            , handler = handler_
             }
                 |> Problem
         )
         problems
+
+
+isBodySafe : String -> Bool
+isBodySafe str =
+    let
+        checks =
+            [ String.contains "password"
+            , String.contains "Password"
+            , String.contains "hash"
+            , String.contains "Hash"
+            ]
+    in
+    not <| List.any (\c -> c str) checks
+
+
+
+{- JSON -}
+
+
+encode : Problem msg -> Value
+encode (Problem internals) =
+    Encode.object
+        [ ( "title", Encode.string internals.title )
+        , ( "description", encodeDesc internals.description )
+        ]
+
+
+encodeDesc : Description -> Value
+encodeDesc desc =
+    case desc of
+        MarkdownError err ->
+            Markdown.encode err
+
+        JsonError err ->
+            Encode.string <| Decode.errorToString err
+
+        HttpError err ->
+            case err of
+                BadUrl str ->
+                    Encode.string <| "bad url: " ++ str
+
+                Timeout ->
+                    Encode.string "request timeout"
+
+                NetworkError ->
+                    Encode.string "network error"
+
+                BadStatus int ->
+                    Encode.string <| "bad status: " ++ String.fromInt int
+
+                BadBody str ->
+                    if isBodySafe str then
+                        Encode.string <| "bad body: " ++ str
+
+                    else
+                        Encode.string "bad body (unsafe contents)"

@@ -157,7 +157,6 @@ update compound model =
                     updatePage Login LoginMsg Page.Login.update loginModel loginMsg model
 
                 _ ->
-                    -- TODO: Error handling (impossible state)
                     let
                         problem =
                             Problem.create

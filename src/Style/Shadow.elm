@@ -9,11 +9,7 @@ import Css exposing (..)
 
 dp1 : Style
 dp1 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 1) (px 1) (px 0) color1
-        , boxShadow5 (px 0) (px 2) (px 1) (px -1) color2
-        , boxShadow5 (px 0) (px 1) (px 3) (px 0) color3
-        ]
+    property "box-shadow" "0 1px 1px 0 rgba(0, 0, 0, 0.14), 0 2px 1px -1px rgba(0, 0, 0, 0.12), 0 1px 3px 0 rgba(0 0 0 0.2)"
 
 
 
@@ -22,11 +18,7 @@ dp1 =
 
 dp2 : Style
 dp2 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 2) (px 2) (px 0) color1
-        , boxShadow5 (px 0) (px 3) (px 1) (px -2) color2
-        , boxShadow5 (px 0) (px 1) (px 5) (px 0) color3
-        ]
+    property "box-shadow" "0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 3px 1px -2px rgba(0, 0, 0, 0.12), 0px 1px 5px 0px rgba(0, 0, 0, 0.2)"
 
 
 
@@ -35,11 +27,7 @@ dp2 =
 
 dp3 : Style
 dp3 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 3) (px 4) (px 0) color1
-        , boxShadow5 (px 0) (px 3) (px 3) (px -2) color2
-        , boxShadow5 (px 0) (px 1) (px 8) (px 0) color3
-        ]
+    property "box-shadow" "0px 3px 4px 0px rgba(0, 0, 0, 0.14), 0px 3px 3px -2px rgba(0, 0, 0, 0.12), 0px 1px 8px 0px rgba(0, 0, 0, 0.2)"
 
 
 
@@ -48,11 +36,7 @@ dp3 =
 
 dp4 : Style
 dp4 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 4) (px 5) (px 0) color1
-        , boxShadow5 (px 0) (px 1) (px 10) (px 0) color2
-        , boxShadow5 (px 0) (px 2) (px 4) (px -1) color3
-        ]
+    property "box-shadow" "0px 4px 5px 0px rgba(0, 0, 0, 0.14), 0px 1px 10px 0px rgba(0, 0, 0, 0.12), 0px 2px 4px -1px rgba(0, 0, 0, 0.2)"
 
 
 
@@ -61,11 +45,7 @@ dp4 =
 
 dp6 : Style
 dp6 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 6) (px 10) (px 0) color1
-        , boxShadow5 (px 0) (px 1) (px 18) (px 0) color2
-        , boxShadow5 (px 0) (px 3) (px 5) (px -1) color3
-        ]
+    property "box-shadow" "0px 6px 10px 0px rgba(0, 0, 0, 0.14), 0px 1px 18px 0px rgba(0, 0, 0, 0.12), 0px 3px 5px -1px rgba(0, 0, 0, 0.2)"
 
 
 
@@ -74,11 +54,7 @@ dp6 =
 
 dp8 : Style
 dp8 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 8) (px 10) (px 1) color1
-        , boxShadow5 (px 0) (px 3) (px 14) (px 2) color2
-        , boxShadow5 (px 0) (px 5) (px 5) (px -3) color3
-        ]
+    property "box-shadow" "0px 8px 10px 1px rgba(0, 0, 0, 0.14), 0px 3px 14px 2px rgba(0, 0, 0, 0.12), 0px 5px 5px -3px rgba(0, 0, 0, 0.2)"
 
 
 
@@ -87,11 +63,7 @@ dp8 =
 
 dp9 : Style
 dp9 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 9) (px 12) (px 1) color1
-        , boxShadow5 (px 0) (px 3) (px 16) (px 2) color2
-        , boxShadow5 (px 0) (px 5) (px 6) (px -3) color3
-        ]
+    property "box-shadow" "0px 9px 12px 1px rgba(0, 0, 0, 0.14), 0px 3px 16px 2px rgba(0, 0, 0, 0.12), 0px 5px 6px -3px rgba(0, 0, 0, 0.2)"
 
 
 
@@ -100,11 +72,7 @@ dp9 =
 
 dp12 : Style
 dp12 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 1) (px 17) (px 2) color1
-        , boxShadow5 (px 0) (px 5) (px 22) (px 4) color2
-        , boxShadow5 (px 0) (px 7) (px 8) (px -4) color3
-        ]
+    property "box-shadow" "0px 1px 17px 2px rgba(0, 0, 0, 0.14), 0px 5px 22px 4px rgba(0, 0, 0, 0.12), 0px 7px 8px -4px rgba(0, 0, 0, 0.2)"
 
 
 
@@ -113,11 +81,7 @@ dp12 =
 
 dp16 : Style
 dp16 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 1) (px 24) (px 2) color1
-        , boxShadow5 (px 0) (px 6) (px 30) (px 5) color2
-        , boxShadow5 (px 0) (px 8) (px 10) (px -5) color3
-        ]
+    property "box-shadow" "0px 1px 24px 2px rgba(0, 0, 0, 0.14), 0px 6px 30px 5px rgba(0, 0, 0, 0.12), 0px 8px 10px -5px rgba(0, 0, 0, 0.2)"
 
 
 
@@ -126,23 +90,4 @@ dp16 =
 
 dp24 : Style
 dp24 =
-    Css.batch
-        [ boxShadow5 (px 0) (px 2) (px 38) (px 3) color1
-        , boxShadow5 (px 0) (px 9) (px 46) (px 8) color2
-        , boxShadow5 (px 0) (px 11) (px 15) (px -7) color3
-        ]
-
-
-color1 : Color
-color1 =
-    rgba 0 0 0 0.14
-
-
-color2 : Color
-color2 =
-    rgba 0 0 0 0.12
-
-
-color3 : Color
-color3 =
-    rgba 0 0 0 0.2
+    property "box-shadow" "0px 2px 38px 3px rgba(0, 0, 0, 0.14), 0px 9px 46px 8px rgba(0, 0, 0, 0.12), 0px 1px1 15px -7px rgba(0, 0, 0, 0.2)"
