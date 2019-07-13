@@ -15,8 +15,6 @@ import View.Page as Page exposing (PageUpdateOutput)
 
 {-
    Changelog page
-
-   TODO: Create webpack plugin to transform changelog from "md" to "elm"
 -}
 -- Model --
 

@@ -11,12 +11,12 @@ import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
 import Http exposing (Error(..))
 import Json.Decode
+import Style.Button
 import Style.Color as Color
 import Style.Font as Font
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes as SvgAttr
 import View.Svg as Svg
-import Style.Button
 
 
 view : List (Problem Msg) -> Html Msg
@@ -96,8 +96,6 @@ view problems =
                                                     [ text <| "Bad Body " ++ body ]
                             in
                             div [ class "description" ] contents
-
-                        -- TODO: setup reaction
                     in
                     div
                         [ class "problem"

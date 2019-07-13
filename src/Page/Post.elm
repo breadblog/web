@@ -16,17 +16,17 @@ import Data.Username as Username exposing (Username)
 import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
-import Html.Styled.Events as Events exposing (onInput, onClick)
+import Html.Styled.Events as Events exposing (onClick, onInput)
 import Http
 import Message exposing (Compound(..), Msg(..))
+import Style.Button
 import Style.Color as Color
+import Style.Font as Font
 import Style.Post
 import Time
 import Update
 import View.Loading
 import View.Page as Page exposing (PageUpdateOutput)
-import Style.Font as Font
-import Style.Button
 
 
 
@@ -37,9 +37,10 @@ type alias Model =
     Page.PageModel Internals
 
 
-type Internals
-      {------------------ Public States ---------------------}
-      -- loading state for when we are fetching post info
+type
+    Internals
+    {------------------ Public States ---------------------}
+    -- loading state for when we are fetching post info
     = Loading
       -- we are now ready to display an existing post
     | Ready (Post Core Full) Author
@@ -55,7 +56,10 @@ type Internals
       -- doesn't have info from core (such as uuid)
     | Edit (Post Core Full) Author
     | Create (Post Client Full) Author
-      {------------------------------------------------------}
+
+
+
+{------------------------------------------------------}
 
 
 init : Maybe UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
@@ -66,7 +70,6 @@ init maybePostUUID general =
 
         authors =
             General.authors general
-
     in
     case maybePostUUID of
         Just postUUID ->
@@ -136,6 +139,7 @@ type ModMsg
     | CreatePostRes (Result Http.Error (Post Core Full))
 
 
+
 {- Update -}
 
 
@@ -193,12 +197,11 @@ updateMod msg general internals =
                 updatePost =
                     \p ->
                         Post.mapTitle
-                        (str
-                            |> String.left 64
-                            |> always
-                        )
-                        p
-
+                            (str
+                                |> String.left 64
+                                |> always
+                            )
+                            p
             in
             case internals of
                 Edit post author ->
@@ -215,13 +218,12 @@ updateMod msg general internals =
                 updatePost =
                     \p ->
                         Post.mapBody
-                        (str
-                            |> String.left 100000
-                            |> Markdown.create
-                            |> always
-                        )
-                        p
-
+                            (str
+                                |> String.left 100000
+                                |> Markdown.create
+                                |> always
+                            )
+                            p
             in
             case internals of
                 Edit post author ->
@@ -238,12 +240,11 @@ updateMod msg general internals =
                 updatePost =
                     \p ->
                         Post.mapDescription
-                        (str
-                            |> String.left 256
-                            |> always
-                        )
-                        p
-
+                            (str
+                                |> String.left 256
+                                |> always
+                            )
+                            p
             in
             case internals of
                 Edit post author ->
@@ -260,11 +261,12 @@ updateMod msg general internals =
                 Create post author ->
                     { model = internals
                     , general = general
-                    , cmd = Api.put
-                        { url = Api.url (General.mode general) "/post/private/"
-                        , expect = Http.expectJson (CreatePostRes >> Mod) (Post.fullDecoder)
-                        , body = Http.jsonBody <| Post.encodeFreshFull post
-                        }
+                    , cmd =
+                        Api.put
+                            { url = Api.url (General.mode general) "/post/private/"
+                            , expect = Http.expectJson (CreatePostRes >> Mod) Post.fullDecoder
+                            , body = Http.jsonBody <| Post.encodeFreshFull post
+                            }
                     }
 
                 _ ->
@@ -288,7 +290,6 @@ updateMod msg general internals =
 
                 _ ->
                     simpleOutput internals
-
 
 
 
@@ -590,7 +591,6 @@ inputStyle theme =
         , transition
             [ Transitions.borderColor3 100 0 Transitions.easeIn ]
         ]
-
 
 
 divider : Theme -> Html msg

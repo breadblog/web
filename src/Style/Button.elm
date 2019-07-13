@@ -1,12 +1,11 @@
 module Style.Button exposing (default, submit)
 
-
 import Css exposing (..)
 import Css.Transitions as Transitions exposing (transition)
+import Data.Theme exposing (Theme(..))
+import Style.Color as Color
 import Style.Font as Font
 import Style.Shadow as Shadow
-import Style.Color as Color
-import Data.Theme exposing (Theme(..))
 
 
 default : Style

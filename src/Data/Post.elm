@@ -1,4 +1,4 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFull, encodePreview, fullDecoder, mergeFromApi, previewDecoder, title, mapDescription, mapBody, mapTitle, encodeFreshFull)
+module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, fullDecoder, mapBody, mapDescription, mapTitle, mergeFromApi, previewDecoder, title)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
