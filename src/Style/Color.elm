@@ -1,4 +1,4 @@
-module Style.Color exposing (accent, background, card, cardHeading, danger, drawer, dropdown, dropdownActive, dropdownContrast, overlay, primary, primaryFont, secondary, secondaryFont, slothBackground, tertiaryFont)
+module Style.Color exposing (accent, background, card, cardHeading, danger, drawer, dropdown, dropdownActive, dropdownContrast, favorite, overlay, primary, primaryFont, secondary, secondaryFont, slothBackground, tagBackground, tertiaryFont)
 
 import Css exposing (..)
 import Data.Theme exposing (Theme(..))
@@ -155,3 +155,18 @@ overlay theme =
 slothBackground : Color
 slothBackground =
     hex "003240"
+
+
+tagBackground : Theme -> Color
+tagBackground theme =
+    case theme of
+        Dark ->
+            hex "171212"
+
+        Light ->
+            hex "fff"
+
+
+favorite : Color
+favorite =
+    hex "FF0000"

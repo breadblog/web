@@ -1,5 +1,6 @@
 module Data.Markdown exposing (Markdown, create, decoder, encode, toHtml, toValue)
 
+import Css exposing (Style)
 import Css.Global exposing (Snippet, descendants, global)
 import Html.Attributes
 import Html.Styled exposing (..)
@@ -18,8 +19,8 @@ create str =
     Markdown str
 
 
-toHtml : String -> List Snippet -> Markdown -> Html msg
-toHtml className styles (Markdown content) =
+toHtml : String -> List Style -> List Snippet -> Markdown -> Html msg
+toHtml className styles snippets (Markdown content) =
     let
         markdown =
             MD.toHtml
@@ -31,11 +32,16 @@ toHtml className styles (Markdown content) =
             Html.Styled.fromUnstyled markdown
     in
     div
-        [ class (className ++ "markdown-container") ]
+        [ classList
+            [ ( className, not <| String.isEmpty <| className )
+            , ( "markdown-container", True )
+            ]
+        , css styles
+        ]
         [ styledMarkdown
         , global
             [ Css.Global.class (markdownClass className)
-                [ descendants styles ]
+                [ descendants snippets ]
             ]
         ]
 

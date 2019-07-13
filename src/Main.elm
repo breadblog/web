@@ -284,13 +284,8 @@ fromGeneral general page =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Sub.map
-            (\m ->
-                m
-                    |> GeneralMsg
-                    |> Global
-            )
-            General.networkSub
+        [ Sub.map (GeneralMsg >> Global) General.networkSub
+        , Sub.map (GeneralMsg >> Global) General.fullscreenSub
         ]
 
 
