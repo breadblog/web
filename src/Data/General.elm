@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, fullscreen, fullscreenSub, highlightBlock, init, key, mapUser, mode, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, fullscreen, fullscreenSub, highlightBlock, init, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
@@ -59,13 +59,13 @@ type alias ICache =
     , theme : Theme
     , tags : List Tag
     , authors : List Author
-    , postPreviews : List (Post Post.Cache Preview)
+    , postPreviews : List (Post Core Preview)
     , user : Maybe UUID
     }
 
 
 type alias Temp =
-    { postPreviews : List (Post Post.Cache Preview)
+    { postPreviews : List (Post Core Preview)
     , authors : List Author
     , tags : List Tag
     }
@@ -172,13 +172,13 @@ type Msg
     = SetTheme Theme
     | ToggleTag Tag
     | ToggleAuthor Author
-    | TogglePost (Post Post.Cache Preview)
+    | TogglePost (Post Core Preview)
     | UpdateNetwork Network
     | NetworkProblem Decode.Error
     | UpdateAuthors
     | GotAuthors (Result Http.Error (List Author))
     | UpdatePosts
-    | GotPosts (Result Http.Error (List (Post Post.Cache Preview)))
+    | GotPosts (Result Http.Error (List (Post Core Preview)))
     | UpdateTags
     | GotTags (Result Http.Error (List Tag))
     | Highlight String
@@ -277,8 +277,8 @@ update msg general =
                         , res = res
                         , general = general
                         , triggerUpdate = updatePostsAt
-                        , setInTemp = \postPreviews temp_ -> { temp_ | postPreviews = postPreviews }
-                        , setInCache = \postPreviews iCache_ -> { iCache_ | postPreviews = postPreviews }
+                        , setInTemp = \postPreviews_ temp_ -> { temp_ | postPreviews = postPreviews_ }
+                        , setInCache = \postPreviews_ iCache_ -> { iCache_ | postPreviews = postPreviews_ }
                         , getFromTemp = .postPreviews
                         , getFromCache = .postPreviews
                         , name = "post"
@@ -519,11 +519,20 @@ toggleTagList tag =
         )
 
 
-togglePostList : Post Post.Cache Preview -> List (Post Post.Cache Preview) -> List (Post Post.Cache Preview)
+togglePostList : Post Core Preview -> List (Post Core Preview) -> List (Post Core Preview)
 togglePostList post list =
     List.Extra.updateIf
         (Post.compare post)
-        (Post.mapFavorite not)
+        (Post.mapFavorite
+            (\m ->
+                case m of
+                    Just b ->
+                        Just <| not b
+
+                    Nothing ->
+                        Nothing
+            )
+        )
         list
 
 
@@ -595,7 +604,7 @@ updatePostsAt (General general) page =
     in
     Api.get
         { url = Api.url general.config.mode path
-        , expect = Http.expectJson GotPosts (Decode.list Post.previewDecoder)
+        , expect = Http.expectJson GotPosts (Decode.list <| Post.previewDecoder <| Just False)
         }
 
 
@@ -751,6 +760,14 @@ authors general =
         |> .authors
 
 
+postPreviews : General -> List (Post Core Preview)
+postPreviews general =
+    general
+        |> cache
+        |> cacheInternals
+        |> .postPreviews
+
+
 user : General -> Maybe UUID
 user general =
     general
@@ -826,7 +843,7 @@ cacheDecoder =
             (Decode.list Author.decoder)
             []
         |> optional "postPreviews"
-            (Decode.list Post.previewDecoder)
+            (Decode.list <| Post.previewDecoder <| Just False)
             []
         |> optional "user" (Decode.nullable UUID.decoder) Nothing
         |> Decode.map Cache

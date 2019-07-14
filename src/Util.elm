@@ -1,4 +1,8 @@
-module Util exposing (find, joinLeftWith)
+module Util exposing (joinLeftWith)
+
+import List.Extra
+
+
 
 {--
     Join two lists
@@ -13,7 +17,7 @@ joinLeftWith : (t -> t -> t) -> (t -> t -> Bool) -> List t -> List t -> List t
 joinLeftWith transform compare a b =
     List.map
         (\aEl ->
-            case find (compare aEl) b of
+            case List.Extra.find (compare aEl) b of
                 Just bEl ->
                     transform aEl bEl
 
@@ -21,10 +25,3 @@ joinLeftWith transform compare a b =
                     aEl
         )
         a
-
-
-find : (t -> Bool) -> List t -> Maybe t
-find predicate list =
-    list
-        |> List.filter predicate
-        |> List.head

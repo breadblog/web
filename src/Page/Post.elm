@@ -19,6 +19,7 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events as Events exposing (onClick, onInput)
 import Http
+import List.Extra
 import Message exposing (Compound(..), Msg(..))
 import Style.Button
 import Style.Color as Color
@@ -481,6 +482,8 @@ readyView general post author =
 
         fullscreen =
             General.fullscreen general
+
+        -- fav =
     in
     [ sheet theme
         [ heading theme
@@ -494,7 +497,8 @@ readyView general post author =
 
               else
                 maximize theme []
-            , favorite theme
+            , favorite
+                general
                 post
                 []
             ]
@@ -536,39 +540,51 @@ viewTags general post =
         )
 
 
-
--- TODO: should only show favorite button if it is a public post
--- TODO: should track maximize state
--- TODO: should only show max/min based on current state
-
-
-favorite : Theme -> Post Core f -> List Style -> Html (Compound ModMsg)
-favorite theme post styles =
+favorite : General -> Post Core f -> List Style -> Html (Compound ModMsg)
+favorite general post styles =
     let
-        fav =
-            Post.favorite post
-    in
-    View.Svg.heart
-        [ SvgEvents.onClick <| Global <| GeneralMsg <| TogglePost <| Post.toPreview post
-        , SvgAttributes.css
-            (List.append
-                [ svgStyle theme
-                , marginRight (px 15)
-                , fillIf fav Color.favorite
-                , color <|
-                    if fav then
-                        Color.favorite
+        theme =
+            General.theme general
 
-                    else
-                        Color.tertiaryFont <| theme
-                , hover
-                    [ fillIf fav Color.favorite
-                    , color Color.favorite
-                    ]
+        maybeFav =
+            case Post.favorite post of
+                Just f ->
+                    Just f
+
+                Nothing ->
+                    case List.Extra.find (Post.compare post) (General.postPreviews general) of
+                        Just p ->
+                            Post.favorite p
+
+                        Nothing ->
+                            Nothing
+    in
+    case maybeFav of
+        Just fav ->
+            View.Svg.heart
+                [ SvgEvents.onClick <| Global <| GeneralMsg <| TogglePost <| Post.toPreview post
+                , SvgAttributes.css
+                    (List.append
+                        [ svgStyle theme
+                        , marginRight (px 15)
+                        , fillIf fav Color.favorite
+                        , color <|
+                            if fav then
+                                Color.favorite
+
+                            else
+                                Color.tertiaryFont <| theme
+                        , hover
+                            [ fillIf fav Color.favorite
+                            , color Color.favorite
+                            ]
+                        ]
+                        styles
+                    )
                 ]
-                styles
-            )
-        ]
+
+        Nothing ->
+            text ""
 
 
 fillIf : Bool -> Color -> Style
