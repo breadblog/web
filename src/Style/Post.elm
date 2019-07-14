@@ -47,11 +47,13 @@ darkPostStyle =
 
     -- Code block containers
     , Css.Global.pre
-        [ padding (px 10)
-        , Css.Global.descendants
+        [ Css.Global.descendants
             [ Css.Global.code
                 [ borderRadius (px 5)
-                , padding (px 15)
+                , display block
+                , overflowX auto
+                , padding <| em 0.5
+                , backgroundColor <| rgba 40 40 40 0.9
                 ]
             ]
         ]

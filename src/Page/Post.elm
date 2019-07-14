@@ -181,7 +181,7 @@ updateMod msg general internals =
                         Just author ->
                             { model = Ready post author
                             , general = general
-                            , cmd = General.highlightBlock markdownClass
+                            , cmd = Cmd.none
                             }
 
                         Nothing ->
@@ -285,7 +285,7 @@ updateMod msg general internals =
                         Ok post ->
                             { model = Ready post author
                             , general = general
-                            , cmd = General.highlightBlock markdownClass
+                            , cmd = Cmd.none
                             }
 
                         Err err ->

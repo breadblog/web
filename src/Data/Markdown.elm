@@ -23,7 +23,12 @@ toHtml : String -> List Style -> List Snippet -> Markdown -> Html msg
 toHtml className styles snippets (Markdown content) =
     let
         markdown =
-            MD.toHtml
+            MD.toHtmlWith
+                { githubFlavored = Just { tables = False, breaks = False }
+                , defaultHighlighting = Nothing
+                , sanitize = True
+                , smartypants = False
+                }
                 [ Html.Attributes.class (markdownClass className)
                 ]
                 content
