@@ -1,4 +1,4 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, favorite, fullDecoder, mapBody, mapDescription, mapFavorite, mapTitle, mergeFromApi, previewDecoder, tags, title, toPreview)
+module Data.Post exposing (Cache, Client, Core, Full, Post, Preview, author, body, cachePreviewDecoder, compare, corePreviewDecoder, description, empty, encodeFreshFull, encodeFull, encodePreview, favorite, fullDecoder, mapBody, mapDescription, mapFavorite, mapTitle, mergeFromApi, tags, title, toPreview)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
@@ -33,8 +33,11 @@ type Core
 type alias CoreInternals =
     { uuid : UUID
     , date : Time.Posix
-    , favorite : Bool
     }
+
+
+type Cache
+    = Cache CoreInternals Bool
 
 
 
@@ -83,9 +86,12 @@ type alias Internals =
 {- Accessors -}
 
 
-uuid : Post Core f -> UUID
-uuid post =
+coreUUID : Post Core f -> UUID
+coreUUID post =
     accessCore .uuid post
+
+
+cacheUUID : 
 
 
 description : Post l f -> String
@@ -128,14 +134,14 @@ date post =
     accessCore .date post
 
 
-favorite : Post Core f -> Bool
-favorite post =
-    accessCore .favorite post
+favorite : Post Cache f -> Bool
+favorite (Post (Cache _ fav) _ _) =
+    fav
 
 
-mapFavorite : (Bool -> Bool) -> Post Core f -> Post Core f
-mapFavorite transform post =
-    mapCore (\i -> { i | favorite = transform i.favorite }) post
+mapFavorite : (Bool -> Bool) -> Post Cache f -> Post Cache f
+mapFavorite transform (Post (Cache a fav) b c) =
+    Post (Cache a (transform fav)) b c
 
 
 tags : Post l f -> List UUID
@@ -217,9 +223,9 @@ toSource msg posts =
         msg
 
 
-mergeFromApi : Post Core Preview -> Post Core Preview -> Post Core Preview
-mergeFromApi fromAPI (Post (Core fromCache) _ _) =
-    mapFavorite (\_ -> fromCache.favorite) fromAPI
+mergeFromApi : Post Core Preview -> Post Cache Preview -> Post Cache Preview
+mergeFromApi (Post (Core coreInternals) Preview internals) (Post (Cache _ fav) _ _) =
+    Post (Cache coreInternals fav) Preview internals
 
 
 
@@ -247,7 +253,6 @@ encodeCoreHelper : CoreInternals -> List ( String, Value )
 encodeCoreHelper i =
     [ ( "date", Encode.int <| Time.posixToMillis i.date )
     , ( "uuid", UUID.encode i.uuid )
-    , ( "favorite", Encode.bool i.favorite )
     ]
 
 
@@ -261,10 +266,10 @@ encodeFull (Post (Core coreInternals) (Full fullInternals) internals) =
         )
 
 
-encodePreview : Post Core Preview -> Value
-encodePreview (Post (Core coreInternals) _ internals) =
+encodePreview : Post Cache Preview -> Value
+encodePreview (Post (Cache coreInternals fav) Preview internals) =
     Encode.object
-        ([]
+        ([ ( "favorite", Encode.bool fav ) ]
             |> (++) (encodeInternalsHelper internals)
             |> (++) (encodeCoreHelper coreInternals)
         )
@@ -293,13 +298,24 @@ internalsDecoder =
         |> required "published" Decode.bool
 
 
-coreDecodeHelper : Decoder Core
-coreDecodeHelper =
+coreInternalsDecodeHelper : Decoder CoreInternals
+coreInternalsDecodeHelper =
     Decode.succeed CoreInternals
         |> required "uuid" UUID.decoder
         |> required "date" timeDecoder
-        |> optional "favorite" Decode.bool True
+
+
+coreDecodeHelper : Decoder Core
+coreDecodeHelper =
+    coreInternalsDecodeHelper
         |> Decode.map Core
+
+
+cacheDecodeHelper : Decoder Cache
+cacheDecodeHelper =
+    Decode.succeed Cache
+        |> custom coreInternalsDecodeHelper
+        |> required "favorite" Decode.bool
 
 
 fullDecodeHelper : Decoder Full
@@ -318,8 +334,16 @@ timeDecoder =
             )
 
 
-previewDecoder : Decoder (Post Core Preview)
-previewDecoder =
+cachePreviewDecoder : Decoder (Post Cache Preview)
+cachePreviewDecoder =
+    Decode.succeed Post
+        |> custom cacheDecodeHelper
+        |> hardcoded Preview
+        |> custom internalsDecoder
+
+
+corePreviewDecoder : Decoder (Post Core Preview)
+corePreviewDecoder =
     Decode.succeed Post
         |> custom coreDecodeHelper
         |> hardcoded Preview

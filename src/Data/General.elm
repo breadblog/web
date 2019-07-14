@@ -59,13 +59,13 @@ type alias ICache =
     , theme : Theme
     , tags : List Tag
     , authors : List Author
-    , postPreviews : List (Post Core Preview)
+    , postPreviews : List (Post Post.Cache Preview)
     , user : Maybe UUID
     }
 
 
 type alias Temp =
-    { postPreviews : List (Post Core Preview)
+    { postPreviews : List (Post Post.Cache Preview)
     , authors : List Author
     , tags : List Tag
     }
@@ -172,13 +172,13 @@ type Msg
     = SetTheme Theme
     | ToggleTag Tag
     | ToggleAuthor Author
-    | TogglePost (Post Core Preview)
+    | TogglePost (Post Post.Cache Preview)
     | UpdateNetwork Network
     | NetworkProblem Decode.Error
     | UpdateAuthors
     | GotAuthors (Result Http.Error (List Author))
     | UpdatePosts
-    | GotPosts (Result Http.Error (List (Post Core Preview)))
+    | GotPosts (Result Http.Error (List (Post Post.Cache Preview)))
     | UpdateTags
     | GotTags (Result Http.Error (List Tag))
     | Highlight String
@@ -519,7 +519,7 @@ toggleTagList tag =
         )
 
 
-togglePostList : Post Core Preview -> List (Post Core Preview) -> List (Post Core Preview)
+togglePostList : Post Post.Cache Preview -> List (Post Post.Cache Preview) -> List (Post Post.Cache Preview)
 togglePostList post list =
     List.Extra.updateIf
         (Post.compare post)
