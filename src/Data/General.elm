@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, fullscreen, fullscreenSub, highlightBlock, init, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, fullscreen, fullscreenSub, init, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
@@ -181,7 +181,6 @@ type Msg
     | GotPosts (Result Http.Error (List (Post Core Preview)))
     | UpdateTags
     | GotTags (Result Http.Error (List Tag))
-    | Highlight String
     | TryLogout
     | OnLogout (Result Http.Error ())
     | NavigateTo Route
@@ -300,11 +299,6 @@ update msg general =
                         , getFromCache = .tags
                         , name = "tag"
                         }
-
-                Highlight class ->
-                    ( general
-                    , highlightBlock class
-                    )
 
                 TryLogout ->
                     ( general, tryLogout general )
@@ -663,9 +657,6 @@ port exitFullscreen : () -> Cmd msg
 
 
 port fullscreenElement : String -> Cmd msg
-
-
-port highlightBlock : String -> Cmd msg
 
 
 port setCachePort : Value -> Cmd msg

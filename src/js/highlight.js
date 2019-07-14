@@ -1,4 +1,5 @@
 import hljs from 'highlight.js/lib/highlight'
+import 'highlight.js/styles/gruvbox-dark'
 import javascript from 'highlight.js/lib/languages/javascript'
 import css from 'highlight.js/lib/languages/css'
 import elm from 'highlight.js/lib/languages/elm'
@@ -24,14 +25,4 @@ hljs.registerLanguage('ini', ini)
 hljs.registerLanguage('html', xml)
 hljs.registerLanguage('xml', xml)
 
-function highlight (className) {
-  console.log(`highlighting ${className}`)
-  const elements = document.querySelectorAll(`.${className} pre>code`)
-  elements.forEach(el => hljs.highlightBlock(el))
-}
-
-function highlightAll () {
-  hljs.initHighlighting()
-}
-
-export { highlightAll, highlight }
+window.hljs = hljs

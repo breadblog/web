@@ -1,3 +1,7 @@
+## 0.0.23
+
+* Fix code highlighting
+
 ## 0.0.22
 
 * Style "view post"

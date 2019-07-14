@@ -1,8 +1,7 @@
-import 'highlight.js/styles/gruvbox-dark'
 import 'animate.css'
 
+import '@js/highlight'
 import { Elm } from '@main'
-import { highlight } from '@js/highlight'
 import '@font/firacode'
 import '@font/indieflower'
 import '@font/montserrat'
@@ -45,10 +44,6 @@ const app = Elm.Main.init({
 ;(function () {
   app.ports.setCachePort.subscribe(function (data) {
     localStorage.setItem('elm-cache', JSON.stringify(data))
-  })
-
-  app.ports.highlightBlock.subscribe(function (className) {
-    highlight(className)
   })
 
   app.ports.fullscreenElement.subscribe(function (className) {
