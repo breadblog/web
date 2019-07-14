@@ -25,6 +25,7 @@ suite =
                                   )
                                 , ( "mode", Encode.string "production" )
                                 , ( "network", Encode.bool True )
+                                , ( "fullscreen", Encode.bool False )
                                 ]
                     in
                     case Version.fromString "0.0.1" of
@@ -51,6 +52,7 @@ suite =
                                   )
                                 , ( "mode", Encode.string "production" )
                                 , ( "network", Encode.bool True )
+                                , ( "fullscreen", Encode.bool False )
                                 ]
                     in
                     case Version.fromString "0.0.1" of
