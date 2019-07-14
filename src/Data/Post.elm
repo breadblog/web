@@ -1,4 +1,4 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, fullDecoder, mapBody, mapDescription, mapTitle, mergeFromApi, previewDecoder, title)
+module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, favorite, fullDecoder, mapBody, mapDescription, mapFavorite, mapTitle, mergeFromApi, previewDecoder, tags, title, toPreview)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
@@ -33,6 +33,7 @@ type Core
 type alias CoreInternals =
     { uuid : UUID
     , date : Time.Posix
+    , favorite : Maybe Bool
     }
 
 
@@ -65,12 +66,6 @@ type Preview
     = Preview
 
 
-type alias Existing =
-    { uuid : UUID
-    , date : Time.Posix
-    }
-
-
 
 -- fields contained by ALL posts
 
@@ -81,7 +76,6 @@ type alias Internals =
     , tags : List UUID
     , author : UUID
     , published : Bool
-    , favorite : Bool
     }
 
 
@@ -134,18 +128,33 @@ date post =
     accessCore .date post
 
 
-favorite : Post l f -> Bool
+favorite : Post Core f -> Maybe Bool
 favorite post =
-    accessInternals .favorite post
+    accessCore .favorite post
 
 
-mapFavorite : (Bool -> Bool) -> Post l f -> Post l f
+mapFavorite : (Maybe Bool -> Maybe Bool) -> Post Core f -> Post Core f
 mapFavorite transform post =
-    mapInternals (\i -> { i | favorite = transform i.favorite }) post
+    mapCore (\i -> { i | favorite = transform i.favorite }) post
+
+
+tags : Post l f -> List UUID
+tags post =
+    accessInternals .tags post
 
 
 
 {- Util -}
+
+
+toPreview : Post c f -> Post c Preview
+toPreview (Post c f i) =
+    Post c Preview i
+
+
+compare : Post Core x -> Post Core y -> Bool
+compare (Post (Core a) _ _) (Post (Core b) _ _) =
+    UUID.compare a.uuid b.uuid
 
 
 accessInternals : (Internals -> a) -> Post l f -> a
@@ -194,7 +203,6 @@ empty userUUID =
         , tags = []
         , author = userUUID
         , published = False
-        , favorite = False
         }
 
 
@@ -209,13 +217,8 @@ toSource msg posts =
         msg
 
 
-compare : Post Core f -> Post Core f -> Bool
-compare a b =
-    uuid a == uuid b
-
-
 mergeFromApi : Post Core Preview -> Post Core Preview -> Post Core Preview
-mergeFromApi fromAPI (Post _ _ fromCache) =
+mergeFromApi fromAPI (Post (Core fromCache) _ _) =
     mapFavorite (\_ -> fromCache.favorite) fromAPI
 
 
@@ -231,7 +234,6 @@ encodeInternalsHelper i =
     , ( "tags", Encode.list UUID.encode i.tags )
     , ( "author", UUID.encode i.author )
     , ( "published", Encode.bool i.published )
-    , ( "favorite", Encode.bool i.favorite )
     ]
 
 
@@ -243,9 +245,17 @@ encodeFullHelper i =
 
 encodeCoreHelper : CoreInternals -> List ( String, Value )
 encodeCoreHelper i =
-    [ ( "date", Encode.int <| Time.posixToMillis i.date )
-    , ( "uuid", UUID.encode i.uuid )
-    ]
+    List.append
+        [ ( "date", Encode.int <| Time.posixToMillis i.date )
+        , ( "uuid", UUID.encode i.uuid )
+        ]
+        (case i.favorite of
+            Just v ->
+                [ ( "favorite", Encode.bool v ) ]
+
+            Nothing ->
+                []
+        )
 
 
 encodeFull : Post Core Full -> Value
@@ -288,14 +298,14 @@ internalsDecoder =
         |> required "tags" (Decode.list UUID.decoder)
         |> required "author" UUID.decoder
         |> required "published" Decode.bool
-        |> optional "favorite" Decode.bool True
 
 
-coreDecodeHelper : Decoder Core
-coreDecodeHelper =
+coreDecodeHelper : Maybe Bool -> Decoder Core
+coreDecodeHelper defaultFav =
     Decode.succeed CoreInternals
         |> required "uuid" UUID.decoder
         |> required "date" timeDecoder
+        |> optional "favorite" (Decode.maybe Decode.bool) defaultFav
         |> Decode.map Core
 
 
@@ -315,10 +325,10 @@ timeDecoder =
             )
 
 
-previewDecoder : Decoder (Post Core Preview)
-previewDecoder =
+previewDecoder : Maybe Bool -> Decoder (Post Core Preview)
+previewDecoder defaultFav =
     Decode.succeed Post
-        |> custom coreDecodeHelper
+        |> custom (coreDecodeHelper defaultFav)
         |> hardcoded Preview
         |> custom internalsDecoder
 
@@ -326,6 +336,6 @@ previewDecoder =
 fullDecoder : Decoder (Post Core Full)
 fullDecoder =
     Decode.succeed Post
-        |> custom coreDecodeHelper
+        |> custom (coreDecodeHelper Nothing)
         |> custom fullDecodeHelper
         |> custom internalsDecoder

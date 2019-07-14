@@ -41,6 +41,7 @@ import View.Page as Page exposing (PageUpdateOutput)
     see (by authors or tags).
 
 --}
+-- TODO: should update previews when navigating to this page?
 -- Model
 
 

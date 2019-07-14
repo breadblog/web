@@ -25,6 +25,7 @@ hljs.registerLanguage('html', xml)
 hljs.registerLanguage('xml', xml)
 
 function highlight (className) {
+  console.log(`highlighting ${className}`)
   const elements = document.querySelectorAll(`.${className} pre>code`)
   elements.forEach(el => hljs.highlightBlock(el))
 }

@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, highlightBlock, init, key, mapUser, mode, networkSub, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, fullscreen, fullscreenSub, highlightBlock, init, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
@@ -35,6 +35,7 @@ type alias Flags =
     { mode : Mode
     , cache : Cache
     , network : Network
+    , fullscreen : Bool
     }
 
 
@@ -45,6 +46,7 @@ type alias IGeneral =
     , config : Config
     , network : Network
     , temp : Temp
+    , fullscreen : Bool
     }
 
 
@@ -86,7 +88,7 @@ init key_ flags =
                         Err err ->
                             ( defaultFlags currentVersion
                             , [ Problem.create
-                                    "Corrupt flags"
+                                    "Corrupt preferences flags"
                                     (JsonError err)
                                     Nothing
                               ]
@@ -114,6 +116,7 @@ init key_ flags =
             , config = initConfig decoded
             , network = decoded.network
             , temp = defaultTemp
+            , fullscreen = decoded.fullscreen
             }
                 |> General
     in
@@ -151,6 +154,7 @@ defaultFlags version_ =
     { cache = defaultCache version_
     , mode = Production
     , network = Offline
+    , fullscreen = False
     }
 
 
@@ -168,6 +172,7 @@ type Msg
     = SetTheme Theme
     | ToggleTag Tag
     | ToggleAuthor Author
+    | TogglePost (Post Core Preview)
     | UpdateNetwork Network
     | NetworkProblem Decode.Error
     | UpdateAuthors
@@ -183,6 +188,10 @@ type Msg
     | ReportErr (Problem Msg)
     | DismissProblem Int
     | WithDismiss Int Msg
+    | FullscreenElement String
+    | ExitFullscreen
+    | UpdateFullscreen Bool
+    | PushProblem (Problem Msg)
 
 
 
@@ -219,6 +228,13 @@ update msg general =
                             toggleAuthorList author iCache.authors
                     in
                     updateCache general { iCache | authors = authors_ }
+
+                TogglePost post ->
+                    let
+                        posts_ =
+                            togglePostList post iCache.postPreviews
+                    in
+                    updateCache general { iCache | postPreviews = posts_ }
 
                 UpdateNetwork network ->
                     ( General { internals | network = network }
@@ -261,8 +277,8 @@ update msg general =
                         , res = res
                         , general = general
                         , triggerUpdate = updatePostsAt
-                        , setInTemp = \postPreviews temp_ -> { temp_ | postPreviews = postPreviews }
-                        , setInCache = \postPreviews iCache_ -> { iCache_ | postPreviews = postPreviews }
+                        , setInTemp = \postPreviews_ temp_ -> { temp_ | postPreviews = postPreviews_ }
+                        , setInCache = \postPreviews_ iCache_ -> { iCache_ | postPreviews = postPreviews_ }
                         , getFromTemp = .postPreviews
                         , getFromCache = .postPreviews
                         , name = "post"
@@ -321,6 +337,22 @@ update msg general =
 
                 WithDismiss index nestedMsg ->
                     update nestedMsg <| dismissProblem index general
+
+                FullscreenElement class ->
+                    ( general, fullscreenElement class )
+
+                ExitFullscreen ->
+                    ( general, exitFullscreen () )
+
+                UpdateFullscreen fs ->
+                    ( General { internals | fullscreen = fs }
+                    , Cmd.none
+                    )
+
+                PushProblem problem ->
+                    ( pushProblem problem general
+                    , Cmd.none
+                    )
     in
     ( newGeneral
     , Cmd.batch
@@ -487,6 +519,23 @@ toggleTagList tag =
         )
 
 
+togglePostList : Post Core Preview -> List (Post Core Preview) -> List (Post Core Preview)
+togglePostList post list =
+    List.Extra.updateIf
+        (Post.compare post)
+        (Post.mapFavorite
+            (\m ->
+                case m of
+                    Just b ->
+                        Just <| not b
+
+                    Nothing ->
+                        Nothing
+            )
+        )
+        list
+
+
 toggleAuthorList : Author -> List Author -> List Author
 toggleAuthorList author =
     let
@@ -555,7 +604,7 @@ updatePostsAt (General general) page =
     in
     Api.get
         { url = Api.url general.config.mode path
-        , expect = Http.expectJson GotPosts (Decode.list Post.previewDecoder)
+        , expect = Http.expectJson GotPosts (Decode.list <| Post.previewDecoder <| Just False)
         }
 
 
@@ -610,6 +659,12 @@ tryLogout general =
 {- Ports -}
 
 
+port exitFullscreen : () -> Cmd msg
+
+
+port fullscreenElement : String -> Cmd msg
+
+
 port highlightBlock : String -> Cmd msg
 
 
@@ -626,6 +681,9 @@ setCache c =
 port getNetworkPort : (Value -> msg) -> Sub msg
 
 
+port getFullscreenPort : (Value -> msg) -> Sub msg
+
+
 networkSub : Sub Msg
 networkSub =
     getNetworkPort
@@ -639,8 +697,30 @@ networkSub =
         )
 
 
+fullscreenSub : Sub Msg
+fullscreenSub =
+    getFullscreenPort
+        (\v ->
+            case Decode.decodeValue Decode.bool v of
+                Ok fs ->
+                    UpdateFullscreen fs
+
+                Err err ->
+                    PushProblem <|
+                        Problem.create
+                            "Failed to determine fullscreen state"
+                            (JsonError err)
+                            Nothing
+        )
+
+
 
 {- Accessors (public) -}
+
+
+fullscreen : General -> Bool
+fullscreen (General internals) =
+    internals.fullscreen
 
 
 cache : General -> Cache
@@ -678,6 +758,14 @@ authors general =
         |> cache
         |> cacheInternals
         |> .authors
+
+
+postPreviews : General -> List (Post Core Preview)
+postPreviews general =
+    general
+        |> cache
+        |> cacheInternals
+        |> .postPreviews
 
 
 user : General -> Maybe UUID
@@ -740,6 +828,7 @@ flagsDecoder currentVersion =
         |> required "mode" Mode.decoder
         |> required "cache" (Decode.oneOf [ cacheDecoder, defaultCacheDecoder currentVersion ])
         |> required "network" Network.decoder
+        |> required "fullscreen" Decode.bool
 
 
 cacheDecoder : Decoder Cache
@@ -754,7 +843,7 @@ cacheDecoder =
             (Decode.list Author.decoder)
             []
         |> optional "postPreviews"
-            (Decode.list Post.previewDecoder)
+            (Decode.list <| Post.previewDecoder <| Just False)
             []
         |> optional "user" (Decode.nullable UUID.decoder) Nothing
         |> Decode.map Cache

@@ -1,10 +1,11 @@
-module Data.Tag exposing (Tag, compare, decoder, encode, mapWatched, mergeFromApi, name, toSource, watched)
+module Data.Tag exposing (Tag, compare, decoder, encode, find, mapWatched, mergeFromApi, name, toSource, watched)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
+import List.Extra
 
 
 
@@ -44,6 +45,17 @@ mapWatched transform (Tag internals) =
 
 
 {- Util -}
+
+
+find : UUID -> List Tag -> Maybe Tag
+find tagUUID list =
+    List.Extra.find
+        (\(Tag t) ->
+            t
+                |> .uuid
+                |> UUID.compare tagUUID
+        )
+        list
 
 
 toSource : msg -> List Tag -> Source msg

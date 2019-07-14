@@ -13,6 +13,10 @@ function getNetwork () {
   return window.navigator.onLine
 }
 
+function getFullscreen () {
+  return !!document.fullscreenElement
+}
+
 // -- Flags
 const flags = (function () {
   function getCache () {
@@ -27,6 +31,7 @@ const flags = (function () {
     cache: getCache(),
     mode: getMode(),
     network: getNetwork(),
+    fullscreen: getFullscreen(),
   }
 })()
 
@@ -45,14 +50,31 @@ const app = Elm.Main.init({
   app.ports.highlightBlock.subscribe(function (className) {
     highlight(className)
   })
+
+  app.ports.fullscreenElement.subscribe(function (className) {
+    const els = document.getElementsByClassName(className)
+    if (els.length) {
+      els[0].requestFullscreen()
+    }
+  })
+
+  app.ports.exitFullscreen.subscribe(function () {
+    document.exitFullscreen()
+  })
 })()
 
 // -- Port updates
 ;(function () {
   function onNetworkChange () {
-    app.ports.setNetworkPort.send(getNetwork())
+    app.ports.getNetworkPort.send(getNetwork())
   }
 
   window.addEventListener('online', onNetworkChange)
   window.addEventListener('offline', onNetworkChange)
+
+  function onFullscreenChange () {
+    app.ports.getFullscreenPort.send(getFullscreen())
+  }
+
+  document.addEventListener('fullscreenchange', onFullscreenChange)
 })()

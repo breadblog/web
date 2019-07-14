@@ -76,7 +76,7 @@ view problems =
                                             [ text <| Json.Decode.errorToString err ]
 
                                         MarkdownError err ->
-                                            [ Markdown.toHtml "problem" [] err ]
+                                            [ Markdown.toHtml "problem" [] [] err ]
 
                                         HttpError err ->
                                             case err of

@@ -1,3 +1,7 @@
+## 0.0.22
+
+* Style "view post"
+
 ## 0.0.21
 
 * Add create post implementation

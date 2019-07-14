@@ -1,4 +1,4 @@
-module View.Svg exposing (Icon, attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, github, link, linkedin, menu, search, user, xCircle, xSquare)
+module View.Svg exposing (Icon, attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, github, heart, link, linkedin, maximize, menu, minimize, search, user, xCircle, xSquare)
 
 import Svg.Styled as Svg exposing (..)
 import Svg.Styled.Attributes as Attributes exposing (..)
@@ -98,3 +98,18 @@ menu attr =
 link : List (Attribute msg) -> Svg msg
 link attr =
     svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-link" ] attr) [ Svg.path [ d "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" ] [], Svg.path [ d "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" ] [] ]
+
+
+maximize : List (Attribute msg) -> Svg msg
+maximize attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-maximize" ] attr) [ Svg.path [ d "M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" ] [] ]
+
+
+heart : List (Attribute msg) -> Svg msg
+heart attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-heart" ] attr) [ Svg.path [ d "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" ] [] ]
+
+
+minimize : List (Attribute msg) -> Svg msg
+minimize attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-minimize" ] attr) [ Svg.path [ d "M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" ] [] ]

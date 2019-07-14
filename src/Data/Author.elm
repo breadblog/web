@@ -7,6 +7,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
+import List.Extra
 import Util
 
 
@@ -82,7 +83,7 @@ toSource msg authors =
 
 fromUUID : UUID -> List Author -> Maybe Author
 fromUUID authorUUID list =
-    Util.find
+    List.Extra.find
         (\a ->
             a
                 |> uuid

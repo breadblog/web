@@ -10,6 +10,7 @@ import Data.Markdown as Markdown exposing (Markdown)
 import Data.Post as Post exposing (Client, Core, Full, Post)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route as Route exposing (Route(..))
+import Data.Tag as Tag exposing (Tag)
 import Data.Theme exposing (Theme)
 import Data.UUID as UUID exposing (UUID)
 import Data.Username as Username exposing (Username)
@@ -18,15 +19,20 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events as Events exposing (onClick, onInput)
 import Http
+import List.Extra
 import Message exposing (Compound(..), Msg(..))
 import Style.Button
 import Style.Color as Color
 import Style.Font as Font
 import Style.Post
+import Svg.Styled.Attributes as SvgAttributes
+import Svg.Styled.Events as SvgEvents
 import Time
 import Update
 import View.Loading
 import View.Page as Page exposing (PageUpdateOutput)
+import View.Svg
+import View.Tag
 
 
 
@@ -75,7 +81,7 @@ init maybePostUUID general =
         Just postUUID ->
             Page.init
                 Loading
-                (getPost general postUUID)
+                (getPost general postUUID maybeUserUUID)
                 (Post <| Just postUUID)
                 general
 
@@ -93,7 +99,7 @@ init maybePostUUID general =
                         Nothing ->
                             Page.init
                                 Redirect
-                                (redirectHome general)
+                                (redirect404 general)
                                 (Post Nothing)
                                 general
 
@@ -175,19 +181,19 @@ updateMod msg general internals =
                         Just author ->
                             { model = Ready post author
                             , general = general
-                            , cmd = General.highlightBlock readyClass
+                            , cmd = General.highlightBlock markdownClass
                             }
 
                         Nothing ->
                             { model = Redirect
-                            , cmd = redirectHome general
+                            , cmd = redirect404 general
                             , general = general
                             }
 
                 Err err ->
                     -- TODO: handle error properly (might be offline etc)
                     { model = internals
-                    , cmd = redirectHome general
+                    , cmd = redirect404 general
                     , general = general
                     }
 
@@ -279,7 +285,7 @@ updateMod msg general internals =
                         Ok post ->
                             { model = Ready post author
                             , general = general
-                            , cmd = Cmd.none
+                            , cmd = General.highlightBlock markdownClass
                             }
 
                         Err err ->
@@ -296,11 +302,16 @@ updateMod msg general internals =
 {- Util -}
 
 
-getPost : General -> UUID -> Cmd ModMsg
-getPost general uuid =
+getPost : General -> UUID -> Maybe UUID -> Cmd ModMsg
+getPost general postUUID maybeUserUUID =
     let
         path =
-            UUID.toPath "/post/public" uuid
+            case maybeUserUUID of
+                Just _ ->
+                    UUID.toPath "/post/private" postUUID
+
+                Nothing ->
+                    UUID.toPath "/post/public" postUUID
 
         mode =
             General.mode general
@@ -311,9 +322,9 @@ getPost general uuid =
         }
 
 
-redirectHome : General -> Cmd msg
-redirectHome general =
-    Navigation.pushUrl (General.key general) (Route.toPath Home)
+redirect404 : General -> Cmd msg
+redirect404 general =
+    Navigation.pushUrl (General.key general) (Route.toPath NotFound)
 
 
 
@@ -394,9 +405,9 @@ peekView general post =
         theme =
             General.theme general
     in
-    []
-        |> sheet theme
-        |> List.singleton
+    [ sheet theme
+        []
+    ]
 
 
 editView : General -> Post Core Full -> List (Html (Compound ModMsg))
@@ -405,9 +416,9 @@ editView general post =
         theme =
             General.theme general
     in
-    []
-        |> sheet theme
-        |> List.singleton
+    [ sheet theme
+        []
+    ]
 
 
 createView : General -> Post Client Full -> Author -> List (Html (Compound ModMsg))
@@ -468,40 +479,36 @@ readyView general post author =
 
         body =
             Post.body post
+
+        fullscreen =
+            General.fullscreen general
+
+        -- fav =
     in
-    [ div
-        [ classList
-            [ ( readyClass, True )
-            , ( "animated", True )
-            , ( "fadeIn", True )
+    [ sheet theme
+        [ heading theme
+            [ authorLink author theme
+            , divider theme
+            , viewTitle theme title
+            , viewTags general post
+            , filler
+            , if fullscreen then
+                minimize theme []
+
+              else
+                maximize theme []
+            , favorite
+                general
+                post
+                []
             ]
-        , css
-            [ Css.height <| pct 100
-            , Css.width <| pct 100
-            , displayFlex
-            , justifyContent center
-            , alignItems center
-            , flexDirection column
+        , Markdown.toHtml
+            markdownClass
+            [ padding (px 15)
+            , overflowY auto
             ]
-        ]
-        [ div
-            [ class "card"
-            , css
-                [ marginTop <| px 50
-                , marginBottom <| px 50
-                , backgroundColor <| Color.card theme
-                , maxWidth <| pct 60
-                , flexGrow <| num 1
-                ]
-            ]
-            [ h1
-                [ class "title" ]
-                [ text title ]
-            , h2
-                [ class "author" ]
-                [ text <| Username.toString <| Author.username author ]
-            , Markdown.toHtml "body" postStyle.body body
-            ]
+            postStyle
+            body
         ]
     ]
 
@@ -510,18 +517,164 @@ readyView general post author =
 {- View Helpers -}
 
 
+viewTags : General -> Post l f -> Html msg
+viewTags general post =
+    let
+        theme =
+            General.theme general
+
+        tags =
+            Post.tags post
+                |> List.map (\tagUUID -> Tag.find tagUUID (General.tags general))
+                |> List.filterMap identity
+    in
+    div
+        [ class "tags-container"
+        , css
+            [ displayFlex
+            ]
+        ]
+        (List.map
+            (\t -> View.Tag.view theme [] t)
+            tags
+        )
+
+
+favorite : General -> Post Core f -> List Style -> Html (Compound ModMsg)
+favorite general post styles =
+    let
+        theme =
+            General.theme general
+
+        maybeFav =
+            case Post.favorite post of
+                Just f ->
+                    Just f
+
+                Nothing ->
+                    case List.Extra.find (Post.compare post) (General.postPreviews general) of
+                        Just p ->
+                            Post.favorite p
+
+                        Nothing ->
+                            Nothing
+    in
+    case maybeFav of
+        Just fav ->
+            View.Svg.heart
+                [ SvgEvents.onClick <| Global <| GeneralMsg <| TogglePost <| Post.toPreview post
+                , SvgAttributes.css
+                    (List.append
+                        [ svgStyle theme
+                        , marginRight (px 15)
+                        , fillIf fav Color.favorite
+                        , color <|
+                            if fav then
+                                Color.favorite
+
+                            else
+                                Color.tertiaryFont <| theme
+                        , hover
+                            [ fillIf fav Color.favorite
+                            , color Color.favorite
+                            ]
+                        ]
+                        styles
+                    )
+                ]
+
+        Nothing ->
+            text ""
+
+
+fillIf : Bool -> Color -> Style
+fillIf bool color =
+    Css.batch <|
+        if bool then
+            [ Css.fill color ]
+
+        else
+            []
+
+
+maximize : Theme -> List Style -> Html (Compound ModMsg)
+maximize theme styles =
+    View.Svg.maximize
+        [ SvgEvents.onClick <| Global <| GeneralMsg <| FullscreenElement "post-page"
+        , SvgAttributes.css
+            (List.append
+                [ svgStyle theme
+                ]
+                styles
+            )
+        ]
+
+
+minimize : Theme -> List Style -> Html (Compound ModMsg)
+minimize theme styles =
+    View.Svg.minimize
+        [ SvgEvents.onClick <| Global <| GeneralMsg <| ExitFullscreen
+        , SvgAttributes.css
+            (List.append
+                [ svgStyle theme
+                ]
+                styles
+            )
+        ]
+
+
+svgStyle : Theme -> Style
+svgStyle theme =
+    Css.batch
+        [ margin2 (px 0) (px 7)
+        , cursor pointer
+        , color <| Color.tertiaryFont theme
+        , hover
+            [ color <| Color.secondaryFont theme
+            ]
+        , transition
+            [ Transitions.color3 100 0 Transitions.easeInOut ]
+        ]
+
+
+filler : Html msg
+filler =
+    div
+        [ class "filler"
+        , css
+            [ displayFlex
+            , flex3 (int 1) (int 0) (int 0)
+            ]
+        ]
+        []
+
+
 authorLink : Author -> Theme -> Html (Compound ModMsg)
 authorLink author theme =
     a
         [ class "author"
+        , href <| UUID.toPath "/author" (Author.uuid author)
         , css
             [ textDecoration none
             , marginLeft <| px 15
             , fontWeight <| int 500
             , fontSize <| rem 1
+            , color <| Color.secondaryFont theme
             ]
         ]
         [ text <| Username.toString <| Author.username author ]
+
+
+viewTitle : Theme -> String -> Html msg
+viewTitle theme title =
+    h1
+        [ class "title"
+        , css
+            [ fontSize <| rem 1.2
+            , margin4 (px 0) (px 20) (px 2) (px 3)
+            ]
+        ]
+        [ text title ]
 
 
 titleInput : Theme -> String -> Html (Compound ModMsg)
@@ -625,7 +778,7 @@ heading theme contents =
 sheet : Theme -> List (Html msg) -> Html msg
 sheet theme contents =
     div
-        [ class "sheet"
+        [ class "sheet post-sheet"
         , css
             [ marginBottom <| px 50
             , marginTop <| px 50
@@ -640,9 +793,9 @@ sheet theme contents =
         contents
 
 
-readyClass : String
-readyClass =
-    "post"
+markdownClass : String
+markdownClass =
+    "post-md"
 
 
 sheetRadius : Px
