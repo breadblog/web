@@ -1,3 +1,7 @@
+## 0.0.24
+
+* Fix url on successful post creation
+
 ## 0.0.23
 
 * Fix code highlighting
