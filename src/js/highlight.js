@@ -25,4 +25,7 @@ hljs.registerLanguage('ini', ini)
 hljs.registerLanguage('html', xml)
 hljs.registerLanguage('xml', xml)
 
+// simply adding "hljs" to window is enough to allow
+// elm-explorations/markdown to automatically highlight
+// code blocks
 window.hljs = hljs

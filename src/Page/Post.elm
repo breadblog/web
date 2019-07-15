@@ -285,7 +285,7 @@ updateMod msg general internals =
                         Ok post ->
                             { model = Ready post author
                             , general = general
-                            , cmd = Cmd.none
+                            , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Just <| Post.uuid post)
                             }
 
                         Err err ->
