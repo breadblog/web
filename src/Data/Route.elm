@@ -18,7 +18,7 @@ type Route
 
 
 type PostType
-    = View UUID
+    = Ready UUID
     | Create
     | Edit UUID
 
@@ -36,7 +36,7 @@ urlParser =
 
         -- Posts
         , Parser.map (Post Create) (s "post" </> s "create")
-        , Parser.map (Post << View) (s "post" </> UUID.urlParser)
+        , Parser.map (Post << Ready) (s "post" </> UUID.urlParser)
         , Parser.map (Post << Edit) (s "post" </> s "edit" </> UUID.urlParser)
 
         -- Info
@@ -139,7 +139,7 @@ toPath route =
                 Create ->
                     relative [ "/post/create" ] []
 
-                View postUUID ->
+                Ready postUUID ->
                     relative [ UUID.toPath "/post" postUUID ] []
 
                 Edit postUUID ->

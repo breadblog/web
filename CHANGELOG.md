@@ -1,3 +1,7 @@
+## 0.0.25
+
+* Add "edit post" view
+
 ## 0.0.24
 
 * Fix url on successful post creation

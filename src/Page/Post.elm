@@ -47,9 +47,9 @@ type
     Internals
     {------------------ Public States ---------------------}
     -- loading state for when we are fetching post info
-    = LoadingView
+    = LoadingReady
       -- we are now ready to display an existing post
-    | View (Post Core Full) Author
+    | Ready (Post Core Full) Author
       -- page shown when failure occurs, waiting for redirect
       -- to home page
     | Redirect
@@ -82,11 +82,11 @@ init postType general =
             \uuid -> Author.fromUUID uuid authors
     in
     case postType of
-        Route.View postUUID ->
+        Route.Ready postUUID ->
             Page.init
-                LoadingView
-                (getPost general postUUID maybeUserUUID View)
-                (Post <| Route.View postUUID)
+                LoadingReady
+                (getPost general postUUID maybeUserUUID Ready)
+                (Post <| Route.Ready postUUID)
                 general
 
         Route.Edit postUUID ->
@@ -123,7 +123,7 @@ init postType general =
                                 (Just <| Problem.createHandler "Log In" (NavigateTo Login))
                     in
                     Page.init
-                        LoadingView
+                        LoadingReady
                         Cmd.none
                         (Post Route.Create)
                         (General.pushProblem problem general)
@@ -154,6 +154,7 @@ type ModMsg
     | OnBodyInput String
     | WritePost
     | WritePostRes (Result Http.Error (Post Core Full))
+    | EditCurrentPost
 
 
 
@@ -314,9 +315,9 @@ updateMod msg general internals =
             let
                 onOk =
                     \post author ->
-                        { model = View post author
+                        { model = Ready post author
                         , general = general
-                        , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Route.View <| Post.uuid post)
+                        , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Route.Ready <| Post.uuid post)
                         }
             in
             case internals of
@@ -337,6 +338,17 @@ updateMod msg general internals =
                         Err err ->
                             withProblem <|
                                 Problem.create "Failed to edit post" (HttpError err) Nothing
+
+                _ ->
+                    simpleOutput internals
+
+        EditCurrentPost ->
+            case internals of
+                Ready post author ->
+                    { model = internals
+                    , general = general
+                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Edit <| Post.uuid post)
+                    }
 
                 _ ->
                     simpleOutput internals
@@ -392,13 +404,13 @@ viewPost general internals =
 
         contents =
             case internals of
-                LoadingView ->
+                LoadingReady ->
                     loadingView theme
 
                 Redirect ->
                     [ div [ css [ flexGrow <| num 1 ] ] [] ]
 
-                View post author ->
+                Ready post author ->
                     let
                         authors =
                             General.authors general
@@ -564,6 +576,14 @@ readyView general post author =
         fullscreen =
             General.fullscreen general
 
+        myPost =
+            case General.user general of
+                Nothing ->
+                    False
+
+                Just userUUID ->
+                    UUID.compare (Author.uuid author) userUUID
+
         -- fav =
     in
     [ sheet theme
@@ -573,6 +593,11 @@ readyView general post author =
             , viewTitle theme title
             , viewTags general post
             , filler
+            , if myPost then
+                edit theme []
+
+              else
+                text ""
             , if fullscreen then
                 minimize theme []
 
@@ -619,6 +644,17 @@ viewTags general post =
             (\t -> View.Tag.view theme [] t)
             tags
         )
+
+
+edit : Theme -> List Style -> Html (Compound ModMsg)
+edit theme styles =
+    View.Svg.edit
+        [ SvgEvents.onClick <| Mod <| EditCurrentPost
+        , SvgAttributes.css
+            [ svgStyle theme
+            , Css.batch styles
+            ]
+        ]
 
 
 favorite : General -> Post Core f -> List Style -> Html (Compound ModMsg)
@@ -683,11 +719,9 @@ maximize theme styles =
     View.Svg.maximize
         [ SvgEvents.onClick <| Global <| GeneralMsg <| FullscreenElement "post-page"
         , SvgAttributes.css
-            (List.append
-                [ svgStyle theme
-                ]
-                styles
-            )
+            [ svgStyle theme
+            , Css.batch styles
+            ]
         ]
 
 
@@ -696,11 +730,9 @@ minimize theme styles =
     View.Svg.minimize
         [ SvgEvents.onClick <| Global <| GeneralMsg <| ExitFullscreen
         , SvgAttributes.css
-            (List.append
-                [ svgStyle theme
-                ]
-                styles
-            )
+            [ svgStyle theme
+            , Css.batch styles
+            ]
         ]
 
 
