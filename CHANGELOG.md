@@ -1,3 +1,7 @@
+## 0.0.25
+
+* Fix missing text on dismiss button (problems page)
+
 ## 0.0.24
 
 * Fix url on successful post creation
