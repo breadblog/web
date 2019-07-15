@@ -141,7 +141,7 @@ danger : Theme -> Color
 danger theme =
     case theme of
         Dark ->
-            hex "FF5252"
+            hex "FF0000"
 
         Light ->
             hex "b71c1c"
@@ -169,4 +169,4 @@ tagBackground theme =
 
 favorite : Color
 favorite =
-    hex "FF0000"
+    hex "FF5252"

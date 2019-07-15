@@ -20,6 +20,9 @@ config
   .entry('main')
     .add(src('js', 'index.js'))
     .end()
+  .entry('animate-css')
+    .add(root('node_modules', 'animate.css', 'animate.min.css'))
+    .end()
   .devtool('none')
   .resolve
     .alias
@@ -52,9 +55,6 @@ config
       .exclude
         .add(/elm-stuff/)
         .add(/node_modules/)
-        .end()
-      .use('elm hot')
-        .loader('elm-hot-webpack-loader')
         .end()
       .use('elm')
         .loader('elm-webpack-loader')

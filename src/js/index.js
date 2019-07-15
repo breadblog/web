@@ -1,5 +1,3 @@
-import 'animate.css'
-
 import '@js/highlight'
 import { Elm } from '@main'
 import '@font/firacode'

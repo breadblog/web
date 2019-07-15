@@ -22,9 +22,11 @@ import Http
 import List.Extra
 import Message exposing (Compound(..), Msg(..))
 import Style.Button
+import Style.Card
 import Style.Color as Color
 import Style.Font as Font
 import Style.Post
+import Style.Shadow as Shadow
 import Svg.Styled.Attributes as SvgAttributes
 import Svg.Styled.Events as SvgEvents
 import Time
@@ -63,6 +65,7 @@ type
       -- doesn't have info from core (such as uuid)
     | Edit (Post Core Full) Author
     | Create (Post Client Full) Author
+    | Delete UUID
 
 
 
@@ -94,6 +97,13 @@ init postType general =
                 LoadingEdit
                 (getPost general postUUID maybeUserUUID Edit)
                 (Post <| Route.Edit postUUID)
+                general
+
+        Route.Delete postUUID ->
+            Page.init
+                (Delete postUUID)
+                Cmd.none
+                (Post <| Route.Delete postUUID)
                 general
 
         Route.Create ->
@@ -155,6 +165,9 @@ type ModMsg
     | WritePost
     | WritePostRes (Result Http.Error (Post Core Full))
     | EditCurrentPost
+    | DeleteCurrentPost
+    | ConfirmDelete
+    | OnDelete (Result Http.Error ())
 
 
 
@@ -353,6 +366,44 @@ updateMod msg general internals =
                 _ ->
                     simpleOutput internals
 
+        DeleteCurrentPost ->
+            case internals of
+                Ready post author ->
+                    { model = internals
+                    , general = general
+                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Delete <| Post.uuid post)
+                    }
+
+                _ ->
+                    simpleOutput internals
+
+        ConfirmDelete ->
+            case internals of
+                Delete postUUID ->
+                    { model = internals
+                    , general = general
+                    , cmd =
+                        Api.delete
+                            { url = Api.url (General.mode general) (UUID.toPath "/post/private" postUUID)
+                            , expect = Http.expectWhatever (OnDelete >> Mod)
+                            }
+                    }
+
+                _ ->
+                    simpleOutput internals
+
+        OnDelete res ->
+            case res of
+                Err err ->
+                    withProblem <|
+                        Problem.create "Failed to delete post" (HttpError err) Nothing
+
+                Ok _ ->
+                    { model = internals
+                    , general = general
+                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath Home)
+                    }
+
 
 
 {- Util -}
@@ -428,6 +479,9 @@ viewPost general internals =
 
                 Create post author ->
                     createView general post author
+
+                Delete postUUID ->
+                    deleteView theme postUUID
     in
     [ div
         [ class "page post-page"
@@ -480,7 +534,10 @@ editView general post author =
             General.theme general
     in
     [ sheet theme
-        [ heading theme
+        [ div
+            [ css
+                [ Style.Card.headingStyle theme ]
+            ]
             [ authorLink author theme
             , divider theme
             , titleInput theme <| Post.title post
@@ -521,7 +578,11 @@ createView general post author =
             General.theme general
     in
     [ sheet theme
-        [ heading theme
+        [ div
+            [ css
+                [ Style.Card.headingStyle theme
+                ]
+            ]
             [ authorLink author theme
             , divider theme
             , titleInput theme <| Post.title post
@@ -551,6 +612,79 @@ createView general post author =
             , onClick <| Mod <| WritePost
             ]
             [ text "Create" ]
+        ]
+    ]
+
+
+deleteView : Theme -> UUID -> List (Html (Compound ModMsg))
+deleteView theme postUUID =
+    [ div
+        [ class "delete-post"
+        , css
+            [ displayFlex
+            , justifyContent center
+            , alignItems center
+            , Css.height <| pct 100
+            , Css.width <| pct 100
+            ]
+        ]
+        [ div
+            [ css
+                [ Css.width <| pct 20
+                , Shadow.dp4
+                , Style.Card.style theme
+                ]
+            ]
+            [ div
+                [ css
+                    [ Style.Card.headingStyle theme ]
+                ]
+                [ h1
+                    [ css
+                        [ fontWeight <| int 400
+                        , fontSize <| rem 1.3
+                        , margin2 (px 0) auto
+                        , color <| Color.primaryFont theme
+                        ]
+                    ]
+                    [ text "Confirm post deletion?"
+                    ]
+                ]
+            , p
+                [ css
+                    [ margin2 (px 15) (px 15)
+                    , color <| Color.secondaryFont theme
+                    ]
+                ]
+                [ text "Deleting a post is a permanent action. Please ensure you no longer want access to this post before deletion." ]
+            , div
+                [ class "buttons"
+                , css
+                    [ Css.width <| pct 100
+                    , displayFlex
+                    , justifyContent center
+                    , marginBottom <| px 10
+                    ]
+                ]
+                [ button
+                    [ onClick <| Global <| GeneralMsg GoBack
+                    , css
+                        [ Style.Button.default
+                        , backgroundColor <| Color.danger theme
+                        , marginRight <| px 15
+                        ]
+                    ]
+                    [ text "Go Back" ]
+                , button
+                    [ onClick <| Mod <| ConfirmDelete
+                    , css
+                        [ Style.Button.default
+                        , Style.Button.submit
+                        ]
+                    ]
+                    [ text "Submit" ]
+                ]
+            ]
         ]
     ]
 
@@ -587,12 +721,20 @@ readyView general post author =
         -- fav =
     in
     [ sheet theme
-        [ heading theme
+        [ div
+            [ css
+                [ Style.Card.headingStyle theme ]
+            ]
             [ authorLink author theme
             , divider theme
             , viewTitle theme title
             , viewTags general post
             , filler
+            , if myPost then
+                delete theme []
+
+              else
+                text ""
             , if myPost then
                 edit theme []
 
@@ -650,6 +792,17 @@ edit : Theme -> List Style -> Html (Compound ModMsg)
 edit theme styles =
     View.Svg.edit
         [ SvgEvents.onClick <| Mod <| EditCurrentPost
+        , SvgAttributes.css
+            [ svgStyle theme
+            , Css.batch styles
+            ]
+        ]
+
+
+delete : Theme -> List Style -> Html (Compound ModMsg)
+delete theme styles =
+    View.Svg.trash2
+        [ SvgEvents.onClick <| Mod <| DeleteCurrentPost
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles
@@ -873,21 +1026,6 @@ divider theme =
         [ text "/" ]
 
 
-heading : Theme -> List (Html msg) -> Html msg
-heading theme contents =
-    div
-        [ class "heading"
-        , css
-            [ borderRadius4 sheetRadius sheetRadius (pct 0) (pct 0)
-            , displayFlex
-            , Css.height <| px 40
-            , backgroundColor <| Color.cardHeading theme
-            , alignItems center
-            ]
-        ]
-        contents
-
-
 sheet : Theme -> List (Html msg) -> Html msg
 sheet theme contents =
     div
@@ -895,12 +1033,11 @@ sheet theme contents =
         , css
             [ marginBottom <| px 50
             , marginTop <| px 50
-            , backgroundColor <| Color.card theme
             , Css.width <| pct 60
             , flexGrow <| num 1
             , displayFlex
             , flexDirection column
-            , borderRadius <| sheetRadius
+            , Style.Card.style theme
             ]
         ]
         contents
@@ -909,11 +1046,6 @@ sheet theme contents =
 markdownClass : String
 markdownClass =
     "post-md"
-
-
-sheetRadius : Px
-sheetRadius =
-    px 5
 
 
 textAreaLabelStyle : Style

@@ -1,3 +1,7 @@
+## 0.0.27
+
+* Add delete button to existing post (user only)
+
 ## 0.0.26
 
 * Fix missing text on dismiss button (problems page)
