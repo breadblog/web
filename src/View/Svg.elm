@@ -1,4 +1,4 @@
-module View.Svg exposing (Icon, attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, github, heart, link, linkedin, maximize, menu, minimize, search, user, xCircle, xSquare)
+module View.Svg exposing (Icon, attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, edit, github, heart, link, linkedin, maximize, menu, minimize, search, user, xCircle, xSquare)
 
 import Svg.Styled as Svg exposing (..)
 import Svg.Styled.Attributes as Attributes exposing (..)
@@ -113,3 +113,8 @@ heart attr =
 minimize : List (Attribute msg) -> Svg msg
 minimize attr =
     svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-minimize" ] attr) [ Svg.path [ d "M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" ] [] ]
+
+
+edit : List (Attribute msg) -> Svg msg
+edit attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-edit" ] attr) [ Svg.path [ d "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" ] [], Svg.path [ d "M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" ] [] ]
