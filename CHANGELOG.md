@@ -1,6 +1,10 @@
-## 0.0.25
+## 0.0.26
 
 * Fix missing text on dismiss button (problems page)
+
+## 0.0.25
+
+* Add "edit post" view
 
 ## 0.0.24
 

@@ -9,7 +9,7 @@ import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.Post as Post exposing (Client, Core, Full, Post)
 import Data.Problem as Problem exposing (Description(..), Problem)
-import Data.Route as Route exposing (Route(..))
+import Data.Route as Route exposing (PostType, Route(..))
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme exposing (Theme)
 import Data.UUID as UUID exposing (UUID)
@@ -47,7 +47,7 @@ type
     Internals
     {------------------ Public States ---------------------}
     -- loading state for when we are fetching post info
-    = Loading
+    = LoadingReady
       -- we are now ready to display an existing post
     | Ready (Post Core Full) Author
       -- page shown when failure occurs, waiting for redirect
@@ -58,6 +58,7 @@ type
       -- referred to as "preview" in UI, but "Peek"
       -- in code to avoid conflicts
     | Peek (Post Core Full) Author
+    | LoadingEdit
       -- the following two states are very similar, just one
       -- doesn't have info from core (such as uuid)
     | Edit (Post Core Full) Author
@@ -68,24 +69,34 @@ type
 {------------------------------------------------------}
 
 
-init : Maybe UUID -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init maybePostUUID general =
+init : PostType -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
+init postType general =
     let
         maybeUserUUID =
             General.user general
 
         authors =
             General.authors general
+
+        getAuthor =
+            \uuid -> Author.fromUUID uuid authors
     in
-    case maybePostUUID of
-        Just postUUID ->
+    case postType of
+        Route.Ready postUUID ->
             Page.init
-                Loading
-                (getPost general postUUID maybeUserUUID)
-                (Post <| Just postUUID)
+                LoadingReady
+                (getPost general postUUID maybeUserUUID Ready)
+                (Post <| Route.Ready postUUID)
                 general
 
-        Nothing ->
+        Route.Edit postUUID ->
+            Page.init
+                LoadingEdit
+                (getPost general postUUID maybeUserUUID Edit)
+                (Post <| Route.Edit postUUID)
+                general
+
+        Route.Create ->
             case maybeUserUUID of
                 Just userUUID ->
                     case Author.fromUUID userUUID authors of
@@ -93,14 +104,14 @@ init maybePostUUID general =
                             Page.init
                                 (Create (Post.empty userUUID) author)
                                 Cmd.none
-                                (Post Nothing)
+                                (Post Route.Create)
                                 general
 
                         Nothing ->
                             Page.init
                                 Redirect
                                 (redirect404 general)
-                                (Post Nothing)
+                                (Post Route.Create)
                                 general
 
                 Nothing ->
@@ -112,9 +123,9 @@ init maybePostUUID general =
                                 (Just <| Problem.createHandler "Log In" (NavigateTo Login))
                     in
                     Page.init
-                        Loading
+                        LoadingReady
                         Cmd.none
-                        (Post Nothing)
+                        (Post Route.Create)
                         (General.pushProblem problem general)
 
 
@@ -137,16 +148,21 @@ type alias Msg =
 
 
 type ModMsg
-    = GotPost (Result Http.Error (Post Core Full))
+    = GotPost ToInternals (Result Http.Error (Post Core Full))
     | OnTitleInput String
     | OnDescriptionInput String
     | OnBodyInput String
-    | CreatePost
-    | CreatePostRes (Result Http.Error (Post Core Full))
+    | WritePost
+    | WritePostRes (Result Http.Error (Post Core Full))
+    | EditCurrentPost
 
 
 
 {- Update -}
+
+
+type alias ToInternals =
+    Post Core Full -> Author -> Internals
 
 
 update : Msg -> Model -> PageUpdateOutput ModMsg Internals
@@ -162,9 +178,15 @@ updateMod msg general internals =
             , general = general
             , cmd = Cmd.none
             }
+
+        withProblem problem =
+            { model = internals
+            , general = General.pushProblem problem general
+            , cmd = Cmd.none
+            }
     in
     case msg of
-        GotPost res ->
+        GotPost toInternals res ->
             case res of
                 Ok post ->
                     let
@@ -179,7 +201,7 @@ updateMod msg general internals =
                     in
                     case maybeAuthor of
                         Just author ->
-                            { model = Ready post author
+                            { model = toInternals post author
                             , general = general
                             , cmd = Cmd.none
                             }
@@ -262,7 +284,7 @@ updateMod msg general internals =
                 _ ->
                     simpleOutput internals
 
-        CreatePost ->
+        WritePost ->
             case internals of
                 Create post author ->
                     { model = internals
@@ -270,29 +292,63 @@ updateMod msg general internals =
                     , cmd =
                         Api.put
                             { url = Api.url (General.mode general) "/post/private/"
-                            , expect = Http.expectJson (CreatePostRes >> Mod) Post.fullDecoder
+                            , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
                             , body = Http.jsonBody <| Post.encodeFreshFull post
+                            }
+                    }
+
+                Edit post author ->
+                    { model = internals
+                    , general = general
+                    , cmd =
+                        Api.post
+                            { url = Api.url (General.mode general) "/post/private/"
+                            , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
+                            , body = Http.jsonBody <| Post.encodeFull post
                             }
                     }
 
                 _ ->
                     simpleOutput internals
 
-        CreatePostRes res ->
+        WritePostRes res ->
+            let
+                onOk =
+                    \post author ->
+                        { model = Ready post author
+                        , general = general
+                        , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Route.Ready <| Post.uuid post)
+                        }
+            in
             case internals of
                 Create _ author ->
                     case res of
                         Ok post ->
-                            { model = Ready post author
-                            , general = general
-                            , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Just <| Post.uuid post)
-                            }
+                            onOk post author
 
                         Err err ->
-                            { model = internals
-                            , general = general
-                            , cmd = Cmd.none
-                            }
+                            withProblem <|
+                                Problem.create "Failed to create post" (HttpError err) Nothing
+
+                Edit _ author ->
+                    case res of
+                        Ok post ->
+                            onOk post author
+
+                        Err err ->
+                            withProblem <|
+                                Problem.create "Failed to edit post" (HttpError err) Nothing
+
+                _ ->
+                    simpleOutput internals
+
+        EditCurrentPost ->
+            case internals of
+                Ready post author ->
+                    { model = internals
+                    , general = general
+                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Edit <| Post.uuid post)
+                    }
 
                 _ ->
                     simpleOutput internals
@@ -302,8 +358,12 @@ updateMod msg general internals =
 {- Util -}
 
 
-getPost : General -> UUID -> Maybe UUID -> Cmd ModMsg
-getPost general postUUID maybeUserUUID =
+type alias PostResult =
+    Result Http.Error (Post Core Full)
+
+
+getPost : General -> UUID -> Maybe UUID -> ToInternals -> Cmd ModMsg
+getPost general postUUID maybeUserUUID toInternals =
     let
         path =
             case maybeUserUUID of
@@ -318,7 +378,7 @@ getPost general postUUID maybeUserUUID =
     in
     Api.get
         { url = Api.url mode path
-        , expect = Http.expectJson GotPost Post.fullDecoder
+        , expect = Http.expectJson (GotPost toInternals) Post.fullDecoder
         }
 
 
@@ -344,7 +404,7 @@ viewPost general internals =
 
         contents =
             case internals of
-                Loading ->
+                LoadingReady ->
                     loadingView theme
 
                 Redirect ->
@@ -360,8 +420,11 @@ viewPost general internals =
                 Peek post author ->
                     peekView general post
 
+                LoadingEdit ->
+                    loadingView theme
+
                 Edit post author ->
-                    editView general post
+                    editView general post author
 
                 Create post author ->
                     createView general post author
@@ -410,14 +473,44 @@ peekView general post =
     ]
 
 
-editView : General -> Post Core Full -> List (Html (Compound ModMsg))
-editView general post =
+editView : General -> Post Core Full -> Author -> List (Html (Compound ModMsg))
+editView general post author =
     let
         theme =
             General.theme general
     in
     [ sheet theme
-        []
+        [ heading theme
+            [ authorLink author theme
+            , divider theme
+            , titleInput theme <| Post.title post
+            ]
+        , h3
+            [ css
+                [ textAreaLabelStyle
+                , margin4 (px 10) (px 0) (px 0) (px 15)
+                ]
+            ]
+            [ text "Description" ]
+        , descInput theme <| Post.description post
+        , h3
+            [ css
+                [ textAreaLabelStyle
+                , margin4 (px 0) (px 0) (px 0) (px 15)
+                ]
+            ]
+            [ text "Body" ]
+        , bodyInput theme <| Post.body post
+        , button
+            [ css
+                [ Style.Button.default
+                , Style.Button.submit
+                , margin4 (px 0) (px 10) (px 10) (px 10)
+                ]
+            , onClick <| Mod <| WritePost
+            ]
+            [ text "Edit" ]
+        ]
     ]
 
 
@@ -455,7 +548,7 @@ createView general post author =
                 , Style.Button.submit
                 , margin4 (px 0) (px 10) (px 10) (px 10)
                 ]
-            , onClick <| Mod <| CreatePost
+            , onClick <| Mod <| WritePost
             ]
             [ text "Create" ]
         ]
@@ -483,6 +576,14 @@ readyView general post author =
         fullscreen =
             General.fullscreen general
 
+        myPost =
+            case General.user general of
+                Nothing ->
+                    False
+
+                Just userUUID ->
+                    UUID.compare (Author.uuid author) userUUID
+
         -- fav =
     in
     [ sheet theme
@@ -492,6 +593,11 @@ readyView general post author =
             , viewTitle theme title
             , viewTags general post
             , filler
+            , if myPost then
+                edit theme []
+
+              else
+                text ""
             , if fullscreen then
                 minimize theme []
 
@@ -538,6 +644,17 @@ viewTags general post =
             (\t -> View.Tag.view theme [] t)
             tags
         )
+
+
+edit : Theme -> List Style -> Html (Compound ModMsg)
+edit theme styles =
+    View.Svg.edit
+        [ SvgEvents.onClick <| Mod <| EditCurrentPost
+        , SvgAttributes.css
+            [ svgStyle theme
+            , Css.batch styles
+            ]
+        ]
 
 
 favorite : General -> Post Core f -> List Style -> Html (Compound ModMsg)
@@ -602,11 +719,9 @@ maximize theme styles =
     View.Svg.maximize
         [ SvgEvents.onClick <| Global <| GeneralMsg <| FullscreenElement "post-page"
         , SvgAttributes.css
-            (List.append
-                [ svgStyle theme
-                ]
-                styles
-            )
+            [ svgStyle theme
+            , Css.batch styles
+            ]
         ]
 
 
@@ -615,11 +730,9 @@ minimize theme styles =
     View.Svg.minimize
         [ SvgEvents.onClick <| Global <| GeneralMsg <| ExitFullscreen
         , SvgAttributes.css
-            (List.append
-                [ svgStyle theme
-                ]
-                styles
-            )
+            [ svgStyle theme
+            , Css.batch styles
+            ]
         ]
 
 
