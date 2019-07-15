@@ -1,4 +1,4 @@
-module Data.Route exposing (Route(..), fromUrl, toClass, toName, toPath)
+module Data.Route exposing (PostType(..), Route(..), fromUrl, toClass, toName, toPath)
 
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode
@@ -10,11 +10,17 @@ import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, to
 type Route
     = NotFound
     | Home
-    | Post (Maybe UUID)
+    | Post PostType
     | About
     | Donate
     | Changelog
     | Login
+
+
+type PostType
+    = View UUID
+    | Create
+    | Edit UUID
 
 
 
@@ -29,8 +35,9 @@ urlParser =
         , Parser.map Login (s "login")
 
         -- Posts
-        , Parser.map (Post Nothing) (s "post" </> s "create")
-        , Parser.map (\uuid -> Post (Just uuid)) (s "post" </> UUID.urlParser)
+        , Parser.map (Post Create) (s "post" </> s "create")
+        , Parser.map (Post << View) (s "post" </> UUID.urlParser)
+        , Parser.map (Post << Edit) (s "post" </> s "edit" </> UUID.urlParser)
 
         -- Info
         , Parser.map About (s "about")
@@ -127,13 +134,16 @@ toPath route =
         Login ->
             relative [ "/login" ] []
 
-        Post maybePostUUID ->
-            case maybePostUUID of
-                Just postUUID ->
+        Post postType ->
+            case postType of
+                Create ->
+                    relative [ "/post/create" ] []
+
+                View postUUID ->
                     relative [ UUID.toPath "/post" postUUID ] []
 
-                Nothing ->
-                    relative [ "/post/create" ] []
+                Edit postUUID ->
+                    relative [ UUID.toPath "/post/edit" postUUID ] []
 
         About ->
             relative [ "/about" ] []
