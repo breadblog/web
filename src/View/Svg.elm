@@ -1,4 +1,4 @@
-module View.Svg exposing (Icon, attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, delete, edit, github, heart, link, linkedin, maximize, menu, minimize, search, trash2, user, xCircle, xSquare)
+module View.Svg exposing (Icon, attribute, checkCircle, checkSquare, chevronDown, chevronLeft, chevronRight, chevronUp, delete, edit, github, heart, link, linkedin, lock, maximize, menu, minimize, search, trash2, unlock, user, xCircle, xSquare)
 
 import Svg.Styled as Svg exposing (..)
 import Svg.Styled.Attributes as Attributes exposing (..)
@@ -128,3 +128,13 @@ delete attr =
 trash2 : List (Attribute msg) -> Svg msg
 trash2 attr =
     svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-trash-2" ] attr) [ polyline [ points "3 6 5 6 21 6" ] [], Svg.path [ d "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" ] [], line [ x1 "10", y1 "11", x2 "10", y2 "17" ] [], line [ x1 "14", y1 "11", x2 "14", y2 "17" ] [] ]
+
+
+lock : List (Attribute msg) -> Svg msg
+lock attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-lock" ] attr) [ rect [ x "3", y "11", width "18", height "11", rx "2", ry "2" ] [], Svg.path [ d "M7 11V7a5 5 0 0 1 10 0v4" ] [] ]
+
+
+unlock : List (Attribute msg) -> Svg msg
+unlock attr =
+    svg (List.append [ width "24", height "24", viewBox "0 0 24 24", fill "none", stroke "currentColor", strokeWidth "2", strokeLinecap "round", strokeLinejoin "round", class "feather feather-unlock" ] attr) [ rect [ x "3", y "11", width "18", height "11", rx "2", ry "2" ] [], Svg.path [ d "M7 11V7a5 5 0 0 1 9.9-1" ] [] ]

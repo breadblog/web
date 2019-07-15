@@ -119,9 +119,6 @@ if (build() === 'dev') {
       .end()
     .module
       .rule('elm')
-        .use('elm hot')
-          .loader('elm-hot-webpack-loader')
-          .end()
         .use('elm')
           .loader('elm-webpack-loader')
           .options({
