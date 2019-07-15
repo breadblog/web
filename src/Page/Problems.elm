@@ -159,7 +159,7 @@ view problems =
                                             , Style.Button.submit
                                             ]
                                         ]
-                                        []
+                                        [ text "Dismiss" ]
                             ]
                         ]
                 )
