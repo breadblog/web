@@ -168,6 +168,7 @@ type ModMsg
     | DeleteCurrentPost
     | ConfirmDelete
     | OnDelete (Result Http.Error ())
+    | TogglePublished
 
 
 
@@ -384,7 +385,7 @@ updateMod msg general internals =
                     , general = general
                     , cmd =
                         Api.delete
-                            { url = Api.url (General.mode general) (UUID.toPath "/post/private" postUUID)
+                            { url = Api.url (General.mode general) (UUID.toPath "/post/owner" postUUID)
                             , expect = Http.expectWhatever (OnDelete >> Mod)
                             }
                     }
@@ -403,6 +404,17 @@ updateMod msg general internals =
                     , general = general
                     , cmd = Navigation.pushUrl (General.key general) (Route.toPath Home)
                     }
+
+        TogglePublished ->
+            case internals of
+                Edit post author ->
+                    simpleOutput <| Edit (Post.mapPublished not post) author
+
+                Create post author ->
+                    simpleOutput <| Create (Post.mapPublished not post) author
+
+                _ ->
+                    simpleOutput internals
 
 
 
@@ -541,6 +553,8 @@ editView general post author =
             [ authorLink author theme
             , divider theme
             , titleInput theme <| Post.title post
+            , filler
+            , togglePublished theme post [ marginRight <| px 15 ]
             ]
         , h3
             [ css
@@ -558,15 +572,30 @@ editView general post author =
             ]
             [ text "Body" ]
         , bodyInput theme <| Post.body post
-        , button
-            [ css
-                [ Style.Button.default
-                , Style.Button.submit
-                , margin4 (px 0) (px 10) (px 10) (px 10)
-                ]
-            , onClick <| Mod <| WritePost
+        , div
+            [ css [ displayFlex ]
             ]
-            [ text "Edit" ]
+            [ button
+                [ onClick <| Global <| GeneralMsg <| GoBack
+                , css
+                    [ Style.Button.default
+                    , Style.Button.danger theme
+                    , margin4 (px 0) (px 10) (px 10) (px 10)
+                    , flex3 (num 1) (num 0) (num 0)
+                    ]
+                ]
+                [ text "Back" ]
+            , button
+                [ css
+                    [ Style.Button.default
+                    , Style.Button.submit
+                    , margin4 (px 0) (px 10) (px 10) (px 10)
+                    , flex3 (num 1) (num 0) (num 0)
+                    ]
+                , onClick <| Mod <| WritePost
+                ]
+                [ text "Edit" ]
+            ]
         ]
     ]
 
@@ -586,6 +615,8 @@ createView general post author =
             [ authorLink author theme
             , divider theme
             , titleInput theme <| Post.title post
+            , filler
+            , togglePublished theme post [ marginRight <| px 15 ]
             ]
         , h3
             [ css
@@ -603,15 +634,31 @@ createView general post author =
             ]
             [ text "Body" ]
         , bodyInput theme <| Post.body post
-        , button
+        , div
             [ css
-                [ Style.Button.default
-                , Style.Button.submit
-                , margin4 (px 0) (px 10) (px 10) (px 10)
-                ]
-            , onClick <| Mod <| WritePost
+                [ displayFlex ]
             ]
-            [ text "Create" ]
+            [ button
+                [ onClick <| Global <| GeneralMsg <| GoBack
+                , css
+                    [ Style.Button.default
+                    , Style.Button.danger theme
+                    , margin4 (px 0) (px 10) (px 10) (px 10)
+                    , flex3 (num 1) (num 0) (num 0)
+                    ]
+                ]
+                [ text "Back" ]
+            , button
+                [ css
+                    [ Style.Button.default
+                    , Style.Button.submit
+                    , margin4 (px 0) (px 10) (px 10) (px 10)
+                    , flex3 (num 1) (num 0) (num 0)
+                    ]
+                , onClick <| Mod <| WritePost
+                ]
+                [ text "Create" ]
+            ]
         ]
     ]
 
@@ -867,6 +914,28 @@ fillIf bool color =
             []
 
 
+togglePublished : Theme -> Post l f -> List Style -> Html (Compound ModMsg)
+togglePublished theme post styles =
+    let
+        published =
+            Post.published post
+
+        svg =
+            if published then
+                View.Svg.unlock
+
+            else
+                View.Svg.lock
+    in
+    svg
+        [ SvgEvents.onClick <| Mod <| TogglePublished
+        , SvgAttributes.css
+            [ svgStyle theme
+            , Css.batch styles
+            ]
+        ]
+
+
 maximize : Theme -> List Style -> Html (Compound ModMsg)
 maximize theme styles =
     View.Svg.maximize
@@ -949,6 +1018,7 @@ titleInput theme title =
         [ class "title-input"
         , value title
         , onInput <| OnTitleInput >> Mod
+        , autofocus True
         , css
             [ inputStyle theme
             , fontWeight <| int 600
@@ -971,6 +1041,7 @@ descInput theme desc =
             , borderColor <| Color.card theme
             , flex3 (int 1) (int 0) (px 0)
             , margin (px 10)
+            , resize none
             ]
         ]
         []
@@ -988,6 +1059,7 @@ bodyInput theme body =
             , borderColor <| Color.card theme
             , flex3 (int 5) (int 0) (px 0)
             , margin (px 10)
+            , resize none
             ]
         ]
         []

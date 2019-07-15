@@ -1,4 +1,4 @@
-module Style.Button exposing (default, submit)
+module Style.Button exposing (danger, default, submit)
 
 import Css exposing (..)
 import Css.Transitions as Transitions exposing (transition)
@@ -32,3 +32,9 @@ submit =
     Css.batch
         [ backgroundColor <| hex "006400"
         ]
+
+
+danger : Theme -> Style
+danger theme =
+    Css.batch
+        [ backgroundColor <| Color.danger theme ]

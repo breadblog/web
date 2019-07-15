@@ -1,4 +1,4 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, favorite, fullDecoder, mapBody, mapDescription, mapFavorite, mapTitle, mergeFromApi, previewDecoder, tags, title, toPreview, uuid)
+module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, favorite, fullDecoder, mapBody, mapDescription, mapFavorite, mapPublished, mapTitle, mergeFromApi, previewDecoder, published, tags, title, toPreview, uuid)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
@@ -141,6 +141,16 @@ mapFavorite transform post =
 tags : Post l f -> List UUID
 tags post =
     accessInternals .tags post
+
+
+published : Post l f -> Bool
+published post =
+    accessInternals .published post
+
+
+mapPublished : (Bool -> Bool) -> Post l f -> Post l f
+mapPublished transform post =
+    mapInternals (\i -> { i | published = transform i.published }) post
 
 
 

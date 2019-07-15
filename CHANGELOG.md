@@ -1,3 +1,8 @@
+## 0.0.28
+
+* Add published lock/unlock
+* Remove textarea draggables
+
 ## 0.0.27
 
 * Add delete button to existing post (user only)
