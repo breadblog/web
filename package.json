@@ -1,7 +1,7 @@
 {
   "scripts": {
     "test": "elm-test --compiler ./node_modules/.bin/elm",
-    "start": "webpack-dev-server --hot",
+    "start": "webpack-dev-server",
     "clean": "rimraf dist/",
     "dev": "cross-env WEBPACK_ENV=dev webpack",
     "prod": "cross-env WEBPACK_ENV=prod webpack",

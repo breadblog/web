@@ -191,6 +191,7 @@ type Msg
     | ExitFullscreen
     | UpdateFullscreen Bool
     | PushProblem (Problem Msg)
+    | GoBack
 
 
 
@@ -346,6 +347,11 @@ update msg general =
                 PushProblem problem ->
                     ( pushProblem problem general
                     , Cmd.none
+                    )
+
+                GoBack ->
+                    ( general
+                    , Browser.Navigation.back (key general) 1
                     )
     in
     ( newGeneral

@@ -21,6 +21,7 @@ type PostType
     = Ready UUID
     | Create
     | Edit UUID
+    | Delete UUID
 
 
 
@@ -38,6 +39,7 @@ urlParser =
         , Parser.map (Post Create) (s "post" </> s "create")
         , Parser.map (Post << Ready) (s "post" </> UUID.urlParser)
         , Parser.map (Post << Edit) (s "post" </> s "edit" </> UUID.urlParser)
+        , Parser.map (Post << Delete) (s "post" </> s "delete" </> UUID.urlParser)
 
         -- Info
         , Parser.map About (s "about")
@@ -99,8 +101,19 @@ toName route =
         Donate ->
             "Donate"
 
-        Post slug ->
-            "Post"
+        Post postType ->
+            case postType of
+                Create ->
+                    "➕ Post"
+
+                Delete _ ->
+                    "🗑️ Post"
+
+                Edit _ ->
+                    "✏️  Post"
+
+                Ready _ ->
+                    "Post"
 
         Changelog ->
             "Changelog"
@@ -144,6 +157,9 @@ toPath route =
 
                 Edit postUUID ->
                     relative [ UUID.toPath "/post/edit" postUUID ] []
+
+                Delete postUUID ->
+                    relative [ UUID.toPath "/post/delete" postUUID ] []
 
         About ->
             relative [ "/about" ] []
