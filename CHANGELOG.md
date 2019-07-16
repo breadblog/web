@@ -1,3 +1,7 @@
+## 0.0.30
+
+* Add meta tags (desc, author, keywords)
+
 ## 0.0.29
 
 * Setup cache migrations (javascript)
