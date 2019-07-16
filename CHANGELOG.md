@@ -1,3 +1,7 @@
+## 0.0.29
+
+* Setup cache migrations (javascript)
+
 ## 0.0.28
 
 * Add published lock/unlock

@@ -1,5 +1,6 @@
 import '@js/highlight'
 import { Elm } from '@main'
+import { migrate } from '@js/migrations'
 import '@font/firacode'
 import '@font/indieflower'
 import '@font/montserrat'
@@ -17,7 +18,10 @@ function getFullscreen () {
 // -- Flags
 const flags = (function () {
   function getCache () {
-    return JSON.parse(localStorage.getItem('elm-cache'))
+    const cache = JSON.parse(localStorage.getItem('elm-cache'))
+    const migrated = migrate(cache)
+
+    return migrated
   }
 
   function getMode () {
