@@ -14,7 +14,6 @@ import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.UUID as UUID exposing (UUID)
 import Data.Version exposing (Version)
-import Dict exposing (Dict)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
@@ -814,15 +813,6 @@ mode (General internals) =
 cacheInternals : Cache -> ICache
 cacheInternals (Cache iCache) =
     iCache
-
-
-
-{- Cache Migrations -}
-
-
-migrations : Dict String String
-migrations =
-    Dict.empty
 
 
 
