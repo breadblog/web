@@ -1,3 +1,7 @@
+## 0.0.31
+
+* Add donations page
+
 ## 0.0.30
 
 * Add meta tags (desc, author, keywords)

@@ -5,7 +5,7 @@ import Data.General as General exposing (General)
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (class, css, href)
+import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound)
 import Update
@@ -79,4 +79,70 @@ view model =
 
 viewDonate : General -> Internals -> List (Html (Compound m))
 viewDonate _ _ =
-    []
+    [ div
+        [ class "donate"
+        , css
+            [ flex3 (int 1) (int 0) (int 0)
+            , displayFlex
+            , flexDirection column
+            , overflowY auto
+            ]
+        ]
+        [ div
+            [ class "brave"
+            , css
+                [ displayFlex
+                , alignItems center
+                , Css.height <| px 400
+                , justifyContent spaceBetween
+                ]
+            ]
+            [ div
+                [ css
+                    [ Css.width <| pct 35
+                    , displayFlex
+                    , justifyContent center
+                    ]
+                ]
+                [ img
+                    [ src "/brave_lion.svg"
+                    , css
+                        [ Css.height <| px 150 ]
+                    ]
+                    []
+                ]
+            ]
+        , div
+            [ class "patreon"
+            , css
+                [ displayFlex
+                , alignItems center
+                , Css.height <| px 400
+                , justifyContent spaceBetween
+                ]
+            ]
+            [ div
+                [ css
+                    [ flex3 (int 1) (int 0) (int 0) ]
+                ]
+                []
+            , div
+                [ css
+                    [ Css.width <| pct 35
+                    , displayFlex
+                    , justifyContent center
+                    ]
+                ]
+                [ img
+                    [ src "/patreon.png"
+                    , css
+                        [ Css.height <| px 150 ]
+                    ]
+                    []
+                ]
+            ]
+        , div
+            [ class "crypto" ]
+            []
+        ]
+    ]
