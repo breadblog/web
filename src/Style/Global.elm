@@ -19,6 +19,8 @@ style theme =
             [ displayFlex
             , flexDirection column
             ]
+        , class "hidden"
+            [ Css.opacity (num 0) ]
         , class "dropdown"
             [ hover
                 [ descendants
@@ -42,6 +44,14 @@ style theme =
                         [ display initial ]
                     ]
                 ]
+            ]
+        , typeSelector "*::-webkit-scrollbar"
+            [ width (rem 0.8) ]
+        , typeSelector "*::-webkit-scrollbar-track"
+            [ Css.property "-webkit-box-shadow" "inset 0 0 6px rgba(0, 0, 0, 0.3)" ]
+        , typeSelector "*::-webkit-scrollbar-thumb"
+            [ Css.backgroundColor (Color.secondary theme)
+            , outline3 (px 1) solid (Color.accent theme)
             ]
         ]
 

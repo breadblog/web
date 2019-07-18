@@ -1,7 +1,8 @@
-module Data.Route exposing (PostType(..), Route(..), fromUrl, toClass, toName, toPath)
+port module Data.Route exposing (PostType(..), Route(..), changeRoute, fromUrl, toClass, toName, toPath)
 
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode
+import Json.Encode as Encode exposing (Value)
 import Url exposing (Url)
 import Url.Builder exposing (relative)
 import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, top)
@@ -25,7 +26,7 @@ type PostType
 
 
 
--- Parser
+{- Parser -}
 
 
 urlParser : Parser (Route -> a) a
@@ -49,7 +50,19 @@ urlParser =
 
 
 
--- Util
+{- Ports -}
+
+
+port changeRoutePort : Value -> Cmd msg
+
+
+
+{- Util -}
+
+
+changeRoute : Route -> Cmd msg
+changeRoute route =
+    changeRoutePort <| encode route
 
 
 fromUrl : Url -> Route
@@ -172,3 +185,14 @@ toPath route =
 
         NotFound ->
             relative [ "/404" ] []
+
+
+
+{- JSON -}
+
+
+encode : Route -> Value
+encode route =
+    route
+        |> toPath
+        |> Encode.string

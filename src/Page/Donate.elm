@@ -77,25 +77,51 @@ view model =
     Page.view model viewDonate
 
 
+
+{-
+   TODO: animations?
+-}
+
+
 viewDonate : General -> Internals -> List (Html (Compound m))
 viewDonate _ _ =
     [ div
-        [ class "donate"
+        [ id "donate-page"
         , css
             [ flex3 (int 1) (int 0) (int 0)
             , displayFlex
+            , alignItems center
             , flexDirection column
             , overflowY auto
+            , position relative
             ]
         ]
         [ div
-            [ class "brave"
+            [ class "summary"
             , css
-                [ displayFlex
+                [ Css.width (pct 50)
+                , flex3 (int 0) (int 0) (px 300)
+                , displayFlex
+                , flexDirection column
                 , alignItems center
-                , Css.height <| px 400
-                , justifyContent spaceBetween
+                , marginTop (px 30)
                 ]
+            ]
+            [ h1
+                []
+                [ text "Considering Donating?" ]
+            , p
+                [ css
+                    [ fontSize (rem 1.2) ]
+                ]
+                [ text "Before you do, we just wanted to clarify that our content does not depend on donations from our readers. We are fortunate enough to use some great services that support open source, which allows our hosting fees to be negligible. If you still want to donate and support us, know that we greatly appreciate it!"
+                ]
+            ]
+        , div
+            [ class "brave"
+            , id "donate-brave-section"
+            , css
+                [ sectionStyle ]
             ]
             [ div
                 [ css
@@ -104,22 +130,12 @@ viewDonate _ _ =
                     , justifyContent center
                     ]
                 ]
-                [ img
-                    [ src "/brave_lion.svg"
-                    , css
-                        [ Css.height <| px 150 ]
-                    ]
-                    []
-                ]
+                [ sectionImg "/brave_lion.svg" ]
             ]
         , div
             [ class "patreon"
             , css
-                [ displayFlex
-                , alignItems center
-                , Css.height <| px 400
-                , justifyContent spaceBetween
-                ]
+                [ sectionStyle ]
             ]
             [ div
                 [ css
@@ -133,16 +149,59 @@ viewDonate _ _ =
                     , justifyContent center
                     ]
                 ]
-                [ img
-                    [ src "/patreon.png"
-                    , css
-                        [ Css.height <| px 150 ]
-                    ]
-                    []
-                ]
+                [ sectionImg "/patreon.png" ]
             ]
         , div
-            [ class "crypto" ]
-            []
+            [ class "crypto"
+            , css
+                [ sectionStyle ]
+            ]
+            [ div
+                [ css
+                    [ Css.width <| pct 35
+                    , displayFlex
+                    , justifyContent center
+                    ]
+                ]
+                [ sectionImg "/ethereum.svg"
+                ]
+            ]
         ]
+    , div
+        [ class "overlay"
+        , css
+            [ position absolute
+            , Css.height (pct 30)
+
+            -- TODO: add a gradient opacity background
+            ]
+        ]
+        []
     ]
+
+
+sectionImg : String -> Html msg
+sectionImg imgSrc =
+    img
+        [ src imgSrc
+        , css
+            [ Css.height (px 150) ]
+        ]
+        []
+
+
+
+{- Styles -}
+
+
+sectionStyle : Style
+sectionStyle =
+    Css.batch
+        [ displayFlex
+        , alignItems center
+        , justifyContent spaceBetween
+        , flexBasis auto
+        , flex3 (int 0) (int 0) (px 300)
+        , marginBottom (px 50)
+        , Css.width (pct 100)
+        ]

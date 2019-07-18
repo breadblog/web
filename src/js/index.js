@@ -1,6 +1,7 @@
 import '@js/highlight'
 import { Elm } from '@main'
 import { migrate } from '@js/migrations'
+import * as scroll from '@js/scroll'
 import '@font/firacode'
 import '@font/indieflower'
 import '@font/montserrat'
@@ -57,6 +58,10 @@ const app = Elm.Main.init({
 
   app.ports.exitFullscreen.subscribe(function () {
     document.exitFullscreen()
+  })
+
+  app.ports.changeRoutePort.subscribe((route) => {
+    setTimeout(() => scroll.onRouteChange(route))
   })
 })()
 
