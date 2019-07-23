@@ -1,3 +1,7 @@
+## 0.0.35
+
+* Fix header overflow
+
 ## 0.0.34
 
 * Fix cache bug for new users

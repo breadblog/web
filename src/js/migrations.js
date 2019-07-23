@@ -49,6 +49,7 @@ createMigration('0.0.29', '0.0.30')
 createMigration('0.0.30', '0.0.32')
 createMigration('0.0.32', '0.0.33')
 createMigration('0.0.33', '0.0.34')
+createMigration('0.0.34', '0.0.35')
 
 /********************************/
 /*            Helpers           */
