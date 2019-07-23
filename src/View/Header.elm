@@ -12,7 +12,7 @@ import Data.Theme as Theme exposing (Theme(..))
 import Data.Username as Username exposing (Username)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
-import Html.Styled.Events exposing (onClick, onInput)
+import Html.Styled.Events exposing (onBlur, onClick, onFocus, onInput)
 import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
@@ -71,7 +71,7 @@ import View.Svg as Svg
    |                   |
 
 -}
--- Model --
+{- Model -}
 
 
 type alias Model =
@@ -94,7 +94,7 @@ init route =
 
 
 
--- Message --
+{- Message -}
 
 
 type Msg
@@ -105,7 +105,7 @@ type Msg
 
 
 
--- Update --
+{- Update -}
 
 
 update : Msg -> General -> Model -> Update.Output Msg Model
@@ -131,8 +131,24 @@ update msg general model =
             let
                 focusedModel =
                     focusSearch True model
+
+                updatedValue =
+                    not model.searchOpenOnMobile
+
+                updatedModel =
+                    { focusedModel | searchOpenOnMobile = updatedValue }
+
+                cmd =
+                    if updatedValue then
+                        General.focus "search"
+
+                    else
+                        Cmd.none
             in
-            simpleOutput <| { focusedModel | searchOpenOnMobile = not model.searchOpenOnMobile }
+            { model = updatedModel
+            , cmd = cmd
+            , general = general
+            }
 
 
 focusSearch : Bool -> Model -> Model
@@ -152,7 +168,7 @@ focusSearch value model =
 
 
 
--- View --
+{- View -}
 
 
 view : (Compound Msg -> msg) -> Theme -> List Author -> List Tag -> Model -> List (Html msg)
@@ -173,10 +189,10 @@ viewHeader theme authors tags model =
         [ css
             [ position relative
             , displayFlex
+            , flex3 (int 0) (int 0) (px Dimension.headerHeight)
             , flexDirection row
             , alignItems center
             , justifyContent spaceBetween
-            , Css.height (px Dimension.headerHeight)
             , Css.width (pct 100)
             , backgroundColor (Color.primary theme)
             , Shadow.dp6
@@ -225,14 +241,13 @@ viewHeader theme authors tags model =
 
 
 
--- BOTH --
 -- Search
 
 
 searchBar : Theme -> Bool -> String -> Html (Compound Msg)
 searchBar theme openOnMobile searchTerm =
     div
-        [ class "search"
+        [ class "search-bar"
         , css
             [ displayFlex
             , flexDirection row
@@ -259,10 +274,11 @@ searchBar theme openOnMobile searchTerm =
                 [ Css.width <| px 260
                 ]
             ]
-        , onClick <| Mod (FocusSearch True)
         ]
         [ input
-            [ class "search"
+            [ id "search"
+            , class "search"
+            , autocomplete False
             , css
                 [ flexGrow (num 1)
                 , borderWidth (px 0)
@@ -274,6 +290,8 @@ searchBar theme openOnMobile searchTerm =
                 , fontFamilies Font.montserrat
                 ]
             , onInput (\s -> Mod <| SetSearchTerm s)
+            , onFocus <| Mod (FocusSearch True)
+            , onBlur <| Mod (FocusSearch False)
             , value searchTerm
             ]
             []
