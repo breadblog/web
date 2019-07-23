@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, fullscreen, fullscreenSub, init, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, focus, fullscreen, fullscreenSub, init, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
@@ -657,6 +657,9 @@ tryLogout general =
 
 
 {- Ports -}
+
+
+port focus : String -> Cmd msg
 
 
 port exitFullscreen : () -> Cmd msg

@@ -1,3 +1,7 @@
+## 0.0.32
+
+* Making posts mobile friendly
+
 ## 0.0.30
 
 * Add meta tags (desc, author, keywords)

@@ -114,7 +114,7 @@ footerLeft theme version =
         [ css
             []
         ]
-        [ a
+        [ div
             -- [ href <| Route.toPath Changelog
             [ css
                 [ textDecoration none
