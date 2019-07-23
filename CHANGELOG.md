@@ -1,3 +1,7 @@
+## 0.0.34
+
+* Fix cache bug for new users
+
 ## 0.0.33
 
 * Make header shorter on mobile

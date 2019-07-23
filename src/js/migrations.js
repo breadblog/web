@@ -48,6 +48,7 @@ createMigration('0.0.28', '0.0.29')
 createMigration('0.0.29', '0.0.30')
 createMigration('0.0.30', '0.0.32')
 createMigration('0.0.32', '0.0.33')
+createMigration('0.0.33', '0.0.34')
 
 /********************************/
 /*            Helpers           */
@@ -100,6 +101,7 @@ function createHelpers () {
    * @returns {object}
    */
   function migrate (value) {
+    if (!value || !value.version) { return null }
     let curr = value
     while (!migrationsEmpty()) {
       const step = getMigration(curr.version)
