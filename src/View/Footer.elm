@@ -97,7 +97,7 @@ viewFooter theme version =
             , flexDirection row
             , alignItems center
             , justifyContent spaceBetween
-            , Css.height <| px Dimension.headerHeight
+            , flex3 (int 0) (int 0) (px Dimension.headerHeight)
             , Css.width (pct 100)
             , backgroundColor (Color.primary theme)
             ]

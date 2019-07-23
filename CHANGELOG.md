@@ -1,6 +1,14 @@
+## 0.0.33
+
+* Make header shorter on mobile
+
 ## 0.0.32
 
 * Making posts mobile friendly
+
+## 0.0.31
+
+* Skipped
 
 ## 0.0.30
 
