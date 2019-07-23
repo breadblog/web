@@ -197,7 +197,6 @@ viewHeader theme authors tags model =
             , backgroundColor (Color.primary theme)
             , Shadow.dp6
             , zIndex <| int 15
-            , overflow Css.hidden
             ]
         ]
         -- MOBILE
@@ -328,6 +327,7 @@ drawerMenu showOnMobile =
         , css
             [ Screen.showOn Screen.mobile
             , padding2 (px topBtmPadding) mobileIconPadding
+            , displayFlex
             , Css.batch <|
                 if showOnMobile then
                     []
@@ -360,6 +360,7 @@ searchOpen showOnMobile =
         , css
             [ Screen.showOn Screen.mobile
             , padding2 (px topBtmPadding) mobileIconPadding
+            , displayFlex
             , Css.batch <|
                 if showOnMobile then
                     []
