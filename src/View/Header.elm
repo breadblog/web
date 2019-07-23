@@ -197,6 +197,7 @@ viewHeader theme authors tags model =
             , backgroundColor (Color.primary theme)
             , Shadow.dp6
             , zIndex <| int 15
+            , overflow Css.hidden
             ]
         ]
         -- MOBILE
