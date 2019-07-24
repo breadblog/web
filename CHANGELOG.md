@@ -1,3 +1,7 @@
+## 0.0.36
+
+* Fix problems page to be mobile friendly
+
 ## 0.0.35
 
 * Fix header overflow
