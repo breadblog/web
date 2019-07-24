@@ -44,10 +44,6 @@ count =
     10
 
 
-
--- FIXME: very simplistic, will not work for urls containing \?
-
-
 ensureRightSlash : String -> String
 ensureRightSlash path =
     let
