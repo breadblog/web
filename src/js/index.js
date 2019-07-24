@@ -1,7 +1,7 @@
 import '@js/highlight'
 import { Elm } from '@main'
 import { migrate } from '@js/migrations'
-import * as scroll from '@js/scroll'
+import * as routes from '@js/routes'
 import '@font/firacode'
 import '@font/indieflower'
 import '@font/montserrat'
@@ -61,7 +61,7 @@ const app = Elm.Main.init({
   })
 
   app.ports.changeRoutePort.subscribe((route) => {
-    setTimeout(() => scroll.onRouteChange(route))
+    setTimeout(() => routes.onRouteChange(route))
   })
 
   app.ports.focus.subscribe(function (id) {

@@ -2,14 +2,19 @@ module Page.Donate exposing (Model, Msg, fromGeneral, init, toGeneral, update, v
 
 import Css exposing (..)
 import Data.General as General exposing (General)
+import Data.Markdown as Markdown exposing (Markdown)
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound)
+import Style.Card as Card
+import Style.Color as Color
+import Svg.Styled.Attributes as SvgAttr
 import Update
 import View.Page as Page exposing (PageUpdateOutput)
+import View.Svg as Svg
 
 
 
@@ -84,7 +89,11 @@ view model =
 
 
 viewDonate : General -> Internals -> List (Html (Compound m))
-viewDonate _ _ =
+viewDonate general _ =
+    let
+        theme =
+            General.theme general
+    in
     [ div
         [ id "donate-page"
         , css
@@ -94,6 +103,7 @@ viewDonate _ _ =
             , flexDirection column
             , overflowY auto
             , position relative
+            , overflowX Css.hidden
             ]
         ]
         [ div
@@ -130,10 +140,19 @@ viewDonate _ _ =
                     , justifyContent center
                     ]
                 ]
-                [ sectionImg "/brave_lion.svg" ]
+                [ sectionImg "/brave_lion.svg" Left
+                ]
+            , sectionDescription
+                theme
+                (Just "https://brave.com")
+                "Brave Browser"
+                (Markdown.create "Brave is an open source browser attempting to give control of the web back to you, the users. It has a built in ad/tracker blocking, so you don't have to worry about creepy companies following you across the web. And if you choose to, you can get paid to see ads integrated into your browser, which helps to maintain your privacy and security while also allowing you to get paid for your attention. And if you choose to give back some of that back to content creators such as us, it's easy to contribute. You can find out more [here](https://brave.com)")
+                Right
+            , filler
             ]
         , div
             [ class "patreon"
+            , id "donate-patreon-section"
             , css
                 [ sectionStyle ]
             ]
@@ -149,10 +168,12 @@ viewDonate _ _ =
                     , justifyContent center
                     ]
                 ]
-                [ sectionImg "/patreon.png" ]
+                [ sectionImg "/patreon.png" Right
+                ]
             ]
         , div
             [ class "crypto"
+            , id "donate-crypto-section"
             , css
                 [ sectionStyle ]
             ]
@@ -163,7 +184,7 @@ viewDonate _ _ =
                     , justifyContent center
                     ]
                 ]
-                [ sectionImg "/ethereum.svg"
+                [ sectionImg "/ethereum.svg" Left
                 ]
             ]
         ]
@@ -180,12 +201,104 @@ viewDonate _ _ =
     ]
 
 
-sectionImg : String -> Html msg
-sectionImg imgSrc =
+type Side
+    = Left
+    | Right
+
+
+sectionImg : String -> Side -> Html msg
+sectionImg imgSrc side =
     img
         [ src imgSrc
+        , classList
+            [ ( "right", side == Right )
+            , ( "left", side == Left )
+            , ( "animated", True )
+            , ( "hidden", True )
+            ]
         , css
             [ Css.height (px 150) ]
+        ]
+        []
+
+
+sectionDescription : Theme -> Maybe String -> String -> Markdown -> Side -> Html msg
+sectionDescription theme maybeUrl title description side =
+    div
+        [ classList
+            [ ( "right", side == Right )
+            , ( "left", side == Left )
+            , ( "animated", True )
+            , ( "hidden", True )
+            , ( "content", True )
+            , ( "delay-1s", True )
+            ]
+        , css
+            [ displayFlex
+            , flexDirection column
+            , flex3 (int 2) (int 0) (pct 35)
+            , Card.style theme
+            ]
+        ]
+        [ div
+            [ css
+                [ Card.headingStyle theme
+                , flexBasis auto
+                , justifyContent spaceBetween
+                ]
+            ]
+            [ h1
+                [ class "title"
+                , css
+                    [ fontSize (rem 1.2)
+                    , fontWeight (int 500)
+                    , margin4 (px 5) (px 0) (px 5) (px 20)
+                    ]
+                ]
+                [ text title ]
+            , case maybeUrl of
+                Just url ->
+                    a
+                        [ href url
+                        , css
+                            [ color (Color.secondaryFont theme)
+                            , marginRight (px 10)
+                            , displayFlex
+                            , alignItems center
+                            , textDecoration none
+                            ]
+                        ]
+                        [ Svg.link
+                            [ SvgAttr.css
+                                [ Css.width (px 16)
+                                , Css.height (px 16)
+                                , marginLeft (px 5)
+                                , position relative
+                                , top (px -1)
+                                ]
+                            ]
+                        ]
+
+                Nothing ->
+                    text ""
+            ]
+        , div
+            [ class "description"
+            , css
+                [ fontSize (rem 1.0)
+                , padding (px 15)
+                , letterSpacing (px 0.5)
+                ]
+            ]
+            [ Markdown.toHtml "donate-desc" [] [] description ]
+        ]
+
+
+filler : Html msg
+filler =
+    div
+        [ css
+            [ flex3 (int 1) (int 0) (px 0) ]
         ]
         []
 

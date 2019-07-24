@@ -13,8 +13,16 @@ import Style.Shadow as Shadow
 style : Theme -> Html msg
 style theme =
     global
-        [ html [ full ]
-        , body [ full ]
+        [ html
+            [ full ]
+        , body
+            [ full
+            , descendants
+                [ selector "a"
+                    [ color inherit
+                    ]
+                ]
+            ]
         , id "app"
             [ displayFlex
             , flexDirection column
