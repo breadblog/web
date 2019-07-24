@@ -14,6 +14,7 @@ import Json.Decode
 import Style.Button
 import Style.Color as Color
 import Style.Font as Font
+import Style.Screen as Screen exposing (Screen(..))
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes as SvgAttr
 import View.Svg as Svg
@@ -29,6 +30,7 @@ view problems =
             , displayFlex
             , flexDirection column
             , alignItems center
+            , overflowY auto
             ]
         ]
         [ img
@@ -36,6 +38,11 @@ view problems =
             , css
                 [ Css.height <| px 306
                 , Css.width <| px 252
+                , flexShrink (int 0)
+                , Screen.style Screen.mobile
+                    [ Css.height (px 228)
+                    , Css.width (px 189)
+                    ]
                 ]
             ]
             []
@@ -47,6 +54,9 @@ view problems =
                 , fontFamilies Font.indieFlower
                 , letterSpacing <| px 3
                 , textAlign center
+                , Css.width (pct 92)
+                , Screen.style Screen.mobile
+                    [ top (px -50) ]
                 ]
             ]
             [ h1 [] [ text "Sorry!" ]
@@ -56,9 +66,13 @@ view problems =
             [ class "problems"
             , css
                 [ Css.width <| pct 100
+                , position relative
                 , displayFlex
                 , flexDirection column
                 , alignItems center
+                , marginBottom (px 0)
+                , Screen.style Screen.mobile
+                    [ top (px -50) ]
                 ]
             ]
           <|
@@ -95,7 +109,13 @@ view problems =
                                                 BadBody body ->
                                                     [ text <| "Bad Body " ++ body ]
                             in
-                            div [ class "description" ] contents
+                            div
+                                [ class "description"
+                                , css
+                                    [ Css.width (pct 90)
+                                    ]
+                                ]
+                                contents
                     in
                     div
                         [ class "problem"
@@ -108,12 +128,15 @@ view problems =
                             , flexDirection column
                             , alignItems center
                             , Shadow.dp6
+                            , Screen.style Screen.mobile
+                                [ Css.width (pct 80) ]
                             ]
                         ]
                         [ h1
                             [ class "title"
                             , css
                                 [ margin <| px 8
+                                , fontSize (rem 1.4)
                                 ]
                             ]
                             [ text title

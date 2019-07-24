@@ -117,13 +117,13 @@ toName route =
         Post postType ->
             case postType of
                 Create ->
-                    "➕ Post"
+                    "Create Post"
 
                 Delete _ ->
-                    "🗑️ Post"
+                    "Delete Post"
 
                 Edit _ ->
-                    "✏️  Post"
+                    "Edit Post"
 
                 Ready _ ->
                     "Post"

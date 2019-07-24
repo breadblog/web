@@ -10,6 +10,7 @@ style theme =
     Css.batch
         [ backgroundColor <| Color.card theme
         , borderRadius <| cardRadius
+        , position relative
         ]
 
 
@@ -18,7 +19,8 @@ headingStyle theme =
     Css.batch
         [ borderRadius4 cardRadius cardRadius (pct 0) (pct 0)
         , displayFlex
-        , Css.height <| px 40
+        , flex3 (int 0) (int 0) (px 40)
+        , Css.width (pct 100)
         , backgroundColor <| Color.cardHeading theme
         , alignItems center
         ]

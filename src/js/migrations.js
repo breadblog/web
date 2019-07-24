@@ -46,7 +46,12 @@ createMigration('0.0.26', '0.0.27')
 createMigration('0.0.27', '0.0.28')
 createMigration('0.0.28', '0.0.29')
 createMigration('0.0.29', '0.0.30')
-createMigration('0.0.30', '0.0.31')
+createMigration('0.0.30', '0.0.32')
+createMigration('0.0.32', '0.0.33')
+createMigration('0.0.33', '0.0.34')
+createMigration('0.0.34', '0.0.35')
+createMigration('0.0.35', '0.0.36')
+createMigration('0.0.36', '0.0.37')
 
 /********************************/
 /*            Helpers           */
@@ -99,6 +104,7 @@ function createHelpers () {
    * @returns {object}
    */
   function migrate (value) {
+    if (!value || !value.version) { return null }
     let curr = value
     while (!migrationsEmpty()) {
       const step = getMigration(curr.version)

@@ -1,6 +1,30 @@
-## 0.0.31
+## 0.0.37
 
 * Add donations page
+
+## 0.0.36
+
+* Fix problems page to be mobile friendly
+
+## 0.0.35
+
+* Fix header overflow
+
+## 0.0.34
+
+* Fix cache bug for new users
+
+## 0.0.33
+
+* Make header shorter on mobile
+
+## 0.0.32
+
+* Making posts mobile friendly
+
+## 0.0.31
+
+* Skipped
 
 ## 0.0.30
 

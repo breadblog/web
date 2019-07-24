@@ -63,6 +63,14 @@ const app = Elm.Main.init({
   app.ports.changeRoutePort.subscribe((route) => {
     setTimeout(() => scroll.onRouteChange(route))
   })
+
+  app.ports.focus.subscribe(function (id) {
+    setTimeout(() => {
+      const element = document.getElementById(id)
+      if (!element) { console.error(`failed to target ${id} to focus`) }
+      element.focus()
+    }, 0)
+  })
 })()
 
 // -- Port updates

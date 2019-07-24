@@ -26,6 +26,7 @@ import Style.Card
 import Style.Color as Color
 import Style.Font as Font
 import Style.Post
+import Style.Screen as Screen exposing (Screen(..))
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes as SvgAttributes
 import Svg.Styled.Events as SvgEvents
@@ -503,6 +504,7 @@ viewPost general internals =
             , flexGrow <| num 1
             , overflowY auto
             , alignItems center
+            , position relative
             ]
         ]
         contents
@@ -964,11 +966,16 @@ svgStyle theme =
         [ margin2 (px 0) (px 7)
         , cursor pointer
         , color <| Color.tertiaryFont theme
+        , Css.property "flex" "0 0 auto"
         , hover
             [ color <| Color.secondaryFont theme
             ]
         , transition
             [ Transitions.color3 100 0 Transitions.easeInOut ]
+        , Screen.style Screen.mobile
+            [ Css.width (px 22)
+            , Css.height (px 22)
+            ]
         ]
 
 
@@ -995,6 +1002,10 @@ authorLink author theme =
             , fontWeight <| int 500
             , fontSize <| rem 1
             , color <| Color.secondaryFont theme
+            , whiteSpace noWrap
+            , Screen.style Screen.mobile
+                [ textOverflow ellipsis
+                ]
             ]
         ]
         [ text <| Username.toString <| Author.username author ]
@@ -1007,6 +1018,10 @@ viewTitle theme title =
         , css
             [ fontSize <| rem 1.2
             , margin4 (px 0) (px 20) (px 2) (px 3)
+            , whiteSpace noWrap
+            , textOverflow ellipsis
+            , Css.property "flex" "0 1 auto"
+            , overflow Css.hidden
             ]
         ]
         [ text title ]
@@ -1024,6 +1039,10 @@ titleInput theme title =
             , fontWeight <| int 600
             , marginLeft <| px 2
             , borderColor <| Color.cardHeading theme
+            , Screen.style Screen.mobile
+                [ flex3 (int 1) (int 1) (px 200)
+                , minWidth (px 0)
+                ]
             ]
         ]
         []
@@ -1110,6 +1129,11 @@ sheet theme contents =
             , displayFlex
             , flexDirection column
             , Style.Card.style theme
+            , Screen.style Screen.mobile
+                [ Css.width (pct 95)
+                , marginTop (px 25)
+                , marginBottom (px 25)
+                ]
             ]
         ]
         contents
