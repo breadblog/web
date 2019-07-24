@@ -40,12 +40,12 @@
 /*   font-style: italic; */
 /* } */
 
-/* @font-face { */
-/*   font-family: 'Montserrat'; */
-/*   src: url('montserrat/Montserrat-Bold.ttf'); */
-/*   font-weight: 700; */
-/*   font-style: normal; */
-/* } */
+@font-face {
+  font-family: 'Montserrat';
+  src: url('montserrat/Montserrat-Bold.ttf');
+  font-weight: 700;
+  font-style: normal;
+}
 
 /* @font-face { */
 /*   font-family: 'Montserrat'; */
@@ -54,12 +54,12 @@
 /*   font-style: italic; */
 /* } */
 
-/* @font-face { */
-/*   font-family: 'Montserrat'; */
-/*   src: url('montserrat/Montserrat-ExtraBold.ttf'); */
-/*   font-weight: 800; */
-/*   font-style: normal; */
-/* } */
+@font-face {
+  font-family: 'Montserrat';
+  src: url('montserrat/Montserrat-ExtraBold.ttf');
+  font-weight: 800;
+  font-style: normal;
+}
 
 /* @font-face { */
 /*   font-family: 'Montserrat'; */

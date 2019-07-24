@@ -1,3 +1,7 @@
+## 0.0.37
+
+* Add donations page
+
 ## 0.0.36
 
 * Fix problems page to be mobile friendly

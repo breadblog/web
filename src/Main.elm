@@ -218,7 +218,12 @@ changeRoute route model =
                 Route.Changelog ->
                     Page.Changelog.init general Changelog (toMsg ChangelogMsg)
     in
-    ( pageModel, cmd )
+    ( pageModel
+    , Cmd.batch
+        [ cmd
+        , Route.changeRoute route
+        ]
+    )
 
 
 toGeneral : Model -> General

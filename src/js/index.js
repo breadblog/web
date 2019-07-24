@@ -1,6 +1,7 @@
 import '@js/highlight'
 import { Elm } from '@main'
 import { migrate } from '@js/migrations'
+import * as routes from '@js/routes'
 import '@font/firacode'
 import '@font/indieflower'
 import '@font/montserrat'
@@ -57,6 +58,10 @@ const app = Elm.Main.init({
 
   app.ports.exitFullscreen.subscribe(function () {
     document.exitFullscreen()
+  })
+
+  app.ports.changeRoutePort.subscribe((route) => {
+    setTimeout(() => routes.onRouteChange(route))
   })
 
   app.ports.focus.subscribe(function (id) {
