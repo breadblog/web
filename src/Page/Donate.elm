@@ -11,6 +11,8 @@ import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound)
 import Style.Card as Card
 import Style.Color as Color
+import Style.Post
+import Style.Screen as Screen exposing (Screen(..))
 import Svg.Styled.Attributes as SvgAttr
 import Update
 import View.Page as Page exposing (PageUpdateOutput)
@@ -82,12 +84,6 @@ view model =
     Page.view model viewDonate
 
 
-
-{-
-   TODO: animations?
--}
-
-
 viewDonate : General -> Internals -> List (Html (Compound m))
 viewDonate general _ =
     let
@@ -109,20 +105,36 @@ viewDonate general _ =
         [ div
             [ class "summary"
             , css
-                [ Css.width (pct 50)
-                , flex3 (int 0) (int 0) (px 300)
+                [ Css.width (pct 80)
                 , displayFlex
                 , flexDirection column
                 , alignItems center
-                , marginTop (px 30)
+                , marginTop (px 100)
+                , Card.style theme
+                , marginBottom (px 200)
+                , lineHeight (pct 180)
+                , Screen.style Screen.mobile
+                    [ marginBottom (px 120) ]
                 ]
             ]
-            [ h1
-                []
-                [ text "Considering Donating?" ]
+            [ div
+                [ css
+                    [ Card.headingStyle theme ]
+                ]
+                [ h1
+                    [ css
+                        [ fontSize (rem 1.4)
+                        , margin4 (px 0) (px 0) (px 0) (px 15)
+                        ]
+                    ]
+                    [ text "Considering Donating?" ]
+                ]
             , p
                 [ css
-                    [ fontSize (rem 1.2) ]
+                    [ fontSize (rem 1.2)
+                    , padding2 (px 0) (px 15)
+                    , letterSpacing (px 0.3)
+                    ]
                 ]
                 [ text "Before you do, we just wanted to clarify that our content does not depend on donations from our readers. We are fortunate enough to use some great services that support open source, which allows our hosting fees to be negligible. If you still want to donate and support us, know that we greatly appreciate it!"
                 ]
@@ -133,43 +145,29 @@ viewDonate general _ =
             , css
                 [ sectionStyle ]
             ]
-            [ div
-                [ css
-                    [ Css.width <| pct 35
-                    , displayFlex
-                    , justifyContent center
-                    ]
-                ]
-                [ sectionImg "/brave_lion.svg" Left
-                ]
+            [ sectionImg "/brave_lion.svg" Left
             , sectionDescription
                 theme
-                (Just "https://brave.com")
+                (Just braveUrl)
                 "Brave Browser"
-                (Markdown.create "Brave is an open source browser attempting to give control of the web back to you, the users. It has a built in ad/tracker blocking, so you don't have to worry about creepy companies following you across the web. And if you choose to, you can get paid to see ads integrated into your browser, which helps to maintain your privacy and security while also allowing you to get paid for your attention. And if you choose to give back some of that back to content creators such as us, it's easy to contribute. You can find out more [here](https://brave.com)")
+                (Markdown.create "Brave is an open source browser aiming to give users back their privacy online. It has built in ad & tracker blocking, so you can browse safely. And if you choose to, you can get paid to view ads integrated into the browser, allowing you to get paid for your attention in a private and secure way. And if you want to give back to content creators like us, Brave makes it easy to do so. You can check it out [here](https://brave.com/par269). For full transparency, please be aware this is an affiliate link")
                 Right
-            , filler
             ]
         , div
             [ class "patreon"
             , id "donate-patreon-section"
             , css
-                [ sectionStyle ]
+                [ sectionStyle
+                , flexDirection rowReverse
+                ]
             ]
-            [ div
-                [ css
-                    [ flex3 (int 1) (int 0) (int 0) ]
-                ]
-                []
-            , div
-                [ css
-                    [ Css.width <| pct 35
-                    , displayFlex
-                    , justifyContent center
-                    ]
-                ]
-                [ sectionImg "/patreon.png" Right
-                ]
+            [ sectionImg "/patreon.png" Right
+            , sectionDescription
+                theme
+                (Just "https://www.patreon.com/parasrah")
+                "Patreon"
+                (Markdown.create "If you want to contribute in a more traditional fashion, we have a patreon account setup [here](https://www.patreon.com/parasrah). Patreon is a platform designed to make it easy to give back to content creators.")
+                Left
             ]
         , div
             [ class "crypto"
@@ -177,15 +175,32 @@ viewDonate general _ =
             , css
                 [ sectionStyle ]
             ]
-            [ div
-                [ css
-                    [ Css.width <| pct 35
-                    , displayFlex
-                    , justifyContent center
-                    ]
-                ]
-                [ sectionImg "/ethereum.svg" Left
-                ]
+            [ sectionImg "/ethereum.svg" Left
+            , sectionDescription
+                theme
+                Nothing
+                "Cryptocurrency"
+                (Markdown.create
+                    """
+If you want a more untraceable way to make donations, cryptocurrency is always welcome!
+
+### Bitcoin
+```
+3KuP9Jim8yinsG6RdAADZFFC95Hj6Jd1zX
+```
+
+### Ethereum
+```
+0xaB0Ea5a4505d85773CE143aEa45fe482ee079955
+```
+
+### Basic Attention Token
+```
+0xDA9c1fdE56c3D8b71aB65Cd75380BF17fFD81B17
+```
+                    """
+                )
+                Right
             ]
         ]
     , div
@@ -193,8 +208,6 @@ viewDonate general _ =
         , css
             [ position absolute
             , Css.height (pct 30)
-
-            -- TODO: add a gradient opacity background
             ]
         ]
         []
@@ -208,99 +221,141 @@ type Side
 
 sectionImg : String -> Side -> Html msg
 sectionImg imgSrc side =
-    img
-        [ src imgSrc
-        , classList
-            [ ( "right", side == Right )
-            , ( "left", side == Left )
-            , ( "animated", True )
-            , ( "hidden", True )
-            ]
+    div
+        [ class "animation-container"
         , css
-            [ Css.height (px 150) ]
+            [ justifyContent center
+            , flex3 (int 0) (int 0) (pct 33)
+            , animationContainerStyle
+            , Screen.style Screen.mobile
+                [ marginBottom (px 30)
+                , marginTop (px 0)
+                , Css.property "flex" "0 0 auto"
+                , Css.width (pct 100)
+                ]
+            ]
         ]
-        []
+        [ img
+            [ src imgSrc
+            , classList
+                [ ( "right", side == Right )
+                , ( "left", side == Left )
+                , ( "animated", True )
+                , ( "hidden", True )
+                , ( "animation-target", True )
+                ]
+            , css
+                [ Css.height (px 150)
+                , Screen.style Screen.mobile
+                    [ Css.height auto
+                    , Css.width (pct 40)
+                    ]
+                ]
+            ]
+            []
+        ]
 
 
 sectionDescription : Theme -> Maybe String -> String -> Markdown -> Side -> Html msg
 sectionDescription theme maybeUrl title description side =
     div
-        [ classList
-            [ ( "right", side == Right )
-            , ( "left", side == Left )
-            , ( "animated", True )
-            , ( "hidden", True )
-            , ( "content", True )
-            , ( "delay-1s", True )
-            ]
+        [ class "animation-container"
         , css
-            [ displayFlex
-            , flexDirection column
-            , flex3 (int 2) (int 0) (pct 35)
-            , Card.style theme
+            [ flex3 (int 0) (int 0) (pct 66)
+            , if side == Right then
+                Css.batch [ justifyContent flexStart ]
+
+              else
+                Css.batch [ justifyContent flexEnd ]
+            , animationContainerStyle
+            , Screen.style Screen.mobile
+                [ Css.property "flex" "0 0 auto"
+                , marginBottom (px 120)
+                , maxWidth (pct 90)
+                ]
             ]
         ]
         [ div
-            [ css
-                [ Card.headingStyle theme
-                , flexBasis auto
-                , justifyContent spaceBetween
+            [ classList
+                [ ( "right", side == Right )
+                , ( "left", side == Left )
+                , ( "animated", True )
+                , ( "hidden", True )
+                , ( "content", True )
+                , ( "delay-1s", True )
+                , ( "animation-target", True )
+                ]
+            , css
+                [ displayFlex
+                , flexDirection column
+                , flex3 (int 0) (int 0) (pct 85)
+                , Card.style theme
+                , maxWidth (pct 100)
                 ]
             ]
-            [ h1
-                [ class "title"
-                , css
-                    [ fontSize (rem 1.2)
-                    , fontWeight (int 500)
-                    , margin4 (px 5) (px 0) (px 5) (px 20)
+            [ div
+                [ css
+                    [ Card.headingStyle theme
+                    , flexBasis auto
+                    , justifyContent spaceBetween
                     ]
                 ]
-                [ text title ]
-            , case maybeUrl of
-                Just url ->
-                    a
-                        [ href url
-                        , css
-                            [ color (Color.secondaryFont theme)
-                            , marginRight (px 10)
-                            , displayFlex
-                            , alignItems center
-                            , textDecoration none
-                            ]
+                [ h1
+                    [ class "title"
+                    , css
+                        [ fontSize (rem 1.2)
+                        , fontWeight (int 500)
+                        , margin4 (px 5) (px 0) (px 5) (px 20)
                         ]
-                        [ Svg.link
-                            [ SvgAttr.css
-                                [ Css.width (px 16)
-                                , Css.height (px 16)
-                                , marginLeft (px 5)
-                                , position relative
-                                , top (px -1)
+                    ]
+                    [ text title ]
+                , case maybeUrl of
+                    Just url ->
+                        a
+                            [ href url
+                            , css
+                                [ color (Color.secondaryFont theme)
+                                , marginRight (px 15)
+                                , displayFlex
+                                , alignItems center
+                                , textDecoration none
                                 ]
                             ]
-                        ]
+                            [ Svg.link
+                                [ SvgAttr.css
+                                    [ Css.width (px 18)
+                                    , Css.height (px 18)
+                                    , marginLeft (px 5)
+                                    , position relative
+                                    ]
+                                ]
+                            ]
 
-                Nothing ->
-                    text ""
-            ]
-        , div
-            [ class "description"
-            , css
-                [ fontSize (rem 1.0)
-                , padding (px 15)
-                , letterSpacing (px 0.5)
+                    Nothing ->
+                        text ""
+                ]
+            , div
+                [ class "content"
+                , css
+                    [ fontSize (rem 1.0)
+                    , padding2 (px 0) (px 20)
+                    , letterSpacing (px 0.5)
+                    , lineHeight (pct 150)
+                    ]
+                ]
+                [ Markdown.toHtml
+                    "donate-desc"
+                    []
+                    (Style.Post.style theme)
+                    description
                 ]
             ]
-            [ Markdown.toHtml "donate-desc" [] [] description ]
         ]
 
 
-filler : Html msg
-filler =
-    div
-        [ css
-            [ flex3 (int 1) (int 0) (px 0) ]
-        ]
-        []
+braveUrl : String
+braveUrl =
+    "https://brave.com/par269"
 
 
 
@@ -314,7 +369,26 @@ sectionStyle =
         , alignItems center
         , justifyContent spaceBetween
         , flexBasis auto
-        , flex3 (int 0) (int 0) (px 300)
-        , marginBottom (px 50)
+        , Css.property "flex" "1 0 auto"
+        , marginBottom (px 200)
         , Css.width (pct 100)
+        , Screen.style Screen.mobile
+            [ flexDirection column
+            , minHeight (px 0)
+            , margin (px 0)
+            ]
+        ]
+
+
+animationContainerStyle : Style
+animationContainerStyle =
+    Css.batch
+        [ minHeight (pct 100)
+        , alignItems center
+        , displayFlex
+        , Screen.style Screen.mobile
+            [ justifyContent center
+            , minHeight (px 0)
+            , marginTop (px 0)
+            ]
         ]

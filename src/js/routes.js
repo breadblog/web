@@ -8,21 +8,16 @@
  * solution would simply be to track the elements in javascript
  * and keep the state in elm via ports, but it's less overhead to
  * simply listen for route changes from elm, and handle the scroll
- * behavior in javascript.
+ * behavior in javascript. Also less bulletproof, so we have to be
+ * mindful in our implementation.
  */
 
-/* Donate */
+/**********************************************************************/
+/*                               Donate                               */
+/**********************************************************************/
 
 const DONATE_REGEX = /^\/donate.*/
-
-const DONATE_ANIMATION = 'bounce'
-
-// the donate sections we will be watching for
-const DONATE_ELEMENTS = [
-  'donate-brave-section',
-  'donate-patreon-section',
-  'donate-crypto-section',
-]
+const DONATE_THROTTLE = 40
 
 function createDonateScrollListener () {
   let throttled = false
@@ -33,22 +28,16 @@ function createDonateScrollListener () {
       return
     }
     throttled = true
-    setTimeout(() => { throttled = false }, 20)
+    setTimeout(() => { throttled = false }, DONATE_THROTTLE)
 
     // action
     const { scrollTop, offsetHeight: pageHeight } = target
-    DONATE_ELEMENTS
-      .slice(1)
-      .forEach((id) => {
-        const [img, content] = getDonateSection(id)
-        const { offsetTop, offsetHeight: elHeight } = img
-        console.log(`${scrollTop + pageHeight} < ${offsetTop + elHeight}`)
-        if (scrollTop + pageHeight > offsetTop + elHeight) {
-          animateIn(img)
-          animateIn(content)
-        } else {
-          animateOut(img)
-          animateOut(content)
+    Array.from(document.getElementsByClassName('animation-container'))
+      .forEach((animationContainer) => {
+        const animationTargets = Array.from(animationContainer.getElementsByClassName('animation-target'))
+        const { offsetTop } = animationContainer
+        if (scrollTop + pageHeight > offsetTop) {
+          animationTargets.forEach(animateIn)
         }
       })
   }
@@ -56,15 +45,6 @@ function createDonateScrollListener () {
 
 function getDonatePage () {
   return document.getElementById('donate-page')
-}
-
-function getDonateSection (id) {
-  const section = document.getElementById(id)
-  if (!section) { return null }
-  return [
-    section.querySelector('img'),
-    section.querySelector('.content'),
-  ]
 }
 
 /**
@@ -90,27 +70,6 @@ function animateIn (donateEl) {
 }
 
 /**
- * animate element out of screen
- *
- * @param {HTMLElement} donateEl
- *
- * @returns {boolean} whether or not it was animated
- */
-function animateOut (donateEl) {
-  if (!donateEl) {
-    return false
-  }
-  const [toRemove, toAdd] = animationName(donateEl)
-  const { classList } = donateEl
-  if (!classList.contains(toRemove)) {
-    return false
-  }
-  donateEl.classList.remove(toRemove)
-  donateEl.classList.add(toAdd)
-  return true
-}
-
-/**
  * extract animation className from element
  *
  * @param {HTMLElement} donateEl
@@ -133,7 +92,9 @@ function animationName (donateEl) {
   ]
 }
 
-/* Route Change */
+/**********************************************************************/
+/*                              Listener                              */
+/**********************************************************************/
 
 function onRouteChange (route) {
   if (DONATE_REGEX.test(route)) {
@@ -141,13 +102,9 @@ function onRouteChange (route) {
     const donateInterval = setInterval(() => {
       const page = getDonatePage()
       if (page) {
-        page.addEventListener('scroll', createDonateScrollListener())
-        const first = getDonateSection(DONATE_ELEMENTS[0])
-        if (first) {
-          first.forEach(animateIn)
-        } else {
-          console.error('failed to find first image')
-        }
+        const onDonateScroll = createDonateScrollListener()
+        page.addEventListener('scroll', onDonateScroll)
+        setTimeout(() => onDonateScroll({ target: getDonatePage() }), 0)
         clearInterval(donateInterval)
       }
     }, 100)
