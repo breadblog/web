@@ -68,7 +68,6 @@ context (Result r) =
 
 
 -- Util
--- TODO: room for optimization here (lots of copied information in context, onClick)
 
 
 search : List (Source msg) -> String -> List (Result msg)

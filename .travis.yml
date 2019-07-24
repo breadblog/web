@@ -33,4 +33,5 @@ install:
 
 script:
     - npm run lint
+    - ./script/todo.sh
     - $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 1 npm run test

@@ -228,13 +228,11 @@ updateMod msg general internals =
                             }
 
                 Err err ->
-                    -- TODO: handle error properly (might be offline etc)
                     { model = internals
                     , cmd = redirect404 general
                     , general = general
                     }
 
-        -- TODO: implement min chars
         OnTitleInput str ->
             let
                 updatePost =
