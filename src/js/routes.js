@@ -104,7 +104,6 @@ function onRouteChange (route) {
       if (page) {
         const onDonateScroll = createDonateScrollListener()
         page.addEventListener('scroll', onDonateScroll)
-        setTimeout(() => onDonateScroll({ target: getDonatePage() }), 0)
         clearInterval(donateInterval)
       }
     }, 100)
