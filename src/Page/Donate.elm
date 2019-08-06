@@ -282,7 +282,6 @@ sectionDescription theme maybeUrl title description side =
                 , ( "animated", True )
                 , ( "hidden", True )
                 , ( "content", True )
-                , ( "delay-1s", True )
                 , ( "animation-target", True )
                 ]
             , css

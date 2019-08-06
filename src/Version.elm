@@ -5,4 +5,4 @@ import Data.Version exposing (Version)
 
 current : Maybe Version
 current =
-    Data.Version.fromString "0.0.38"
+    Data.Version.fromString "0.0.39"

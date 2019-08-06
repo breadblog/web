@@ -1,3 +1,7 @@
+## 0.0.39
+
+* Fix donate page delay
+
 ## 0.0.38
 
 * Add CI for TODO, FIXME
