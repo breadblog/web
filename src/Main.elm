@@ -78,7 +78,7 @@ init flags url key =
             Route.fromUrl url
 
         ( general, generalCmd ) =
-            General.init key flags
+            General.init route key flags
 
         ( model, routeCmd ) =
             changeRoute route <| Redirect general
@@ -193,7 +193,7 @@ changeRoute : Route -> Model -> ( Model, Cmd Msg )
 changeRoute route model =
     let
         general =
-            toGeneral model
+            General.updateRoute route (toGeneral model)
 
         ( pageModel, cmd ) =
             case route of
@@ -212,8 +212,8 @@ changeRoute route model =
                 Route.About ->
                     Page.About.init general About (toMsg AboutMsg)
 
-                Route.Post uuid ->
-                    Page.Post.init uuid general Post (toMsg PostMsg)
+                Route.Post postType ->
+                    Page.Post.init postType general Post (toMsg PostMsg)
 
                 Route.Changelog ->
                     Page.Changelog.init general Changelog (toMsg ChangelogMsg)
@@ -291,6 +291,7 @@ subscriptions model =
     Sub.batch
         [ Sub.map (GeneralMsg >> Global) General.networkSub
         , Sub.map (GeneralMsg >> Global) General.fullscreenSub
+        , Sub.map (GeneralMsg >> Global) General.interval
         ]
 
 

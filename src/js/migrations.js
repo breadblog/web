@@ -42,7 +42,6 @@ createMigration('0.0.26', '0.0.27')
  * , user : Maybe UUID
  * }
  */
-
 createMigration('0.0.27', '0.0.28')
 createMigration('0.0.28', '0.0.29')
 createMigration('0.0.29', '0.0.30')
@@ -53,6 +52,23 @@ createMigration('0.0.34', '0.0.35')
 createMigration('0.0.35', '0.0.36')
 createMigration('0.0.36', '0.0.37')
 createMigration('0.0.37', '0.0.38')
+createMigration('0.0.38', '0.0.39')
+
+/*
+ * 0.0.40
+ *
+ * { version : Version
+ * , theme : Theme
+ * , tags : List Tag
+ * , authors : List Author
+ * , postPreviews : List (Post Core Preview)
+ * , user : Maybe UUID
+ * , visits : List Visit
+ * }
+ */
+createMigration('0.0.39', '0.0.40', (cache) => {
+  cache.visits = []
+})
 
 /********************************/
 /*            Helpers           */

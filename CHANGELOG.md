@@ -1,3 +1,7 @@
+## 0.0.40
+
+* Home page post previews
+
 ## 0.0.39
 
 * Fix donate page delay

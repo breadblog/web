@@ -17,30 +17,6 @@ import View.Page as Page exposing (PageUpdateOutput)
 
 
 
-{--
-
-    Home Page
-    =========
-
-    Present
-    -------
-
-    Simple homescreen that simply shows cards for the various posts
-    in chronological order
-
-    Future
-    ------
-
-    Intention of the home page is to allow discovery of blog posts
-    that may be of interest to the user. We do this through a
-    Netflix styled interface that shows various categories and/or
-    authors to the user depending on what the web client
-    belieaves they would be most interested in. Similar to Netflix,
-    it allows for duplicates to occur between rows. Unlike Netflix
-    however, we allow the user to customize the content they will
-    see (by authors or tags).
-
---}
 -- Model
 
 
@@ -132,3 +108,24 @@ viewHome general internals =
         ]
         []
     ]
+
+
+row : Theme -> String -> List (Post Core Preview) -> Html msg
+row theme rowTitle posts =
+    div
+        [ class "row"
+        , css
+            [ Css.width (pct 100)
+            , Css.height (px 500)
+            ]
+        ]
+        [ h3
+            [ class "title"
+            , css
+                [ fontWeight <| int 500 ]
+            ]
+            [ text rowTitle ]
+        , div
+            []
+            []
+        ]

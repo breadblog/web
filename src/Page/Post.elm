@@ -7,6 +7,7 @@ import Css.Transitions as Transitions exposing (transition)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
+import Data.Personalize as Personalize exposing (Visit)
 import Data.Post as Post exposing (Client, Core, Full, Post)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route as Route exposing (PostType, Route(..))
@@ -216,9 +217,16 @@ updateMod msg general internals =
                     in
                     case maybeAuthor of
                         Just author ->
+                            let
+                                visit =
+                                    Personalize.visit post
+
+                                ( updatedGeneral, generalCmd ) =
+                                    General.pushVisit visit general
+                            in
                             { model = toInternals post author
-                            , general = general
-                            , cmd = Cmd.none
+                            , general = updatedGeneral
+                            , cmd = Cmd.map (Global << GeneralMsg) generalCmd
                             }
 
                         Nothing ->

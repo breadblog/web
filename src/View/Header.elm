@@ -190,6 +190,7 @@ viewHeader theme authors tags model =
             [ position relative
             , displayFlex
             , flex3 (int 0) (int 0) (px Dimension.headerHeight)
+            , Css.height (pc Dimension.headerHeight)
             , flexDirection row
             , alignItems center
             , justifyContent spaceBetween

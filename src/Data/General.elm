@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, focus, fullscreen, fullscreenSub, init, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
+port module Data.General exposing (General, Msg(..), authors, flagsDecoder, focus, fullscreen, fullscreenSub, init, interval, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, pushVisit, tags, theme, update, updateAuthors, updateRoute, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation exposing (Key)
@@ -7,6 +7,7 @@ import Data.Config exposing (Config)
 import Data.Markdown as Markdown
 import Data.Mode as Mode exposing (Mode(..))
 import Data.Network as Network exposing (Network(..))
+import Data.Personalize as Personalize exposing (Visit)
 import Data.Post as Post exposing (Core, Post, Preview)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route as Route exposing (Route(..))
@@ -19,6 +20,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
+import Time
 import Util
 import Version
 
@@ -42,6 +44,7 @@ type alias Flags =
 type alias IGeneral =
     { cache : Cache
     , key : Key
+    , route : Route
     , problems : List (Problem Msg)
     , config : Config
     , network : Network
@@ -61,6 +64,7 @@ type alias ICache =
     , authors : List Author
     , postPreviews : List (Post Core Preview)
     , user : Maybe UUID
+    , visits : List Visit
     }
 
 
@@ -75,8 +79,8 @@ type alias Temp =
 {- Constructors -}
 
 
-init : Key -> Value -> ( General, Cmd Msg )
-init key_ flags =
+init : Route -> Key -> Value -> ( General, Cmd Msg )
+init route key_ flags =
     let
         ( decoded, cacheProblems ) =
             case Version.current of
@@ -112,6 +116,7 @@ init key_ flags =
         general =
             { cache = decoded.cache
             , key = key_
+            , route = route
             , problems = cacheProblems
             , config = initConfig decoded
             , network = decoded.network
@@ -138,6 +143,7 @@ defaultCache currentVersion =
     , authors = []
     , postPreviews = []
     , user = Nothing
+    , visits = []
     }
         |> Cache
 
@@ -192,6 +198,8 @@ type Msg
     | UpdateFullscreen Bool
     | PushProblem (Problem Msg)
     | GoBack
+    | PushVisit Visit
+    | Interval Time.Posix
 
 
 
@@ -212,6 +220,9 @@ update msg general =
 
         ( newGeneral, cmd ) =
             case msg of
+                Interval time ->
+                    ( general, Cmd.none )
+
                 SetTheme theme_ ->
                     updateCache general { iCache | theme = theme_ }
 
@@ -353,12 +364,37 @@ update msg general =
                     ( general
                     , Browser.Navigation.back (key general) 1
                     )
+
+                PushVisit visit ->
+                    pushVisit visit general
     in
     ( newGeneral
     , Cmd.batch
         [ cmd
         ]
     )
+
+
+updateRoute : Route -> General -> General
+updateRoute route (General internals) =
+    General { internals | route = route }
+
+
+pushVisit : Visit -> General -> ( General, Cmd Msg )
+pushVisit visit general =
+    let
+        iCache =
+            general
+                |> cache
+                |> cacheInternals
+
+        maxCache =
+            100
+
+        updatedVisits =
+            Personalize.pushVisit visit maxCache iCache.visits
+    in
+    updateCache general { iCache | visits = updatedVisits }
 
 
 updateCache : General -> ICache -> ( General, Cmd Msg )
@@ -656,6 +692,15 @@ tryLogout general =
 
 
 
+{- Subs -}
+
+
+interval : Sub Msg
+interval =
+    Time.every (1000 * 60) Interval
+
+
+
 {- Ports -}
 
 
@@ -716,6 +761,14 @@ fullscreenSub =
 
 
 {- Accessors (public) -}
+
+
+visits : General -> List Visit
+visits general =
+    general
+        |> cache
+        |> cacheInternals
+        |> .visits
 
 
 fullscreen : General -> Bool
@@ -836,16 +889,14 @@ cacheDecoder =
     Decode.succeed ICache
         |> required "version" Data.Version.decoder
         |> required "theme" Theme.decoder
-        |> optional "tags"
+        |> required "tags"
             (Decode.list Tag.decoder)
-            []
-        |> optional "authors"
+        |> required "authors"
             (Decode.list Author.decoder)
-            []
-        |> optional "postPreviews"
+        |> required "postPreviews"
             (Decode.list <| Post.previewDecoder <| Just False)
-            []
-        |> optional "user" (Decode.nullable UUID.decoder) Nothing
+        |> required "user" (Decode.nullable UUID.decoder)
+        |> required "visits" (Decode.list Personalize.visitDecoder)
         |> Decode.map Cache
 
 
@@ -870,4 +921,5 @@ encodeCache (Cache c) =
                 Nothing ->
                     Encode.null
           )
+        , ( "visits", Encode.list Personalize.encodeVisit c.visits )
         ]
