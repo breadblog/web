@@ -176,8 +176,6 @@ initConfig flags =
 
 type Msg
     = SetTheme Theme
-    | ToggleTag Tag
-    | ToggleAuthor Author
     | TogglePost (Post Core Preview)
     | UpdateNetwork Network
     | NetworkProblem Decode.Error
@@ -225,20 +223,6 @@ update msg general =
 
                 SetTheme theme_ ->
                     updateCache general { iCache | theme = theme_ }
-
-                ToggleTag tag ->
-                    let
-                        tags_ =
-                            toggleTagList tag iCache.tags
-                    in
-                    updateCache general { iCache | tags = tags_ }
-
-                ToggleAuthor author ->
-                    let
-                        authors_ =
-                            toggleAuthorList author iCache.authors
-                    in
-                    updateCache general { iCache | authors = authors_ }
 
                 TogglePost post ->
                     let
@@ -539,22 +523,6 @@ updateResource info =
             ( updatedGeneral, Cmd.none )
 
 
-toggleTagList : Tag -> List Tag -> List Tag
-toggleTagList tag =
-    let
-        toggled =
-            Tag.mapWatched (\n -> not n) tag
-    in
-    List.map
-        (\t ->
-            if t == tag then
-                toggled
-
-            else
-                t
-        )
-
-
 togglePostList : Post Core Preview -> List (Post Core Preview) -> List (Post Core Preview)
 togglePostList post list =
     List.Extra.updateIf
@@ -570,22 +538,6 @@ togglePostList post list =
             )
         )
         list
-
-
-toggleAuthorList : Author -> List Author -> List Author
-toggleAuthorList author =
-    let
-        toggled =
-            Author.mapWatched not author
-    in
-    List.map
-        (\a ->
-            if a == author then
-                toggled
-
-            else
-                a
-        )
 
 
 

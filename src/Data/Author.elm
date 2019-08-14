@@ -1,4 +1,4 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, mapWatched, mergeFromApi, name, username, uuid, watched)
+module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, mergeFromApi, name, username, uuid)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -23,7 +23,6 @@ type alias Internals =
     { username : Username
     , name : String
     , bio : String
-    , watched : Bool
     , uuid : UUID
     }
 
@@ -35,16 +34,6 @@ type alias Internals =
 username : Author -> Username
 username (Author internals) =
     internals.username
-
-
-mapWatched : (Bool -> Bool) -> Author -> Author
-mapWatched transform (Author internals) =
-    Author { internals | watched = transform internals.watched }
-
-
-watched : Author -> Bool
-watched (Author internals) =
-    internals.watched
 
 
 name : Author -> String
@@ -98,8 +87,8 @@ compare (Author a) (Author b) =
 
 
 mergeFromApi : Author -> Author -> Author
-mergeFromApi (Author a) (Author b) =
-    Author { a | watched = b.watched }
+mergeFromApi fromApi _ =
+    fromApi
 
 
 
@@ -114,7 +103,6 @@ decoder =
         |> required "bio" Decode.string
         -- Default "watched" because core doesn't provide
         -- don't hardcode because need to decode from cache
-        |> optional "watched" Decode.bool True
         |> required "uuid" UUID.decoder
         |> Decode.map Author
 
@@ -125,6 +113,5 @@ encode (Author internals) =
         [ ( "username", Username.encode internals.username )
         , ( "name", Encode.string internals.name )
         , ( "bio", Encode.string internals.bio )
-        , ( "watched", Encode.bool internals.watched )
         , ( "uuid", UUID.encode internals.uuid )
         ]

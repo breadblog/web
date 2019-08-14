@@ -207,8 +207,7 @@ viewHeader theme authors tags model =
         , fixedSpacer Screen.desktop <| px 25
         , logo Screen.desktop theme
         , spacer Screen.desktop
-        , dropdown Screen.desktop theme "tags" <| tagsContent theme tags
-        , dropdown Screen.desktop theme "author" <| authorsContent theme authors
+        , spacer Screen.desktop
 
         -- BOTH
         , spacer Screen.desktop
@@ -451,26 +450,6 @@ logo shownScreens theme =
 -- Tags
 
 
-tagsContent : Theme -> List Tag -> List (Html (Compound Msg))
-tagsContent theme =
-    List.map
-        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (Global <| GeneralMsg <| ToggleTag t))
-
-
-
--- Authors
-
-
-authorsContent : Theme -> List Author -> List (Html (Compound Msg))
-authorsContent theme =
-    List.map
-        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (Global <| GeneralMsg <| ToggleAuthor a))
-
-
-
--- Theme --
-
-
 themeContent : Theme -> List (Html (Compound Msg))
 themeContent theme =
     List.map
@@ -706,39 +685,6 @@ dropdownItem theme name selected msg =
             [ text name
             , underline
             ]
-        ]
-
-
-checkboxDropdownItem : String -> Theme -> Bool -> msg -> Html msg
-checkboxDropdownItem name theme value msg =
-    div
-        [ class "dropdown-item"
-        , css
-            [ paddingLeft <| px 10
-
-            -- fix for brave browser (for some reason "height"
-            -- doesn't seem to work)
-            , maxHeight <| px 50
-            , minHeight <| px 50
-            , displayFlex
-            , flex2 (num 0) (num 0)
-            , alignItems center
-            , justifyContent spaceBetween
-            , transition
-                [ Transitions.backgroundColor 100 ]
-            , hover
-                [ backgroundColor <| Color.dropdownActive theme
-                ]
-            ]
-        , onClick msg
-        ]
-        [ span
-            [ css
-                [ marginRight <| px 30
-                ]
-            ]
-            [ text name ]
-        , checkbox value theme
         ]
 
 

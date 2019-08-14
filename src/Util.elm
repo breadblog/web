@@ -25,3 +25,26 @@ joinLeftWith transform compare a b =
                     aEl
         )
         a
+
+
+groupBy : (a -> a -> String) -> List a -> List (List a)
+groupBy group list =
+    list
+        |> List.map (\a -> { value = a, group = group a })
+        |> List.groupBy ()
+
+
+
+{-
+   [ 1, 3, 9, 2 ]
+
+   [ { v: 1, s: "a" }
+   , { v: 3, s: "b" }
+   , { v: 9, s: "b" }
+   , { v: 2, s: "a" }
+   ]
+
+   [ [ 1, 2 ]
+   , [ 3, 9 ]
+   ]
+-}

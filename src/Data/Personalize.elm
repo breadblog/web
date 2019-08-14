@@ -1,6 +1,8 @@
-module Data.Personalize exposing (Visit, encodeVisit, pushVisit, visit, visitDecoder)
+module Data.Personalize exposing (Row, Visit, encodeVisit, pushVisit, visit, visitDecoder)
 
-import Data.Post as Post exposing (Core, Full, Post)
+import Data.Author as Author exposing (Author)
+import Data.Post as Post exposing (Core, Full, Post, Preview)
+import Data.Tag as Tag exposing (Tag)
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
@@ -23,6 +25,22 @@ type alias VisitInternals =
     }
 
 
+type Personalization
+    = ByAuthor Author
+    | ByTag Tag
+    | ByRecent
+
+
+type alias Result =
+    { weight : Weight
+    , personalization : Personalization
+    }
+
+
+type alias Row =
+    {}
+
+
 
 {- Constructors -}
 
@@ -40,7 +58,44 @@ visit post =
 
 
 
-{- Util -}
+{- Public API -}
+
+
+personalize : List Visit -> List Author -> List Tag -> List (Post Core Preview) -> List Row
+personalize history validAuthors validTags posts =
+    [ {} ]
+
+
+
+{- Helpers -}
+
+
+results : List Visit -> List Result
+results history =
+
+
+
+type alias Weight =
+    Float
+
+
+rankIndex : Int -> Int -> Weight
+rankIndex index max =
+    toFloat index / toFloat max * 100
+
+
+
+{-
+   1) weights for each tag
+   2) weights for each author
+   3) weight for "new" (how to normalize w/ tag/author)
+-}
+
+
+rankWeights : List Weight -> Weight
+rankWeights weights =
+    weights
+        |> List.sum
 
 
 pushVisit : Visit -> Int -> List Visit -> List Visit
