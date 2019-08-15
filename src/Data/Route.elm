@@ -16,6 +16,7 @@ type Route
     | Donate
     | Changelog
     | Login
+    | Offline
 
 
 type PostType
@@ -46,6 +47,9 @@ urlParser =
         , Parser.map About (s "about")
         , Parser.map Donate (s "donate")
         , Parser.map Changelog (s "changelog")
+
+        -- Offline
+        , Parser.map Offline (s "offline")
         ]
 
 
@@ -134,6 +138,9 @@ toName route =
         NotFound ->
             "404"
 
+        Offline ->
+            "Offline"
+
 
 titlePrefix : String
 titlePrefix =
@@ -185,6 +192,9 @@ toPath route =
 
         NotFound ->
             relative [ "/404" ] []
+
+        Offline ->
+            relative [ "offline" ] []
 
 
 

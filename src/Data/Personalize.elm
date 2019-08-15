@@ -1,4 +1,4 @@
-module Data.Personalize exposing (Row, Visit, encodeVisit, pushVisit, visit, visitDecoder)
+module Data.Personalize exposing (Row, Visit, encodeVisit, personalize, pushVisit, visit, visitDecoder)
 
 import Data.Author as Author exposing (Author)
 import Data.Post as Post exposing (Core, Full, Post, Preview)
@@ -8,6 +8,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
+import Util
 
 
 
@@ -38,7 +39,16 @@ type alias Result =
 
 
 type alias Row =
-    {}
+    { label : String
+    , posts : List (Post Core Preview)
+    }
+
+
+type alias Priorities =
+    { author : Float
+    , tag : Float
+    , recent : Float
+    }
 
 
 
@@ -63,16 +73,72 @@ visit post =
 
 personalize : List Visit -> List Author -> List Tag -> List (Post Core Preview) -> List Row
 personalize history validAuthors validTags posts =
-    [ {} ]
+    [ { label = "Recently Added"
+      , posts = posts
+      }
+    ]
 
 
 
 {- Helpers -}
 
 
-results : List Visit -> List Result
-results history =
+priorities : Priorities
+priorities =
+    { tag = 1.0
+    , author = 1.3
+    , recent = 1.5
+    }
 
+
+results : List Visit -> List Tag -> List Author -> List Result
+results history tags authors =
+    let
+        max =
+            List.length history
+
+        authorTransform author =
+            let
+                priority =
+                    priorities.author
+            in
+            history
+                |> List.filter (\(Visit v) -> Author.compareUUID author v.author)
+                |> List.indexedMap
+                    (\i _ ->
+                        i
+                            |> rankIndex max
+                            |> (*) priority
+                    )
+                |> List.sum
+                |> (\weight -> Result weight (ByAuthor author))
+
+        authorResults =
+            List.map authorTransform authors
+
+        tagTransform tag =
+            let
+                priority =
+                    priorities.tag
+            in
+            history
+                |> List.filter (\(Visit v) -> Util.includesBy Tag.compareUUID tag v.tags)
+                |> List.indexedMap
+                    (\i _ ->
+                        i
+                            |> rankIndex max
+                            |> (*) priority
+                    )
+                |> List.sum
+                |> (\weight -> Result weight (ByTag tag))
+
+        tagResults =
+            List.map tagTransform tags
+
+        mostRecentResult =
+            Result 1.0 ByRecent
+    in
+    mostRecentResult :: authorResults ++ tagResults
 
 
 type alias Weight =
@@ -80,7 +146,7 @@ type alias Weight =
 
 
 rankIndex : Int -> Int -> Weight
-rankIndex index max =
+rankIndex max index =
     toFloat index / toFloat max * 100
 
 

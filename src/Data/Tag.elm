@@ -1,4 +1,4 @@
-module Data.Tag exposing (Tag, compare, decoder, encode, find, mergeFromApi, name, toSource)
+module Data.Tag exposing (Tag, compare, compareUUID, decoder, encode, find, mergeFromApi, name, toPath, toSource)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -62,12 +62,24 @@ toSource msg tags =
 
 compare : Tag -> Tag -> Bool
 compare (Tag a) (Tag b) =
-    a.uuid == b.uuid
+    UUID.compare a.uuid b.uuid
+
+
+compareUUID : Tag -> UUID -> Bool
+compareUUID (Tag tag) uuid =
+    UUID.compare uuid tag.uuid
 
 
 mergeFromApi : Tag -> Tag -> Tag
 mergeFromApi fromApi _ =
     fromApi
+
+
+toPath : Tag -> String
+toPath (Tag tag) =
+    tag
+        |> .uuid
+        |> UUID.toPath "/tag"
 
 
 

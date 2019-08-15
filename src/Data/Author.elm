@@ -1,4 +1,4 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, mergeFromApi, name, username, uuid)
+module Data.Author exposing (Author, bio, compare, compareUUID, decoder, encode, fromUUID, mergeFromApi, name, toPath, username)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -46,11 +46,6 @@ bio (Author internals) =
     internals.bio
 
 
-uuid : Author -> UUID
-uuid (Author internals) =
-    internals.uuid
-
-
 
 {- Util -}
 
@@ -70,12 +65,19 @@ toSource msg authors =
         msg
 
 
+toPath : Author -> String
+toPath (Author author) =
+    author
+        |> .uuid
+        |> UUID.toPath "/author"
+
+
 fromUUID : UUID -> List Author -> Maybe Author
 fromUUID authorUUID list =
     List.Extra.find
-        (\a ->
+        (\(Author a) ->
             a
-                |> uuid
+                |> .uuid
                 |> UUID.compare authorUUID
         )
         list
@@ -83,7 +85,12 @@ fromUUID authorUUID list =
 
 compare : Author -> Author -> Bool
 compare (Author a) (Author b) =
-    a.uuid == b.uuid
+    UUID.compare a.uuid b.uuid
+
+
+compareUUID : Author -> UUID -> Bool
+compareUUID (Author author) uuid =
+    UUID.compare uuid author.uuid
 
 
 mergeFromApi : Author -> Author -> Author

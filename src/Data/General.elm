@@ -1,6 +1,8 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, focus, fullscreen, fullscreenSub, init, interval, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, pushVisit, tags, theme, update, updateAuthors, updateRoute, user, version)
+port module Data.General exposing (General, Msg(..), authors, dataReady, flagsDecoder, focus, fullscreen, fullscreenSub, init, interval, key, mapUser, mode, network, networkSub, onResize, postPreviews, problems, pushProblem, pushVisit, screen, tags, theme, update, updateAuthors, updateRoute, user, version, visits)
 
 import Api exposing (Url)
+import Browser.Dom exposing (Viewport)
+import Browser.Events
 import Browser.Navigation exposing (Key)
 import Data.Author as Author exposing (Author)
 import Data.Config exposing (Config)
@@ -20,6 +22,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
+import Task
 import Time
 import Util
 import Version
@@ -50,6 +53,7 @@ type alias IGeneral =
     , network : Network
     , temp : Temp
     , fullscreen : Bool
+    , screen : Maybe Viewport
     }
 
 
@@ -122,15 +126,26 @@ init route key_ flags =
             , network = decoded.network
             , temp = defaultTemp
             , fullscreen = decoded.fullscreen
+            , screen = Nothing
             }
                 |> General
+
+        networkCmd =
+            if decoded.network == Online then
+                Cmd.batch
+                    [ updateAuthors general
+                    , updatePosts general
+                    , updateTags general
+                    ]
+
+            else
+                Cmd.none
     in
     ( general
     , Cmd.batch
         [ setCache decoded.cache
-        , updateAuthors general
-        , updatePosts general
-        , updateTags general
+        , networkCmd
+        , updateViewport
         ]
     )
 
@@ -159,7 +174,7 @@ defaultFlags : Version -> Flags
 defaultFlags version_ =
     { cache = defaultCache version_
     , mode = Production
-    , network = Offline
+    , network = Network.Offline
     , fullscreen = False
     }
 
@@ -198,6 +213,8 @@ type Msg
     | GoBack
     | PushVisit Visit
     | Interval Time.Posix
+    | OnViewport Viewport
+    | OnResize Int Int
 
 
 
@@ -231,9 +248,28 @@ update msg general =
                     in
                     updateCache general { iCache | postPreviews = posts_ }
 
-                UpdateNetwork network ->
-                    ( General { internals | network = network }
-                    , Cmd.none
+                UpdateNetwork updatedNetwork ->
+                    let
+                        previousNetwork =
+                            internals.network
+
+                        shouldRefresh =
+                            previousNetwork == Network.Offline && updatedNetwork == Online
+
+                        networkCmd =
+                            -- if network reconnects, should update tags, posts & authors
+                            if shouldRefresh then
+                                Cmd.batch
+                                    [ updateAuthors general
+                                    , updateTags general
+                                    , updatePosts general
+                                    ]
+
+                            else
+                                Cmd.none
+                    in
+                    ( General { internals | network = updatedNetwork }
+                    , networkCmd
                     )
 
                 NetworkProblem err ->
@@ -351,6 +387,16 @@ update msg general =
 
                 PushVisit visit ->
                     pushVisit visit general
+
+                OnViewport updatedScreen ->
+                    ( General { internals | screen = Just updatedScreen }
+                    , Cmd.none
+                    )
+
+                OnResize _ _ ->
+                    ( general
+                    , Task.perform OnViewport Browser.Dom.getViewport
+                    )
     in
     ( newGeneral
     , Cmd.batch
@@ -456,12 +502,13 @@ type alias UpdateResourceInfo t =
 
 updateResource : UpdateResourceInfo t -> ( General, Cmd Msg )
 updateResource info =
+    let
+        (General internals) =
+            info.general
+    in
     case info.res of
         Ok fromApi ->
             let
-                (General internals) =
-                    info.general
-
                 temp =
                     internals.temp
 
@@ -510,17 +557,26 @@ updateResource info =
                 ( updatedGeneral, info.triggerUpdate updatedGeneral offset )
 
         Err err ->
-            let
-                message =
-                    "Failed to update list of " ++ info.name ++ "s"
+            if internals.network == Online then
+                let
+                    message =
+                        "Failed to update list of " ++ info.name ++ "s"
 
-                problem =
-                    Problem.create message (HttpError err) Nothing
+                    problem =
+                        Problem.create message (HttpError err) Nothing
 
-                updatedGeneral =
-                    pushProblem problem info.general
-            in
-            ( updatedGeneral, Cmd.none )
+                    updatedGeneral =
+                        pushProblem problem info.general
+                in
+                ( updatedGeneral, Cmd.none )
+
+            else if dataReady info.general then
+                -- if we have data already, fail silently
+                ( info.general, Cmd.none )
+
+            else
+                -- if we don't have data, and something is offline, push to offline page
+                ( info.general, Browser.Navigation.pushUrl (key info.general) (Route.toPath Route.Offline) )
 
 
 togglePostList : Post Core Preview -> List (Post Core Preview) -> List (Post Core Preview)
@@ -652,6 +708,11 @@ interval =
     Time.every (1000 * 60) Interval
 
 
+onResize : Sub Msg
+onResize =
+    Browser.Events.onResize OnResize
+
+
 
 {- Ports -}
 
@@ -686,8 +747,8 @@ networkSub =
     getNetworkPort
         (\v ->
             case Decode.decodeValue Network.decoder v of
-                Ok network ->
-                    UpdateNetwork network
+                Ok updatedNetwork ->
+                    UpdateNetwork updatedNetwork
 
                 Err err ->
                     NetworkProblem err
@@ -814,6 +875,16 @@ mode (General internals) =
     internals.config.mode
 
 
+network : General -> Network
+network (General internals) =
+    internals.network
+
+
+screen : General -> Maybe Viewport
+screen (General internals) =
+    internals.screen
+
+
 
 {- Accessors (private) -}
 
@@ -821,6 +892,27 @@ mode (General internals) =
 cacheInternals : Cache -> ICache
 cacheInternals (Cache iCache) =
     iCache
+
+
+
+{- Helpers -}
+
+
+{-| Checks if the data in general is ready to use
+-}
+dataReady : General -> Bool
+dataReady general =
+    -- can't have lists with different types (can't map List.length)
+    [ List.length <| authors general
+    , List.length <| postPreviews general
+    , List.length <| tags general
+    ]
+        |> List.all ((/=) 0)
+
+
+updateViewport : Cmd Msg
+updateViewport =
+    Task.perform OnViewport Browser.Dom.getViewport
 
 
 

@@ -1,4 +1,4 @@
-module Util exposing (joinLeftWith)
+module Util exposing (includesBy, joinLeftWith)
 
 import List.Extra
 
@@ -27,24 +27,11 @@ joinLeftWith transform compare a b =
         a
 
 
-groupBy : (a -> a -> String) -> List a -> List (List a)
-groupBy group list =
-    list
-        |> List.map (\a -> { value = a, group = group a })
-        |> List.groupBy ()
+includesBy : (b -> a -> Bool) -> b -> List a -> Bool
+includesBy predicate el list =
+    case List.Extra.find (predicate el) list of
+        Just _ ->
+            True
 
-
-
-{-
-   [ 1, 3, 9, 2 ]
-
-   [ { v: 1, s: "a" }
-   , { v: 3, s: "b" }
-   , { v: 9, s: "b" }
-   , { v: 2, s: "a" }
-   ]
-
-   [ [ 1, 2 ]
-   , [ 3, 9 ]
-   ]
--}
+        Nothing ->
+            False

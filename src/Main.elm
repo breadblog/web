@@ -20,6 +20,7 @@ import Page.Donate
 import Page.Home
 import Page.Login
 import Page.NotFound
+import Page.Offline
 import Page.Post
 import Page.Problems
 import Page.Redirect
@@ -37,6 +38,7 @@ import Url exposing (Url)
 type Model
     = Redirect General
     | NotFound General
+    | Offline General
     | Donate Page.Donate.Model
     | About Page.About.Model
     | Home Page.Home.Model
@@ -217,6 +219,9 @@ changeRoute route model =
 
                 Route.Changelog ->
                     Page.Changelog.init general Changelog (toMsg ChangelogMsg)
+
+                Route.Offline ->
+                    ( Offline general, Cmd.none )
     in
     ( pageModel
     , Cmd.batch
@@ -253,6 +258,9 @@ toGeneral page =
         Redirect g ->
             g
 
+        Offline g ->
+            g
+
 
 fromGeneral : General -> Model -> Model
 fromGeneral general page =
@@ -281,6 +289,9 @@ fromGeneral general page =
         Redirect _ ->
             Redirect general
 
+        Offline _ ->
+            Offline general
+
 
 
 -- Subscriptions --
@@ -292,6 +303,7 @@ subscriptions model =
         [ Sub.map (GeneralMsg >> Global) General.networkSub
         , Sub.map (GeneralMsg >> Global) General.fullscreenSub
         , Sub.map (GeneralMsg >> Global) General.interval
+        , Sub.map (GeneralMsg >> Global) General.onResize
         ]
 
 
@@ -349,6 +361,9 @@ viewPage model =
             case model of
                 NotFound notFound ->
                     Page.NotFound.view notFound
+
+                Offline offline ->
+                    Page.Offline.view offline
 
                 Redirect redirect ->
                     Page.Redirect.view redirect

@@ -771,7 +771,7 @@ readyView general post author =
                     False
 
                 Just userUUID ->
-                    UUID.compare (Author.uuid author) userUUID
+                    Author.compareUUID author userUUID
 
         -- fav =
     in
@@ -1001,7 +1001,7 @@ authorLink : Author -> Theme -> Html (Compound ModMsg)
 authorLink author theme =
     a
         [ class "author"
-        , href <| UUID.toPath "/author" (Author.uuid author)
+        , href <| Author.toPath author
         , css
             [ textDecoration none
             , marginLeft <| px 15
