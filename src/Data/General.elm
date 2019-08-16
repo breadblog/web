@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, dataReady, flagsDecoder, focus, fullscreen, fullscreenSub, init, interval, key, mapUser, mode, network, networkSub, onResize, postPreviews, problems, pushProblem, pushVisit, screen, tags, theme, update, updateAuthors, updateRoute, user, version, visits)
+port module Data.General exposing (General, Msg(..), flagsDecoder, focus, fullscreen, fullscreenSub, init, interval, key, mapUser, mode, network, networkSub, onResize, problems, pushProblem, pushVisit, screen, theme, update, updateRoute, user, version, visits)
 
 import Api exposing (Url)
 import Browser.Dom exposing (Viewport)
@@ -64,9 +64,6 @@ type Cache
 type alias ICache =
     { version : Version
     , theme : Theme
-    , tags : List Tag
-    , authors : List Author
-    , postPreviews : List (Post Core Preview)
     , user : Maybe UUID
     , visits : List Visit
     }
@@ -129,22 +126,10 @@ init route key_ flags =
             , screen = Nothing
             }
                 |> General
-
-        networkCmd =
-            if decoded.network == Online then
-                Cmd.batch
-                    [ updateAuthors general
-                    , updatePosts general
-                    , updateTags general
-                    ]
-
-            else
-                Cmd.none
     in
     ( general
     , Cmd.batch
         [ setCache decoded.cache
-        , networkCmd
         , updateViewport
         ]
     )
@@ -154,9 +139,6 @@ defaultCache : Version -> Cache
 defaultCache currentVersion =
     { theme = Dark
     , version = currentVersion
-    , tags = []
-    , authors = []
-    , postPreviews = []
     , user = Nothing
     , visits = []
     }
@@ -191,15 +173,8 @@ initConfig flags =
 
 type Msg
     = SetTheme Theme
-    | TogglePost (Post Core Preview)
     | UpdateNetwork Network
     | NetworkProblem Decode.Error
-    | UpdateAuthors
-    | GotAuthors (Result Http.Error (List Author))
-    | UpdatePosts
-    | GotPosts (Result Http.Error (List (Post Core Preview)))
-    | UpdateTags
-    | GotTags (Result Http.Error (List Tag))
     | TryLogout
     | OnLogout (Result Http.Error ())
     | NavigateTo Route
@@ -241,13 +216,6 @@ update msg general =
                 SetTheme theme_ ->
                     updateCache general { iCache | theme = theme_ }
 
-                TogglePost post ->
-                    let
-                        posts_ =
-                            togglePostList post iCache.postPreviews
-                    in
-                    updateCache general { iCache | postPreviews = posts_ }
-
                 UpdateNetwork updatedNetwork ->
                     let
                         previousNetwork =
@@ -255,21 +223,9 @@ update msg general =
 
                         shouldRefresh =
                             previousNetwork == Network.Offline && updatedNetwork == Online
-
-                        networkCmd =
-                            -- if network reconnects, should update tags, posts & authors
-                            if shouldRefresh then
-                                Cmd.batch
-                                    [ updateAuthors general
-                                    , updateTags general
-                                    , updatePosts general
-                                    ]
-
-                            else
-                                Cmd.none
                     in
                     ( General { internals | network = updatedNetwork }
-                    , networkCmd
+                    , Cmd.none
                     )
 
                 NetworkProblem err ->
@@ -281,59 +237,8 @@ update msg general =
                     , Cmd.none
                     )
 
-                UpdateAuthors ->
-                    ( general, updateAuthors general )
-
-                GotAuthors res ->
-                    updateResource
-                        { compare = Author.compare
-                        , transform = Author.mergeFromApi
-                        , res = res
-                        , general = general
-                        , triggerUpdate = updateAuthorsAt
-                        , setInTemp = \authors_ temp_ -> { temp_ | authors = authors_ }
-                        , setInCache = \authors_ iCache_ -> { iCache_ | authors = authors_ }
-                        , getFromTemp = .authors
-                        , getFromCache = .authors
-                        , name = "author"
-                        }
-
-                UpdatePosts ->
-                    ( general, updatePosts general )
-
-                GotPosts res ->
-                    updateResource
-                        { compare = Post.compare
-                        , transform = Post.mergeFromApi
-                        , res = res
-                        , general = general
-                        , triggerUpdate = updatePostsAt
-                        , setInTemp = \postPreviews_ temp_ -> { temp_ | postPreviews = postPreviews_ }
-                        , setInCache = \postPreviews_ iCache_ -> { iCache_ | postPreviews = postPreviews_ }
-                        , getFromTemp = .postPreviews
-                        , getFromCache = .postPreviews
-                        , name = "post"
-                        }
-
-                UpdateTags ->
-                    ( general, updateTags general )
-
-                GotTags res ->
-                    updateResource
-                        { compare = Tag.compare
-                        , transform = Tag.mergeFromApi
-                        , res = res
-                        , general = general
-                        , triggerUpdate = updateTagsAt
-                        , setInTemp = \tags_ temp_ -> { temp_ | tags = tags_ }
-                        , setInCache = \tags_ iCache_ -> { iCache | tags = tags_ }
-                        , getFromTemp = .tags
-                        , getFromCache = .tags
-                        , name = "tag"
-                        }
-
                 TryLogout ->
-                    ( general, tryLogout general )
+                    ( general, Api.logout (mode general) OnLogout )
 
                 OnLogout res ->
                     case res of
@@ -500,83 +405,72 @@ type alias UpdateResourceInfo t =
     }
 
 
-updateResource : UpdateResourceInfo t -> ( General, Cmd Msg )
-updateResource info =
-    let
-        (General internals) =
-            info.general
-    in
-    case info.res of
-        Ok fromApi ->
-            let
-                temp =
-                    internals.temp
 
-                fromTemp =
-                    info.getFromTemp temp
-            in
-            if List.isEmpty fromApi then
-                -- If list is empty, then we have retrieved all of
-                -- the values, and it's time to update the cache
-                let
-                    (Cache iCache) =
-                        internals.cache
-
-                    fromCache =
-                        info.getFromCache iCache
-
-                    updatedCacheList =
-                        Util.joinLeftWith
-                            info.transform
-                            info.compare
-                            -- fromTemp is aggregated resources from API (primary data)
-                            fromTemp
-                            -- fromCache is old resources from Cache (secondary data)
-                            fromCache
-
-                    updatedTempGeneral =
-                        updateTemp info.general (info.setInTemp [] temp)
-                in
-                updateCache updatedTempGeneral (info.setInCache updatedCacheList iCache)
-
-            else
-                -- If list is not empty should append to temp list and
-                -- retrieve more resources from API (pagination)
-                let
-                    updatedTempList =
-                        fromTemp ++ fromApi
-
-                    updatedGeneral =
-                        updateTemp info.general (info.setInTemp updatedTempList temp)
-
-                    offset =
-                        updatedTempList
-                            |> toOffset
-                            |> (+) 1
-                in
-                ( updatedGeneral, info.triggerUpdate updatedGeneral offset )
-
-        Err err ->
-            if internals.network == Online then
-                let
-                    message =
-                        "Failed to update list of " ++ info.name ++ "s"
-
-                    problem =
-                        Problem.create message (HttpError err) Nothing
-
-                    updatedGeneral =
-                        pushProblem problem info.general
-                in
-                ( updatedGeneral, Cmd.none )
-
-            else if dataReady info.general then
-                -- if we have data already, fail silently
-                ( info.general, Cmd.none )
-
-            else
-                -- if we don't have data, and something is offline, push to offline page
-                ( info.general, Browser.Navigation.pushUrl (key info.general) (Route.toPath Route.Offline) )
+-- updateResource : UpdateResourceInfo t -> ( General, Cmd Msg )
+-- updateResource info =
+--     let
+--         (General internals) =
+--             info.general
+--     in
+--     case info.res of
+--         Ok fromApi ->
+--             let
+--                 temp =
+--                     internals.temp
+--                 fromTemp =
+--                     info.getFromTemp temp
+--             in
+--             if List.isEmpty fromApi then
+--                 -- If list is empty, then we have retrieved all of
+--                 -- the values, and it's time to update the cache
+--                 let
+--                     (Cache iCache) =
+--                         internals.cache
+--                     fromCache =
+--                         info.getFromCache iCache
+--                     updatedCacheList =
+--                         Util.joinLeftWith
+--                             info.transform
+--                             info.compare
+--                             -- fromTemp is aggregated resources from API (primary data)
+--                             fromTemp
+--                             -- fromCache is old resources from Cache (secondary data)
+--                             fromCache
+--                     updatedTempGeneral =
+--                         updateTemp info.general (info.setInTemp [] temp)
+--                 in
+--                 updateCache updatedTempGeneral (info.setInCache updatedCacheList iCache)
+--             else
+--                 -- If list is not empty should append to temp list and
+--                 -- retrieve more resources from API (pagination)
+--                 let
+--                     updatedTempList =
+--                         fromTemp ++ fromApi
+--                     updatedGeneral =
+--                         updateTemp info.general (info.setInTemp updatedTempList temp)
+--                     offset =
+--                         updatedTempList
+--                             |> toOffset
+--                             |> (+) 1
+--                 in
+--                 ( updatedGeneral, info.triggerUpdate updatedGeneral offset )
+--         Err err ->
+--             if internals.network == Online then
+--                 let
+--                     message =
+--                         "Failed to update list of " ++ info.name ++ "s"
+--                     problem =
+--                         Problem.create message (HttpError err) Nothing
+--                     updatedGeneral =
+--                         pushProblem problem info.general
+--                 in
+--                 ( updatedGeneral, Cmd.none )
+--             else if dataReady info.general then
+--                 -- if we have data already, fail silently
+--                 ( info.general, Cmd.none )
+--             else
+--                 -- if we don't have data, and something is offline, push to offline page
+--                 ( info.general, Browser.Navigation.pushUrl (key info.general) (Route.toPath Route.Offline) )
 
 
 togglePostList : Post Core Preview -> List (Post Core Preview) -> List (Post Core Preview)
@@ -598,108 +492,69 @@ togglePostList post list =
 
 
 {- HTTP -}
-
-
-updateAuthors : General -> Cmd Msg
-updateAuthors general =
-    updateAuthorsAt general 0
-
-
-updateAuthorsAt : General -> Int -> Cmd Msg
-updateAuthorsAt (General general) page =
-    let
-        start =
-            page * 10
-
-        path =
-            String.join ""
-                [ "/author/public/"
-                , "?count="
-                , String.fromInt Api.count
-                , "&start="
-                , String.fromInt start
-                ]
-    in
-    Api.get
-        { url = Api.url general.config.mode path
-        , expect = Http.expectJson GotAuthors (Decode.list Author.decoder)
-        }
-
-
-updatePosts : General -> Cmd Msg
-updatePosts general =
-    updatePostsAt general 0
-
-
-updatePostsAt : General -> Int -> Cmd Msg
-updatePostsAt (General general) page =
-    let
-        start =
-            page * 10
-
-        path =
-            String.join ""
-                [ "/post/public/"
-                , "?count="
-                , String.fromInt Api.count
-                , "&start="
-                , String.fromInt start
-                ]
-    in
-    Api.get
-        { url = Api.url general.config.mode path
-        , expect = Http.expectJson GotPosts (Decode.list <| Post.previewDecoder <| Just False)
-        }
-
-
-updateTags : General -> Cmd Msg
-updateTags general =
-    updateTagsAt general 0
-
-
-updateTagsAt : General -> Int -> Cmd Msg
-updateTagsAt (General general) page =
-    let
-        start =
-            page * 10
-
-        path =
-            String.join ""
-                [ "/tag/public/"
-                , "?count="
-                , String.fromInt Api.count
-                , "&start="
-                , String.fromInt start
-                ]
-    in
-    Api.get
-        { url = Api.url general.config.mode path
-        , expect = Http.expectJson GotTags (Decode.list Tag.decoder)
-        }
-
-
-toOffset : List a -> Int
-toOffset list =
-    List.length list // Api.count
-
-
-tryLogout : General -> Cmd Msg
-tryLogout general =
-    let
-        url =
-            Api.url (mode general) "/logout/"
-
-        expect =
-            Http.expectWhatever OnLogout
-    in
-    Api.post
-        { url = url
-        , expect = expect
-        , body = Http.emptyBody
-        }
-
-
-
+-- updateAuthors : General -> Cmd Msg
+-- updateAuthors general =
+--     updateAuthorsAt general 0
+-- updateAuthorsAt : General -> Int -> Cmd Msg
+-- updateAuthorsAt (General general) page =
+--     let
+--         start =
+--             page * 10
+--         path =
+--             String.join ""
+--                 [ "/author/public/"
+--                 , "?count="
+--                 , String.fromInt Api.count
+--                 , "&start="
+--                 , String.fromInt start
+--                 ]
+--     in
+--     Api.get
+--         { url = Api.url general.config.mode path
+--         , expect = Http.expectJson GotAuthors (Decode.list Author.decoder)
+--         }
+-- updatePosts : General -> Cmd Msg
+-- updatePosts general =
+--     updatePostsAt general 0
+-- updatePostsAt : General -> Int -> Cmd Msg
+-- updatePostsAt (General general) page =
+--     let
+--         start =
+--             page * 10
+--         path =
+--             String.join ""
+--                 [ "/post/public/"
+--                 , "?count="
+--                 , String.fromInt Api.count
+--                 , "&start="
+--                 , String.fromInt start
+--                 ]
+--     in
+--     Api.get
+--         { url = Api.url general.config.mode path
+--         , expect = Http.expectJson GotPosts (Decode.list <| Post.previewDecoder <| Just False)
+--         }
+-- updateTags : General -> Cmd Msg
+-- updateTags general =
+--     updateTagsAt general 0
+-- updateTagsAt : General -> Int -> Cmd Msg
+-- updateTagsAt (General general) page =
+--     let
+--         start =
+--             page * 10
+--         path =
+--             String.join ""
+--                 [ "/tag/public/"
+--                 , "?count="
+--                 , String.fromInt Api.count
+--                 , "&start="
+--                 , String.fromInt start
+--                 ]
+--     in
+--     Api.get
+--         { url = Api.url general.config.mode path
+--         , expect = Http.expectJson GotTags (Decode.list Tag.decoder)
+--         }
 {- Subs -}
 
 
@@ -810,28 +665,25 @@ theme general =
         |> .theme
 
 
-tags : General -> List Tag
-tags general =
-    general
-        |> cache
-        |> cacheInternals
-        |> .tags
 
-
-authors : General -> List Author
-authors general =
-    general
-        |> cache
-        |> cacheInternals
-        |> .authors
-
-
-postPreviews : General -> List (Post Core Preview)
-postPreviews general =
-    general
-        |> cache
-        |> cacheInternals
-        |> .postPreviews
+-- tags : General -> List Tag
+-- tags general =
+--     general
+--         |> cache
+--         |> cacheInternals
+--         |> .tags
+-- authors : General -> List Author
+-- authors general =
+--     general
+--         |> cache
+--         |> cacheInternals
+--         |> .authors
+-- postPreviews : General -> List (Post Core Preview)
+-- postPreviews general =
+--     general
+--         |> cache
+--         |> cacheInternals
+--         |> .postPreviews
 
 
 user : General -> Maybe UUID
@@ -900,16 +752,6 @@ cacheInternals (Cache iCache) =
 
 {-| Checks if the data in general is ready to use
 -}
-dataReady : General -> Bool
-dataReady general =
-    -- can't have lists with different types (can't map List.length)
-    [ List.length <| authors general
-    , List.length <| postPreviews general
-    , List.length <| tags general
-    ]
-        |> List.all ((/=) 0)
-
-
 updateViewport : Cmd Msg
 updateViewport =
     Task.perform OnViewport Browser.Dom.getViewport
@@ -933,12 +775,6 @@ cacheDecoder =
     Decode.succeed ICache
         |> required "version" Data.Version.decoder
         |> required "theme" Theme.decoder
-        |> required "tags"
-            (Decode.list Tag.decoder)
-        |> required "authors"
-            (Decode.list Author.decoder)
-        |> required "postPreviews"
-            (Decode.list <| Post.previewDecoder <| Just False)
         |> required "user" (Decode.nullable UUID.decoder)
         |> required "visits" (Decode.list Personalize.visitDecoder)
         |> Decode.map Cache
@@ -954,9 +790,6 @@ encodeCache (Cache c) =
     Encode.object
         [ ( "version", Data.Version.encode c.version )
         , ( "theme", Theme.encode c.theme )
-        , ( "tags", Encode.list Tag.encode c.tags )
-        , ( "authors", Encode.list Author.encode c.authors )
-        , ( "postPreviews", Encode.list Post.encodePreview c.postPreviews )
         , ( "user"
           , case c.user of
                 Just uuid ->

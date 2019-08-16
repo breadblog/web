@@ -171,20 +171,15 @@ focusSearch value model =
 {- View -}
 
 
-view : (Compound Msg -> msg) -> Theme -> List Author -> List Tag -> Model -> List (Html msg)
-view transform theme authors tags model =
+view : (Compound Msg -> msg) -> Theme -> Model -> List (Html msg)
+view transform theme model =
     List.map
         (Html.Styled.map transform)
-        (viewHeader theme authors tags model)
+        (viewHeader theme model)
 
 
-viewHeader : Theme -> List Author -> List Tag -> Model -> List (Html (Compound Msg))
-viewHeader theme authors tags model =
-    let
-        sources =
-            [ Tag.toSource (Global NoOp) tags
-            ]
-    in
+viewHeader : Theme -> Model -> List (Html (Compound Msg))
+viewHeader theme model =
     [ header
         [ css
             [ position relative

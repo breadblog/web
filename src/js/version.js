@@ -9,7 +9,7 @@ const methods = {
     const a = data(this)
     const b = data(other)
     return a.str === b.str
-  },
+  }
 }
 
 function Version (str) {

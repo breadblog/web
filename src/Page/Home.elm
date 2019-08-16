@@ -29,7 +29,8 @@ type alias Model =
 
 
 type alias Internals =
-    {}
+    { positions : List Int
+    }
 
 
 init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )

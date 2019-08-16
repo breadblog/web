@@ -88,7 +88,7 @@ function animationName (donateEl) {
   })()
   return [
     `${animation}In${direction}`,
-    `${animation}Out${direction}`,
+    `${animation}Out${direction}`
   ]
 }
 

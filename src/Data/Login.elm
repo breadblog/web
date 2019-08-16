@@ -1,4 +1,4 @@
-module Data.Login exposing (Request, Response, decodeResponse, encodeRequest)
+module Data.Login exposing (Request, Response, encodeRequest, responseDecoder)
 
 import Data.Password as Password exposing (Password)
 import Data.UUID as UUID exposing (UUID)
@@ -30,7 +30,7 @@ encodeRequest request =
         ]
 
 
-decodeResponse : Decoder Response
-decodeResponse =
+responseDecoder : Decoder Response
+responseDecoder =
     Decode.succeed Response
         |> required "uuid" UUID.decoder

@@ -1,8 +1,18 @@
-module Api exposing (Url, count, delete, get, post, put, url)
+module Api exposing (Url, getAuthors, getPostPreviews, getTags, login, logout)
 
+import Data.Author as Author exposing (Author)
+import Data.Login as Login
 import Data.Mode exposing (Mode(..))
+import Data.Password as Password exposing (Password)
+import Data.Post as Post exposing (Core, Post, Preview)
+import Data.Tag as Tag exposing (Tag)
 import Http exposing (Body, Expect, Header)
-import Json.Encode exposing (Value)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
+
+
+
+{- Model -}
 
 
 type Url
@@ -13,6 +23,80 @@ type alias Internals =
     { mode : Mode
     , path : String
     }
+
+
+
+{- Public API -}
+
+
+type alias MsgConstructor resource msg =
+    Result Http.Error resource -> msg
+
+
+getTags : Mode -> MsgConstructor (List Tag) msg -> Int -> Cmd msg
+getTags =
+    getList "/tag/public/" (Decode.list Tag.decoder)
+
+
+getAuthors : Mode -> MsgConstructor (List Author) msg -> Int -> Cmd msg
+getAuthors =
+    getList "/author/public" (Decode.list Author.decoder)
+
+
+getPostPreviews : Mode -> MsgConstructor (List (Post Core Preview)) msg -> Int -> Cmd msg
+getPostPreviews =
+    getList "/post/public/" <|
+        Decode.list <|
+            Post.previewDecoder <|
+                Just False
+
+
+logout : Mode -> MsgConstructor () msg -> Cmd msg
+logout mode createMsg =
+    post
+        { url = url mode "/logout/"
+        , expect = Http.expectWhatever createMsg
+        , body = Http.emptyBody
+        }
+
+
+login : Mode -> MsgConstructor Login.Response msg -> String -> Password -> Cmd msg
+login mode createMsg username password =
+    post
+        { url = url mode "/login"
+        , expect = Http.expectJson createMsg Login.responseDecoder
+        , body = Http.jsonBody <| Login.encodeRequest <| Login.Request username password
+        }
+
+
+
+{- Helpers -}
+
+
+getList : String -> Decoder r -> Mode -> MsgConstructor r msg -> Int -> Cmd msg
+getList pathPrefix decoder mode createMsg page =
+    let
+        start =
+            page * paginationSize
+
+        path =
+            String.join ""
+                [ pathPrefix
+                , "?count="
+                , String.fromInt paginationSize
+                , "&start="
+                , String.fromInt start
+                ]
+    in
+    get
+        { url = url mode path
+        , expect = Http.expectJson createMsg decoder
+        }
+
+
+paginationSize : Int
+paginationSize =
+    10
 
 
 url : Mode -> String -> Url
@@ -37,11 +121,6 @@ urlToString (Url internals) =
                 |> ensureLeftSlash
     in
     host ++ path
-
-
-count : Int
-count =
-    10
 
 
 ensureRightSlash : String -> String

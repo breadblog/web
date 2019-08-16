@@ -33,14 +33,14 @@ const flags = (function () {
     cache: getCache(),
     mode: getMode(),
     network: getNetwork(),
-    fullscreen: getFullscreen(),
+    fullscreen: getFullscreen()
   }
 })()
 
 // -- Init
 const app = Elm.Main.init({
   node: document.getElementsByTagName('body')[0],
-  flags,
+  flags
 })
 
 // -- Port subscriptions

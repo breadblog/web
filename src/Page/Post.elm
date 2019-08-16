@@ -79,12 +79,6 @@ init postType general =
     let
         maybeUserUUID =
             General.user general
-
-        authors =
-            General.authors general
-
-        getAuthor =
-            \uuid -> Author.fromUUID uuid authors
     in
     case postType of
         Route.Ready postUUID ->

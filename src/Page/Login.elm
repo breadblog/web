@@ -152,14 +152,7 @@ attemptLogin general username password =
                     |> OnLogin
                     |> Mod
     in
-    Api.post
-        { expect = Http.expectJson msg <| Data.Login.decodeResponse
-        , body =
-            Http.jsonBody <|
-                Data.Login.encodeRequest <|
-                    Data.Login.Request username password
-        , url = Api.url mode "/login/"
-        }
+    Api.login mode msg username password
 
 
 

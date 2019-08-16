@@ -181,12 +181,6 @@ type alias ViewResult modMsg =
 view : PageModel modModel -> ViewPage modModel modMsg -> ViewResult modMsg
 view (PageModel pageModel) viewPage =
     let
-        tags =
-            General.tags pageModel.general
-
-        authors =
-            General.authors pageModel.general
-
         version =
             General.version pageModel.general
 
@@ -194,7 +188,7 @@ view (PageModel pageModel) viewPage =
             General.theme pageModel.general
 
         header =
-            Header.view (Message.map HeaderMsg) theme_ authors tags pageModel.header
+            Header.view (Message.map HeaderMsg) theme_ pageModel.header
 
         footer =
             Footer.view (Message.map FooterMsg) theme_ version
