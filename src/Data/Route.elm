@@ -57,7 +57,7 @@ urlParser =
 {- Ports -}
 
 
-port changeRoutePort : Value -> Cmd msg
+port onRouteChangePort : Value -> Cmd msg
 
 
 
@@ -66,7 +66,7 @@ port changeRoutePort : Value -> Cmd msg
 
 changeRoute : Route -> Cmd msg
 changeRoute route =
-    changeRoutePort <| encode route
+    onRouteChangePort <| encode route
 
 
 fromUrl : Url -> Route

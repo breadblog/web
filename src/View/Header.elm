@@ -1,12 +1,13 @@
 module View.Header exposing (Model, Msg(..), init, update, view)
 
+import Browser.Dom
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
 import Css.Transitions as Transitions exposing (transition)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Route as Route exposing (Route(..))
-import Data.Search as Search exposing (Result, Source)
+import Data.Search as Search exposing (SearchResult, Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Username as Username exposing (Username)
@@ -20,6 +21,7 @@ import Style.Font as Font
 import Style.Screen as Screen exposing (Screen(..))
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes
+import Task
 import Update
 import View.Svg as Svg
 
@@ -102,6 +104,7 @@ type Msg
     | SetSearchTerm String
     | ToggleDrawer
     | ToggleSearch
+    | OnFocus (Result Browser.Dom.Error ())
 
 
 
@@ -140,7 +143,7 @@ update msg general model =
 
                 cmd =
                     if updatedValue then
-                        General.focus "search"
+                        Task.attempt (Mod << OnFocus) (Browser.Dom.focus "search")
 
                     else
                         Cmd.none
@@ -149,6 +152,9 @@ update msg general model =
             , cmd = cmd
             , general = general
             }
+
+        OnFocus _ ->
+            simpleOutput model
 
 
 focusSearch : Bool -> Model -> Model

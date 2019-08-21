@@ -302,7 +302,6 @@ subscriptions model =
     Sub.batch
         [ Sub.map (GeneralMsg >> Global) General.networkSub
         , Sub.map (GeneralMsg >> Global) General.fullscreenSub
-        , Sub.map (GeneralMsg >> Global) General.interval
         , Sub.map (GeneralMsg >> Global) General.onResize
         ]
 

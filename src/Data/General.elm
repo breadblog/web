@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), flagsDecoder, focus, fullscreen, fullscreenSub, init, interval, key, mapUser, mode, network, networkSub, onResize, problems, pushProblem, pushVisit, screen, theme, update, updateRoute, user, version, visits)
+port module Data.General exposing (General, Msg(..), flagsDecoder, fullscreen, init, key, mapUser, mode, network, onFullscreenChange, onNetworkChange, onResize, problems, pushProblem, pushVisit, screen, theme, update, updateRoute, user, version, visits)
 
 import Api exposing (Url)
 import Browser.Dom exposing (Viewport)
@@ -270,10 +270,10 @@ update msg general =
                     update nestedMsg <| dismissProblem index general
 
                 FullscreenElement class ->
-                    ( general, fullscreenElement class )
+                    ( general, fullscreenElementPort class )
 
                 ExitFullscreen ->
-                    ( general, exitFullscreen () )
+                    ( general, exitFullscreenPort () )
 
                 UpdateFullscreen fs ->
                     ( General { internals | fullscreen = fs }
@@ -491,76 +491,7 @@ togglePostList post list =
 
 
 
-{- HTTP -}
--- updateAuthors : General -> Cmd Msg
--- updateAuthors general =
---     updateAuthorsAt general 0
--- updateAuthorsAt : General -> Int -> Cmd Msg
--- updateAuthorsAt (General general) page =
---     let
---         start =
---             page * 10
---         path =
---             String.join ""
---                 [ "/author/public/"
---                 , "?count="
---                 , String.fromInt Api.count
---                 , "&start="
---                 , String.fromInt start
---                 ]
---     in
---     Api.get
---         { url = Api.url general.config.mode path
---         , expect = Http.expectJson GotAuthors (Decode.list Author.decoder)
---         }
--- updatePosts : General -> Cmd Msg
--- updatePosts general =
---     updatePostsAt general 0
--- updatePostsAt : General -> Int -> Cmd Msg
--- updatePostsAt (General general) page =
---     let
---         start =
---             page * 10
---         path =
---             String.join ""
---                 [ "/post/public/"
---                 , "?count="
---                 , String.fromInt Api.count
---                 , "&start="
---                 , String.fromInt start
---                 ]
---     in
---     Api.get
---         { url = Api.url general.config.mode path
---         , expect = Http.expectJson GotPosts (Decode.list <| Post.previewDecoder <| Just False)
---         }
--- updateTags : General -> Cmd Msg
--- updateTags general =
---     updateTagsAt general 0
--- updateTagsAt : General -> Int -> Cmd Msg
--- updateTagsAt (General general) page =
---     let
---         start =
---             page * 10
---         path =
---             String.join ""
---                 [ "/tag/public/"
---                 , "?count="
---                 , String.fromInt Api.count
---                 , "&start="
---                 , String.fromInt start
---                 ]
---     in
---     Api.get
---         { url = Api.url general.config.mode path
---         , expect = Http.expectJson GotTags (Decode.list Tag.decoder)
---         }
 {- Subs -}
-
-
-interval : Sub Msg
-interval =
-    Time.every (1000 * 60) Interval
 
 
 onResize : Sub Msg
@@ -568,38 +499,9 @@ onResize =
     Browser.Events.onResize OnResize
 
 
-
-{- Ports -}
-
-
-port focus : String -> Cmd msg
-
-
-port exitFullscreen : () -> Cmd msg
-
-
-port fullscreenElement : String -> Cmd msg
-
-
-port setCachePort : Value -> Cmd msg
-
-
-setCache : Cache -> Cmd msg
-setCache c =
-    c
-        |> encodeCache
-        |> setCachePort
-
-
-port getNetworkPort : (Value -> msg) -> Sub msg
-
-
-port getFullscreenPort : (Value -> msg) -> Sub msg
-
-
-networkSub : Sub Msg
-networkSub =
-    getNetworkPort
+onNetworkChange : Sub Msg
+onNetworkChange =
+    onNetworkChangePort
         (\v ->
             case Decode.decodeValue Network.decoder v of
                 Ok updatedNetwork ->
@@ -610,9 +512,9 @@ networkSub =
         )
 
 
-fullscreenSub : Sub Msg
-fullscreenSub =
-    getFullscreenPort
+onFullscreenChange : Sub Msg
+onFullscreenChange =
+    onFullscreenChangePort
         (\v ->
             case Decode.decodeValue Decode.bool v of
                 Ok fs ->
@@ -625,6 +527,32 @@ fullscreenSub =
                             (JsonError err)
                             Nothing
         )
+
+
+
+{- Ports -}
+
+
+port onNetworkChangePort : (Value -> msg) -> Sub msg
+
+
+port onCacheChangePort : Value -> Cmd msg
+
+
+port fullscreenElementPort : String -> Cmd msg
+
+
+port exitFullscreenPort : () -> Cmd msg
+
+
+port onFullscreenChangePort : (Value -> msg) -> Sub msg
+
+
+setCache : Cache -> Cmd msg
+setCache c =
+    c
+        |> encodeCache
+        |> onCacheChangePort
 
 
 
@@ -663,27 +591,6 @@ theme general =
         |> cache
         |> cacheInternals
         |> .theme
-
-
-
--- tags : General -> List Tag
--- tags general =
---     general
---         |> cache
---         |> cacheInternals
---         |> .tags
--- authors : General -> List Author
--- authors general =
---     general
---         |> cache
---         |> cacheInternals
---         |> .authors
--- postPreviews : General -> List (Post Core Preview)
--- postPreviews general =
---     general
---         |> cache
---         |> cacheInternals
---         |> .postPreviews
 
 
 user : General -> Maybe UUID

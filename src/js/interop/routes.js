@@ -11,6 +11,7 @@
  * behavior in javascript. Also less bulletproof, so we have to be
  * mindful in our implementation.
  */
+// TODO: these API's exist in Browser#Dom
 
 /**********************************************************************/
 /*                               Donate                               */
@@ -110,4 +111,12 @@ function onRouteChange (route) {
   }
 }
 
-export { onRouteChange }
+function apply (ports) {
+  ports.addListener('onRouteChange', onRouteChange)
+}
+
+function addFlags (flags) {
+  return Object.assign({}, flags)
+}
+
+export { apply, addFlags }

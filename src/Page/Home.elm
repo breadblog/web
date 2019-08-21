@@ -28,9 +28,16 @@ type alias Model =
     Page.PageModel Internals
 
 
-type alias Internals =
-    { positions : List Int
+type alias Row =
+    { index : Int
+    , label : String
+    , posts : List (Post Core Preview)
     }
+
+
+type Internals
+    = Loading
+    | Ready (List Row)
 
 
 init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
@@ -52,7 +59,7 @@ fromGeneral =
 
 
 
--- Message --
+{- Message -}
 
 
 type alias Msg =
@@ -95,6 +102,11 @@ type alias Rect =
 type CardWidth
     = Pixels Float
     | Full
+
+
+fromPersonalization : Personalize.Row -> Row
+fromPersonalization row =
+    { row | index = 0 }
 
 
 cardSize : Viewport -> Rect
@@ -198,38 +210,6 @@ viewHome general internals =
 type FromGeneral
     = Ready (List Row) Viewport
     | Loading
-
-
-isReady : General -> FromGeneral
-isReady general =
-    let
-        dataReady =
-            General.dataReady general
-
-        maybeScreen =
-            General.screen general
-
-        visits =
-            General.visits general
-
-        authors =
-            General.authors general
-
-        tags =
-            General.tags general
-
-        posts =
-            General.postPreviews general
-
-        rows =
-            Personalize.personalize visits authors tags posts
-    in
-    case ( dataReady, maybeScreen ) of
-        ( True, Just screen ) ->
-            Ready rows screen
-
-        ( _, _ ) ->
-            Loading
 
 
 loadingView : Theme -> List (Html msg)

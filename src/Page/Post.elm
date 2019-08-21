@@ -864,19 +864,6 @@ favorite general post styles =
     let
         theme =
             General.theme general
-
-        maybeFav =
-            case Post.favorite post of
-                Just f ->
-                    Just f
-
-                Nothing ->
-                    case List.Extra.find (Post.compare post) (General.postPreviews general) of
-                        Just p ->
-                            Post.favorite p
-
-                        Nothing ->
-                            Nothing
     in
     case maybeFav of
         Just fav ->

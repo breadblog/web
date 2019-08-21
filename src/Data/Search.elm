@@ -1,4 +1,4 @@
-module Data.Search exposing (Result, Source, context, onClick, search, source, value)
+module Data.Search exposing (SearchResult, Source, context, onClick, search, source, value)
 
 import Simple.Fuzzy as Fuzzy
 
@@ -20,15 +20,15 @@ type alias ISource msg =
 
 
 {-
-   Result
+   SearchResult
 
    The only way to receive a result is to call the "search" function.
    should not be constructed outside this module
 -}
 
 
-type Result msg
-    = Result (IResult msg)
+type SearchResult msg
+    = SearchResult (IResult msg)
 
 
 type alias IResult msg =
@@ -51,18 +51,18 @@ source values context_ msg =
 -- Accessors
 
 
-value : Result msg -> String
-value (Result r) =
+value : SearchResult msg -> String
+value (SearchResult r) =
     r.value
 
 
-onClick : Result msg -> msg
-onClick (Result r) =
+onClick : SearchResult msg -> msg
+onClick (SearchResult r) =
     r.onClick
 
 
-context : Result msg -> String
-context (Result r) =
+context : SearchResult msg -> String
+context (SearchResult r) =
     r.context
 
 
@@ -70,7 +70,7 @@ context (Result r) =
 -- Util
 
 
-search : List (Source msg) -> String -> List (Result msg)
+search : List (Source msg) -> String -> List (SearchResult msg)
 search sources searchTerm =
     let
         values =
@@ -91,4 +91,4 @@ search sources searchTerm =
         topValues =
             List.take 10 filteredValues
     in
-    List.map Result topValues
+    List.map SearchResult topValues

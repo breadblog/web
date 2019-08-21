@@ -28,6 +28,7 @@ config
     .alias
       .set('@js', src('js'))
       .set('@font', src('fonts'))
+      .set('@interop', src('js', 'interop'))
       .set('@main$', src('Main.elm'))
       .end()
     .extensions
