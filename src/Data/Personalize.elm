@@ -40,7 +40,14 @@ type alias Result =
 
 type alias Row =
     { label : String
-    , posts : List (Post Core Preview)
+    , cards : List Card
+    }
+
+
+type alias Card =
+    { post : Post Core Preview
+    , tags : List Tag
+    , author : Author
     }
 
 
@@ -74,7 +81,7 @@ visit post =
 personalize : List Visit -> List Author -> List Tag -> List (Post Core Preview) -> List Row
 personalize history validAuthors validTags posts =
     [ { label = "Recently Added"
-      , posts = posts
+      , cards = []
       }
     ]
 

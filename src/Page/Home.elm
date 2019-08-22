@@ -1,15 +1,19 @@
 module Page.Home exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
+import Api
 import Browser.Dom exposing (Viewport)
 import Css exposing (..)
+import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General)
 import Data.Personalize as Personalize exposing (Row)
 import Data.Post as Post exposing (Core, Post, Preview)
 import Data.Route as Route exposing (Route(..))
+import Data.Tag as Tag exposing (Tag)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
+import Http
 import Message exposing (Compound(..))
 import Style.Card
 import Style.Color as Color
@@ -36,16 +40,51 @@ type alias Row =
 
 
 type Internals
-    = Loading
+    = Loading ILoading
     | Ready (List Row)
 
 
+type alias ILoading =
+    { posts : List (Post Core Preview)
+    , postsReady : Bool
+    , authors : List Author
+    , authorsReady : Bool
+    , tags : List Tag
+    , tagsReady : Bool
+    }
+
+
+
+{- Init -}
+
+
 init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init =
+init general =
+    let
+        mode =
+            General.mode general
+    in
     Page.init
-        Internals
-        Cmd.none
+        (Loading initLoading)
+        (Cmd.batch
+            [ Api.getPostPreviews mode GotPosts 0
+            , Api.getAuthors mode GotAuthors 0
+            , Api.getTags mode GotTags 0
+            ]
+        )
         Home
+        general
+
+
+initLoading : ILoading
+initLoading =
+    { posts = []
+    , postsReady = False
+    , tags = []
+    , tagsReady = False
+    , authors = []
+    , authorsReady = False
+    }
 
 
 toGeneral : Model -> General
@@ -67,7 +106,9 @@ type alias Msg =
 
 
 type ModMsg
-    = NoOp
+    = GotPosts (Result Http.Error (List (Post Core Preview)))
+    | GotAuthors (Result Http.Error (List Author))
+    | GotTags (Result Http.Error (List Tag))
 
 
 
@@ -81,12 +122,77 @@ update =
 
 updateMod : ModMsg -> General -> Internals -> Update.Output ModMsg Internals
 updateMod msg general internals =
-    case msg of
-        NoOp ->
-            { model = internals
-            , cmd = Cmd.none
-            , general = general
-            }
+    let
+        mode =
+            General.mode general
+    in
+    case internals of
+        Loading iLoading ->
+            let
+                simpleUpdate model =
+                    { model = model
+                    , general = general
+                    , cmd = Cmd.none
+                    }
+
+                replaceMe =
+                    { model = internals
+                    , general = general
+                    , cmd = Cmd.none
+                    }
+            in
+            case msg of
+                GotAuthors result ->
+                    case result of
+                        Ok newResources ->
+                            Api.onUpdate
+                                { oldResources = iLoading.authors
+                                , newResources = newResources
+                                , getMore =
+                                    \page ->
+                                        Api.getAuthors mode GotAuthors page
+                                , onComplete =
+                                    \resources ->
+                                        case ( iLoading.postsReady, iLoading.tagsReady ) of
+                                            ( True, True ) ->
+                                                { posts = iLoading.posts
+                                                , tags = iLoading.tags
+                                                , authors = resources
+                                                }
+                                                    |> Ready
+                                                    |> simpleUpdate
+
+                                            _ ->
+                                                { model = Loading { iLoading | authors = resources }
+                                                , general = general
+                                                , cmd = Cmd.none
+                                                }
+                                , onLoading =
+                                    \resources cmd ->
+                                        { model = Loading { iLoading | authors = resources }
+                                        , cmd = cmd
+                                        , general = general
+                                        }
+                                }
+
+                        Err err ->
+                            replaceMe
+
+                GotPosts result ->
+                    case result of
+                        Ok newResources ->
+                            replaceMe
+
+                        Err err ->
+                            replaceMe
+
+                GotTags result ->
+                    case result of
+                        Ok newResources ->
+                            replaceMe
+
+                        Err err ->
+                            replaceMe
 
 
 
@@ -197,19 +303,14 @@ viewHome general internals =
             , overflowX hidden
             ]
         ]
-        (case isReady general of
-            Ready rows screen ->
-                readyView theme screen rows
-
-            Loading ->
+        (case internals of
+            Loading _ ->
                 loadingView theme
+
+            Ready rows ->
+                readyView theme (General.screen general) rows
         )
     ]
-
-
-type FromGeneral
-    = Ready (List Row) Viewport
-    | Loading
 
 
 loadingView : Theme -> List (Html msg)

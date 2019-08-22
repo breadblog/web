@@ -1,4 +1,4 @@
-module Api exposing (Url, getAuthors, getPostPreviews, getTags, login, logout)
+module Api exposing (Url, getAuthors, getPostPreviews, getTags, login, logout, onUpdate)
 
 import Data.Author as Author exposing (Author)
 import Data.Login as Login
@@ -67,6 +67,42 @@ login mode createMsg username password =
         , expect = Http.expectJson createMsg Login.responseDecoder
         , body = Http.jsonBody <| Login.encodeRequest <| Login.Request username password
         }
+
+
+type alias WithResource model resource =
+    { model : model
+    , resource : resource
+    , mode : Mode
+    }
+
+
+type alias OnUpdateParams resource msg output =
+    { getMore : Int -> Cmd msg
+    , onComplete : List resource -> output
+    , onLoading : List resource -> Cmd msg -> output
+    , oldResources : List resource
+    , newResources : List resource
+    }
+
+
+onUpdate : OnUpdateParams resource msg output -> output
+onUpdate params =
+    let
+        aggregateResources =
+            params.oldResources ++ params.newResources
+    in
+    if List.length params.newResources == paginationSize then
+        let
+            page =
+                (List.length aggregateResources // paginationSize) + 1
+
+            cmd =
+                params.getMore page
+        in
+        params.onLoading aggregateResources cmd
+
+    else
+        params.onComplete aggregateResources
 
 
 

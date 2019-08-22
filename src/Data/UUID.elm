@@ -11,7 +11,7 @@
 --}
 
 
-module Data.UUID exposing (UUID, compare, decoder, encode, toPath, urlParser)
+module Data.UUID exposing (UUID, compare, decoder, encode, missingAuthor, missingTag, toPath, urlParser)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -24,6 +24,20 @@ import Url.Parser exposing (Parser)
 
 type UUID
     = UUID String
+
+
+
+{- Constructors -}
+
+
+missingTag : UUID
+missingTag =
+    UUID "ada1e29b-ac81-4fe3-a9d0-7ca0c55ca592"
+
+
+missingAuthor : UUID
+missingAuthor =
+    UUID "21db3896-c32c-4c63-8d45-b811f4757ca9"
 
 
 

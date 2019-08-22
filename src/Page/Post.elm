@@ -47,27 +47,68 @@ type alias Model =
     Page.PageModel Internals
 
 
-type
-    Internals
-    {------------------ Public States ---------------------}
-    -- loading state for when we are fetching post info
-    = LoadingReady
-      -- we are now ready to display an existing post
-    | Ready (Post Core Full) Author
-      -- page shown when failure occurs, waiting for redirect
-      -- to home page
+type Internals
+    = LoadingView ILoadingView
+      -- view post
+    | View IView
+    | LoadingCreate ILoadingCreate
+      -- create new post
+    | Create ICreate
+    | LoadingEdit ILoadingEdit
+    | Edit IEdit
+      -- peek must have same data as edit
+    | Peek IEdit
+      -- shown when redirecting to home page
     | Redirect
-      {------------------ Private States --------------------}
-      -- "sneak peek" of what a post will look like
-      -- referred to as "preview" in UI, but "Peek"
-      -- in code to avoid conflicts
-    | Peek (Post Core Full) Author
-    | LoadingEdit
-      -- the following two states are very similar, just one
-      -- doesn't have info from core (such as uuid)
-    | Edit (Post Core Full) Author
-    | Create (Post Client Full) Author
+      -- confirm post deletion
     | Delete UUID
+
+
+type alias ILoadingView =
+    { post : Maybe (Post Core Full)
+    , tags : List Tag
+    , author : Maybe Author
+    }
+
+
+type alias IView =
+    { post : Post Core Full
+    , tags : List Tag
+    , author : Author
+    }
+
+
+type alias ILoadingEdit =
+    { post : Maybe (Post Core Full)
+    , tags : List Tag
+    , author : Maybe Author
+    }
+
+
+type alias IEdit =
+    { post : Post Core Full
+    , tags : List Tag
+    , author : Author
+    }
+
+
+type alias ILoadingCreate =
+    { tags : List Tag
+    , author : Maybe Author
+    }
+
+
+type alias ICreate =
+    { tags : List Tag
+    , author : Author
+    }
+
+
+type alias IReady =
+    { post : Post Core Full
+    , tags : List Tag
+    , author : List Author
+    }
 
 
 
@@ -83,7 +124,12 @@ init postType general =
     case postType of
         Route.Ready postUUID ->
             Page.init
-                LoadingReady
+                (LoadingView
+                    { post = Nothing
+                    , tags = []
+                    , author = Nothing
+                    }
+                )
                 (getPost general postUUID maybeUserUUID Ready)
                 (Post <| Route.Ready postUUID)
                 general

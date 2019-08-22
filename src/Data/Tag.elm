@@ -24,6 +24,19 @@ type alias Internals =
 
 
 
+{- Constructors -}
+
+
+missing : Tag
+missing =
+    { name = "?"
+    , description = "this tag is missing for some reason"
+    , uuid = UUID.missingTag
+    }
+        |> Tag
+
+
+
 {- Accessors -}
 
 
