@@ -1,4 +1,4 @@
-module Data.Personalize exposing (Row, Visit, encodeVisit, personalize, pushVisit, visit, visitDecoder)
+module Data.Personalize exposing (Card, Row, Visit, encodeVisit, personalize, pushVisit, visit, visitDecoder)
 
 import Data.Author as Author exposing (Author)
 import Data.Post as Post exposing (Core, Full, Post, Preview)

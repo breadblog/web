@@ -130,7 +130,7 @@ init postType general =
                     , author = Nothing
                     }
                 )
-                (getPost general postUUID maybeUserUUID Ready)
+                (getPost general postUUID maybeUserUUID View)
                 (Post <| Route.Ready postUUID)
                 general
 
@@ -149,36 +149,15 @@ init postType general =
                 general
 
         Route.Create ->
-            case maybeUserUUID of
-                Just userUUID ->
-                    case Author.fromUUID userUUID authors of
-                        Just author ->
-                            Page.init
-                                (Create (Post.empty userUUID) author)
-                                Cmd.none
-                                (Post Route.Create)
-                                general
-
-                        Nothing ->
-                            Page.init
-                                Redirect
-                                (redirect404 general)
-                                (Post Route.Create)
-                                general
-
-                Nothing ->
-                    let
-                        problem =
-                            Problem.create
-                                "Not Logged In"
-                                (MarkdownError <| Markdown.create "you must be logged in to create a post")
-                                (Just <| Problem.createHandler "Log In" (NavigateTo Login))
-                    in
-                    Page.init
-                        LoadingReady
-                        Cmd.none
-                        (Post Route.Create)
-                        (General.pushProblem problem general)
+            Page.init
+                (LoadingCreate
+                    { tags = []
+                    , author = Nothing
+                    }
+                )
+                Cmd.none
+                (Post <| Route.Create)
+                general
 
 
 fromGeneral : General -> Model -> Model
@@ -240,231 +219,205 @@ updateMod msg general internals =
             , general = General.pushProblem problem general
             , cmd = Cmd.none
             }
+
+        replaceMe =
+            { model = internals
+            , general = general
+            , cmd = Cmd.none
+            }
     in
-    case msg of
-        GotPost toInternals res ->
-            case res of
-                Ok post ->
-                    let
-                        authors =
-                            General.authors general
-
-                        authorUUID =
-                            Post.author post
-
-                        maybeAuthor =
-                            Author.fromUUID authorUUID authors
-                    in
-                    case maybeAuthor of
-                        Just author ->
-                            let
-                                visit =
-                                    Personalize.visit post
-
-                                ( updatedGeneral, generalCmd ) =
-                                    General.pushVisit visit general
-                            in
-                            { model = toInternals post author
-                            , general = updatedGeneral
-                            , cmd = Cmd.map (Global << GeneralMsg) generalCmd
-                            }
-
-                        Nothing ->
-                            { model = Redirect
-                            , cmd = redirect404 general
-                            , general = general
-                            }
-
-                Err err ->
-                    { model = internals
-                    , cmd = redirect404 general
-                    , general = general
-                    }
-
-        OnTitleInput str ->
-            let
-                updatePost =
-                    \p ->
-                        Post.mapTitle
-                            (str
-                                |> String.left 64
-                                |> always
-                            )
-                            p
-            in
-            case internals of
-                Edit post author ->
-                    simpleOutput <| Edit (updatePost post) author
-
-                Create post author ->
-                    simpleOutput <| Create (updatePost post) author
-
-                _ ->
-                    simpleOutput internals
-
-        OnBodyInput str ->
-            let
-                updatePost =
-                    \p ->
-                        Post.mapBody
-                            (str
-                                |> String.left 100000
-                                |> Markdown.create
-                                |> always
-                            )
-                            p
-            in
-            case internals of
-                Edit post author ->
-                    simpleOutput <| Edit (updatePost post) author
-
-                Create post author ->
-                    simpleOutput <| Create (updatePost post) author
-
-                _ ->
-                    simpleOutput internals
-
-        OnDescriptionInput str ->
-            let
-                updatePost =
-                    \p ->
-                        Post.mapDescription
-                            (str
-                                |> String.left 256
-                                |> always
-                            )
-                            p
-            in
-            case internals of
-                Edit post author ->
-                    simpleOutput <| Edit (updatePost post) author
-
-                Create post author ->
-                    simpleOutput <| Create (updatePost post) author
-
-                _ ->
-                    simpleOutput internals
-
-        WritePost ->
-            case internals of
-                Create post author ->
-                    { model = internals
-                    , general = general
-                    , cmd =
-                        Api.put
-                            { url = Api.url (General.mode general) "/post/private/"
-                            , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
-                            , body = Http.jsonBody <| Post.encodeFreshFull post
-                            }
-                    }
-
-                Edit post author ->
-                    { model = internals
-                    , general = general
-                    , cmd =
-                        Api.post
-                            { url = Api.url (General.mode general) "/post/private/"
-                            , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
-                            , body = Http.jsonBody <| Post.encodeFull post
-                            }
-                    }
-
-                _ ->
-                    simpleOutput internals
-
-        WritePostRes res ->
-            let
-                onOk =
-                    \post author ->
-                        { model = Ready post author
-                        , general = general
-                        , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Route.Ready <| Post.uuid post)
-                        }
-            in
-            case internals of
-                Create _ author ->
-                    case res of
-                        Ok post ->
-                            onOk post author
-
-                        Err err ->
-                            withProblem <|
-                                Problem.create "Failed to create post" (HttpError err) Nothing
-
-                Edit _ author ->
-                    case res of
-                        Ok post ->
-                            onOk post author
-
-                        Err err ->
-                            withProblem <|
-                                Problem.create "Failed to edit post" (HttpError err) Nothing
-
-                _ ->
-                    simpleOutput internals
-
-        EditCurrentPost ->
-            case internals of
-                Ready post author ->
-                    { model = internals
-                    , general = general
-                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Edit <| Post.uuid post)
-                    }
-
-                _ ->
-                    simpleOutput internals
-
-        DeleteCurrentPost ->
-            case internals of
-                Ready post author ->
-                    { model = internals
-                    , general = general
-                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Delete <| Post.uuid post)
-                    }
-
-                _ ->
-                    simpleOutput internals
-
-        ConfirmDelete ->
-            case internals of
-                Delete postUUID ->
-                    { model = internals
-                    , general = general
-                    , cmd =
-                        Api.delete
-                            { url = Api.url (General.mode general) (UUID.toPath "/post/owner" postUUID)
-                            , expect = Http.expectWhatever (OnDelete >> Mod)
-                            }
-                    }
-
-                _ ->
-                    simpleOutput internals
-
-        OnDelete res ->
-            case res of
-                Err err ->
-                    withProblem <|
-                        Problem.create "Failed to delete post" (HttpError err) Nothing
-
-                Ok _ ->
-                    { model = internals
-                    , general = general
-                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath Home)
-                    }
-
-        TogglePublished ->
-            case internals of
-                Edit post author ->
-                    simpleOutput <| Edit (Post.mapPublished not post) author
-
-                Create post author ->
-                    simpleOutput <| Create (Post.mapPublished not post) author
-
-                _ ->
-                    simpleOutput internals
+    replaceMe
 
 
 
+-- case msg of
+--     GotPost toInternals res ->
+--         case res of
+--             Ok post ->
+--                 let
+--                     authors =
+--                         General.authors general
+--                     authorUUID =
+--                         Post.author post
+--                     maybeAuthor =
+--                         Author.fromUUID authorUUID authors
+--                 in
+--                 case maybeAuthor of
+--                     Just author ->
+--                         let
+--                             visit =
+--                                 Personalize.visit post
+--                             ( updatedGeneral, generalCmd ) =
+--                                 General.pushVisit visit general
+--                         in
+--                         { model = toInternals post author
+--                         , general = updatedGeneral
+--                         , cmd = Cmd.map (Global << GeneralMsg) generalCmd
+--                         }
+--                     Nothing ->
+--                         { model = Redirect
+--                         , cmd = redirect404 general
+--                         , general = general
+--                         }
+--             Err err ->
+--                 { model = internals
+--                 , cmd = redirect404 general
+--                 , general = general
+--                 }
+--     OnTitleInput str ->
+--         let
+--             updatePost =
+--                 \p ->
+--                     Post.mapTitle
+--                         (str
+--                             |> String.left 64
+--                             |> always
+--                         )
+--                         p
+--         in
+--         case internals of
+--             Edit post author ->
+--                 simpleOutput <| Edit (updatePost post) author
+--             Create post author ->
+--                 simpleOutput <| Create (updatePost post) author
+--             _ ->
+--                 simpleOutput internals
+--     OnBodyInput str ->
+--         let
+--             updatePost =
+--                 \p ->
+--                     Post.mapBody
+--                         (str
+--                             |> String.left 100000
+--                             |> Markdown.create
+--                             |> always
+--                         )
+--                         p
+--         in
+--         case internals of
+--             Edit post author ->
+--                 simpleOutput <| Edit (updatePost post) author
+--             Create post author ->
+--                 simpleOutput <| Create (updatePost post) author
+--             _ ->
+--                 simpleOutput internals
+--     OnDescriptionInput str ->
+--         let
+--             updatePost =
+--                 \p ->
+--                     Post.mapDescription
+--                         (str
+--                             |> String.left 256
+--                             |> always
+--                         )
+--                         p
+--         in
+--         case internals of
+--             Edit post author ->
+--                 simpleOutput <| Edit (updatePost post) author
+--             Create post author ->
+--                 simpleOutput <| Create (updatePost post) author
+--             _ ->
+--                 simpleOutput internals
+--     WritePost ->
+--         case internals of
+--             Create post author ->
+--                 { model = internals
+--                 , general = general
+--                 , cmd =
+--                     Api.put
+--                         { url = Api.url (General.mode general) "/post/private/"
+--                         , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
+--                         , body = Http.jsonBody <| Post.encodeFreshFull post
+--                         }
+--                 }
+--             Edit post author ->
+--                 { model = internals
+--                 , general = general
+--                 , cmd =
+--                     Api.post
+--                         { url = Api.url (General.mode general) "/post/private/"
+--                         , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
+--                         , body = Http.jsonBody <| Post.encodeFull post
+--                         }
+--                 }
+--             _ ->
+--                 simpleOutput internals
+--     WritePostRes res ->
+--         let
+--             onOk =
+--                 \post author ->
+--                     { model = Ready post author
+--                     , general = general
+--                     , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Route.Ready <| Post.uuid post)
+--                     }
+--         in
+--         case internals of
+--             Create _ author ->
+--                 case res of
+--                     Ok post ->
+--                         onOk post author
+--                     Err err ->
+--                         withProblem <|
+--                             Problem.create "Failed to create post" (HttpError err) Nothing
+--             Edit _ author ->
+--                 case res of
+--                     Ok post ->
+--                         onOk post author
+--                     Err err ->
+--                         withProblem <|
+--                             Problem.create "Failed to edit post" (HttpError err) Nothing
+--             _ ->
+--                 simpleOutput internals
+--     EditCurrentPost ->
+--         case internals of
+--             Ready post author ->
+--                 { model = internals
+--                 , general = general
+--                 , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Edit <| Post.uuid post)
+--                 }
+--             _ ->
+--                 simpleOutput internals
+--     DeleteCurrentPost ->
+--         case internals of
+--             Ready post author ->
+--                 { model = internals
+--                 , general = general
+--                 , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Delete <| Post.uuid post)
+--                 }
+--             _ ->
+--                 simpleOutput internals
+--     ConfirmDelete ->
+--         case internals of
+--             Delete postUUID ->
+--                 { model = internals
+--                 , general = general
+--                 , cmd =
+--                     Api.delete
+--                         { url = Api.url (General.mode general) (UUID.toPath "/post/owner" postUUID)
+--                         , expect = Http.expectWhatever (OnDelete >> Mod)
+--                         }
+--                 }
+--             _ ->
+--                 simpleOutput internals
+--     OnDelete res ->
+--         case res of
+--             Err err ->
+--                 withProblem <|
+--                     Problem.create "Failed to delete post" (HttpError err) Nothing
+--             Ok _ ->
+--                 { model = internals
+--                 , general = general
+--                 , cmd = Navigation.pushUrl (General.key general) (Route.toPath Home)
+--                 }
+--     TogglePublished ->
+--         case internals of
+--             Edit post author ->
+--                 simpleOutput <| Edit (Post.mapPublished not post) author
+--             Create post author ->
+--                 simpleOutput <| Create (Post.mapPublished not post) author
+--             _ ->
+--                 simpleOutput internals
 {- Util -}
 
 
@@ -475,21 +428,18 @@ type alias PostResult =
 getPost : General -> UUID -> Maybe UUID -> ToInternals -> Cmd ModMsg
 getPost general postUUID maybeUserUUID toInternals =
     let
-        path =
+        isLoggedIn =
             case maybeUserUUID of
                 Just _ ->
-                    UUID.toPath "/post/private" postUUID
+                    True
 
                 Nothing ->
-                    UUID.toPath "/post/public" postUUID
+                    False
 
         mode =
             General.mode general
     in
-    Api.get
-        { url = Api.url mode path
-        , expect = Http.expectJson (GotPost toInternals) Post.fullDecoder
-        }
+    Api.getPost mode GotPost isLoggedIn postUUID
 
 
 redirect404 : General -> Cmd msg
@@ -514,30 +464,26 @@ viewPost general internals =
 
         contents =
             case internals of
-                LoadingReady ->
+                LoadingView _ ->
                     loadingView theme
 
                 Redirect ->
                     [ div [ css [ flexGrow <| num 1 ] ] [] ]
 
-                Ready post author ->
-                    let
-                        authors =
-                            General.authors general
-                    in
-                    readyView general post author
+                View info ->
+                    replaceMeView
 
-                Peek post author ->
-                    peekView general post
+                Peek info ->
+                    replaceMeView
 
-                LoadingEdit ->
+                LoadingEdit _ ->
                     loadingView theme
 
-                Edit post author ->
-                    editView general post author
+                Edit info ->
+                    replaceMeView
 
-                Create post author ->
-                    createView general post author
+                Create info ->
+                    replaceMeView
 
                 Delete postUUID ->
                     deleteView theme postUUID
@@ -555,6 +501,11 @@ viewPost general internals =
         ]
         contents
     ]
+
+
+replaceMeView : Html msg
+replaceMeView =
+    div [] []
 
 
 loadingView : Theme -> List (Html (Compound ModMsg))
@@ -840,10 +791,6 @@ readyView general post author =
 
               else
                 maximize theme []
-            , favorite
-                general
-                post
-                []
             ]
         , Markdown.toHtml
             markdownClass
@@ -867,9 +814,11 @@ viewTags general post =
             General.theme general
 
         tags =
-            Post.tags post
-                |> List.map (\tagUUID -> Tag.find tagUUID (General.tags general))
-                |> List.filterMap identity
+            []
+
+        -- Post.tags post
+        --     |> List.map (\tagUUID -> Tag.find tagUUID (General.tags general))
+        --     |> List.filterMap identity
     in
     div
         [ class "tags-container"
@@ -903,40 +852,6 @@ delete theme styles =
             , Css.batch styles
             ]
         ]
-
-
-favorite : General -> Post Core f -> List Style -> Html (Compound ModMsg)
-favorite general post styles =
-    let
-        theme =
-            General.theme general
-    in
-    case maybeFav of
-        Just fav ->
-            View.Svg.heart
-                [ SvgEvents.onClick <| Global <| GeneralMsg <| TogglePost <| Post.toPreview post
-                , SvgAttributes.css
-                    (List.append
-                        [ svgStyle theme
-                        , marginRight (px 15)
-                        , fillIf fav Color.favorite
-                        , color <|
-                            if fav then
-                                Color.favorite
-
-                            else
-                                Color.tertiaryFont <| theme
-                        , hover
-                            [ fillIf fav Color.favorite
-                            , color Color.favorite
-                            ]
-                        ]
-                        styles
-                    )
-                ]
-
-        Nothing ->
-            text ""
 
 
 fillIf : Bool -> Color -> Style

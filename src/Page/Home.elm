@@ -5,7 +5,7 @@ import Browser.Dom exposing (Viewport)
 import Css exposing (..)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General)
-import Data.Personalize as Personalize exposing (Row)
+import Data.Personalize as Personalize exposing (Card, Row)
 import Data.Post as Post exposing (Core, Post, Preview)
 import Data.Route as Route exposing (Route(..))
 import Data.Tag as Tag exposing (Tag)
@@ -35,7 +35,7 @@ type alias Model =
 type alias Row =
     { index : Int
     , label : String
-    , posts : List (Post Core Preview)
+    , cards : List Card
     }
 
 
@@ -212,7 +212,10 @@ type CardWidth
 
 fromPersonalization : Personalize.Row -> Row
 fromPersonalization row =
-    { row | index = 0 }
+    { label = row.label
+    , cards = row.cards
+    , index = 0
+    }
 
 
 cardSize : Viewport -> Rect
@@ -295,6 +298,9 @@ viewHome general internals =
     let
         theme =
             General.theme general
+
+        maybeScreen =
+            General.screen general
     in
     [ main_
         [ css

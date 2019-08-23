@@ -1,11 +1,12 @@
-module Api exposing (Url, getAuthors, getPostPreviews, getTags, login, logout, onUpdate)
+module Api exposing (Url, getAuthors, getPost, getPostPreviews, getTags, login, logout, onUpdate)
 
 import Data.Author as Author exposing (Author)
 import Data.Login as Login
 import Data.Mode exposing (Mode(..))
 import Data.Password as Password exposing (Password)
-import Data.Post as Post exposing (Core, Post, Preview)
+import Data.Post as Post exposing (Core, Full, Post, Preview)
 import Data.Tag as Tag exposing (Tag)
+import Data.UUID as UUID exposing (UUID)
 import Http exposing (Body, Expect, Header)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -15,11 +16,20 @@ import Json.Encode as Encode exposing (Value)
 {- Model -}
 
 
+type Model r
+    = Model (Internals r)
+
+
+type alias Internals r =
+    { resources : List r
+    }
+
+
 type Url
-    = Url Internals
+    = Url IUrl
 
 
-type alias Internals =
+type alias IUrl =
     { mode : Mode
     , path : String
     }
@@ -29,8 +39,29 @@ type alias Internals =
 {- Public API -}
 
 
+resources : Model r -> List r
+resources (Model internals) =
+    internals.resources
+
+
 type alias MsgConstructor resource msg =
     Result Http.Error resource -> msg
+
+
+getPost : Mode -> MsgConstructor (Post Core Full) msg -> Bool -> UUID -> Cmd msg
+getPost mode createMsg isLoggedIn postUUID =
+    let
+        path =
+            if isLoggedIn then
+                UUID.toPath "/post/private" postUUID
+
+            else
+                UUID.toPath "/post/public" postUUID
+    in
+    get
+        { expect = Http.expectJson createMsg Post.fullDecoder
+        , url = url mode path
+        }
 
 
 getTags : Mode -> MsgConstructor (List Tag) msg -> Int -> Cmd msg
@@ -137,7 +168,7 @@ paginationSize =
 
 url : Mode -> String -> Url
 url mode path =
-    Url <| Internals mode path
+    Url <| IUrl mode path
 
 
 urlToString : Url -> String

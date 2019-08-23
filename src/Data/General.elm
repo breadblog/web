@@ -477,16 +477,7 @@ togglePostList : Post Core Preview -> List (Post Core Preview) -> List (Post Cor
 togglePostList post list =
     List.Extra.updateIf
         (Post.compare post)
-        (Post.mapFavorite
-            (\m ->
-                case m of
-                    Just b ->
-                        Just <| not b
-
-                    Nothing ->
-                        Nothing
-            )
-        )
+        (Post.mapFavorite not)
         list
 
 
