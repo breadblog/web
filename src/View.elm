@@ -6,7 +6,6 @@ import Html
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (..)
-import Message exposing (Msg)
 import Model exposing (Model, Route(..))
 import Page.DarkPost
 import Page.Home

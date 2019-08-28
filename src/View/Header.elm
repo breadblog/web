@@ -34,17 +34,16 @@ type alias Internals =
     { searchTerm : String
     , searchOpen : Bool
     , drawerOpenOnMobile : Bool
-    , route : Route
     }
 
 
-init : Route -> Model
-init route =
-    { searchTerm = ""
-    , searchOpen = False
-    , drawerOpenOnMobile = False
-    , route = route
-    }
+init : Model
+init =
+    Model
+        { searchTerm = ""
+        , searchOpen = False
+        , drawerOpenOnMobile = False
+        }
 
 
 
@@ -72,12 +71,12 @@ update msg model =
         ( updatedInternals, cmd ) =
             case msg of
                 OpenSearch ->
-                    ( { internals | searchBarFocused = True }
+                    ( { internals | searchOpen = True }
                     , Cmd.none
                     )
 
                 CloseSearch ->
-                    ( { internals | searchBarFocused = False, searchTerm = "" }
+                    ( { internals | searchOpen = False, searchTerm = "" }
                     , Cmd.none
                     )
 
@@ -87,41 +86,33 @@ update msg model =
                     )
 
                 ToggleDrawer ->
-                    { internals | drawerOpenOnMobile = not internals.drawerOpenOnMobile }
+                    ( { internals | drawerOpenOnMobile = not internals.drawerOpenOnMobile }
+                    , Cmd.none
+                    )
     in
     ( Model updatedInternals, cmd )
-
-
-focusSearch : Bool -> Model -> Model
-focusSearch value model =
-    let
-        searchTerm =
-            if value == False then
-                ""
-
-            else
-                model.searchTerm
-
-        searchOpenOnMobile =
-            value
-    in
-    { model | searchBarFocused = value, searchTerm = searchTerm, searchOpenOnMobile = searchOpenOnMobile }
 
 
 
 {- View -}
 
 
-view : Theme -> List Author -> List Tag -> Model -> List (Html Msg)
-view theme authors tags model =
-    viewHeader theme authors tags model
+view : General -> List Author -> List Tag -> Model -> List (Html Msg)
+view general authors tags model =
+    viewHeader general authors tags model
 
 
-viewHeader : Theme -> List Author -> List Tag -> Model -> List (Html Msg)
-viewHeader theme authors tags model =
+viewHeader : General -> List Author -> List Tag -> Model -> List (Html Msg)
+viewHeader general authors tags (Model internals) =
     let
         sources =
             []
+
+        theme =
+            General.theme general
+
+        route =
+            General.route general
     in
     [ header
         [ css
@@ -138,7 +129,7 @@ viewHeader theme authors tags model =
             ]
         ]
         -- MOBILE
-        [ drawerMenu <| not model.searchOpenOnMobile
+        [ drawerMenu <| not internals.searchOpen
 
         -- DESKTOP
         , fixedSpacer Screen.desktop <| px 25
@@ -149,11 +140,11 @@ viewHeader theme authors tags model =
 
         -- BOTH
         , spacer Screen.desktop
-        , searchBar theme model.searchOpenOnMobile model.searchTerm
+        , searchBar theme internals.searchOpen internals.searchTerm
         , spacer Screen.desktop
 
         -- MOBILE
-        , title theme model.route (not model.searchOpenOnMobile)
+        , title theme route (not internals.searchOpen)
 
         -- DESKTOP
         , dropdown Screen.desktop theme "theme" <| themeContent theme
@@ -166,17 +157,17 @@ viewHeader theme authors tags model =
         , fixedSpacer Screen.desktop (px 25)
 
         -- MOBILE
-        , searchOpen <| not model.searchOpenOnMobile
+        , searchOpen <| not internals.searchOpen
         ]
 
     -- search bar overlay: header > overlay > content
-    , searchOverlay theme model.searchBarFocused 10
+    , searchOverlay theme internals.searchOpen 10
 
     -- drawer overlay: drawer > overlay > header > content
-    , drawerOverlay theme model.drawerOpenOnMobile 20
+    , drawerOverlay theme internals.drawerOpenOnMobile 20
 
     -- drawer: drawer > header
-    , drawer theme model.drawerOpenOnMobile 25
+    , drawer theme internals.drawerOpenOnMobile 25
     ]
 
 
@@ -392,27 +383,27 @@ logo shownScreens theme =
 tagsContent : Theme -> List Tag -> List (Html Msg)
 tagsContent theme =
     List.map
-        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (Global <| GeneralMsg <| ToggleTag t))
+        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (ToggleTag t))
 
 
 
 -- Authors
 
 
-authorsContent : Theme -> List Author -> List (Html (Compound Msg))
+authorsContent : Theme -> List Author -> List (Html Msg)
 authorsContent theme =
     List.map
-        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (Global <| GeneralMsg <| ToggleAuthor a))
+        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (GeneralMsg << ToggleAuthor a))
 
 
 
 -- Theme --
 
 
-themeContent : Theme -> List (Html (Compound Msg))
+themeContent : Theme -> List (Html Msg)
 themeContent theme =
     List.map
-        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (Global <| GeneralMsg <| SetTheme t))
+        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (SetTheme t))
         Theme.all
 
 
@@ -496,7 +487,7 @@ drawer theme show zInd =
 -- Overlay
 
 
-overlay : Theme -> List Screen -> Bool -> Int -> Compound Msg -> Html (Compound Msg)
+overlay : Theme -> List Screen -> Bool -> Int -> Msg -> Html Msg
 overlay theme screens show zInd msg =
     div
         [ class "content-overlay"
@@ -519,14 +510,14 @@ overlay theme screens show zInd msg =
         []
 
 
-searchOverlay : Theme -> Bool -> Int -> Html (Compound Msg)
+searchOverlay : Theme -> Bool -> Int -> Html Msg
 searchOverlay theme show zInd =
-    overlay theme Screen.all show zInd (Mod <| FocusSearch False)
+    overlay theme Screen.all show zInd CloseSearch
 
 
-drawerOverlay : Theme -> Bool -> Int -> Html (Compound Msg)
+drawerOverlay : Theme -> Bool -> Int -> Html Msg
 drawerOverlay theme show zInd =
-    overlay theme Screen.mobile show zInd (Mod <| ToggleDrawer)
+    overlay theme Screen.mobile show zInd ToggleDrawer
 
 
 

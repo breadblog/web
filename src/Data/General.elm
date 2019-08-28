@@ -1,7 +1,7 @@
-port module Data.General exposing (General, Msg(..), authors, flagsDecoder, focus, fullscreen, fullscreenSub, init, key, mapUser, mode, networkSub, postPreviews, problems, pushProblem, tags, theme, update, updateAuthors, user, version)
+port module Data.General exposing (General, Msg(..), authors, changeRoute, flagsDecoder, focus, fullscreen, fullscreenSub, init, mapUser, mode, networkSub, postPreviews, problems, pushProblem, route, tags, theme, update, updateAuthors, user, version)
 
 import Api exposing (Url)
-import Browser.Navigation exposing (Key)
+import Browser.Navigation as Nav exposing (Key)
 import Data.Author as Author exposing (Author)
 import Data.Config exposing (Config)
 import Data.Markdown as Markdown
@@ -47,21 +47,22 @@ type alias IGeneral =
     , network : Network
     , temp : Temp
     , fullscreen : Bool
+    , route : Route
     }
 
 
 type alias Cache =
     { version : Version
+    , theme : Theme
+    , user : Maybe UUID
     , postPreviews : List (Post Core Preview)
     , tags : List Tag
     , authors : List Author
-    , theme : Theme
-    , user : Maybe UUID
     }
 
 
 type alias Temp =
-    { previews : List (Post Core Preview)
+    { postPreviews : List (Post Core Preview)
     , authors : List Author
     , tags : List Tag
     }
@@ -71,8 +72,8 @@ type alias Temp =
 {- Constructors -}
 
 
-init : Key -> Value -> ( General, Cmd Msg )
-init key_ flags =
+init : Key -> Route -> Value -> ( General, Cmd Msg )
+init applicationKey initialRoute flags =
     let
         ( decoded, cacheProblems ) =
             case Version.current of
@@ -107,7 +108,8 @@ init key_ flags =
 
         general =
             { cache = decoded.cache
-            , key = key_
+            , key = applicationKey
+            , route = initialRoute
             , problems = cacheProblems
             , config = initConfig decoded
             , network = decoded.network
@@ -187,6 +189,7 @@ type Msg
     | UpdateFullscreen Bool
     | PushProblem (Problem Msg)
     | GoBack
+    | UpdateRoute Route
 
 
 
@@ -207,6 +210,11 @@ update msg general =
 
         ( newGeneral, cmd ) =
             case msg of
+                UpdateRoute updatedRoute ->
+                    ( General { internals | route = updatedRoute }
+                    , Cmd.none
+                    )
+
                 SetTheme theme_ ->
                     updateCache general { cache | theme = theme_ }
 
@@ -316,8 +324,8 @@ update msg general =
                             , Cmd.none
                             )
 
-                NavigateTo route ->
-                    navigateTo route general
+                NavigateTo targetRoute ->
+                    navigateTo targetRoute general
 
                 ReportErr _ ->
                     ( general, Cmd.none )
@@ -346,7 +354,7 @@ update msg general =
 
                 GoBack ->
                     ( general
-                    , Browser.Navigation.back (key general) 1
+                    , back general 1
                     )
     in
     ( newGeneral
@@ -357,16 +365,13 @@ update msg general =
 
 
 updateCache : General -> Cache -> ( General, Cmd Msg )
-updateCache general iCache =
+updateCache general cache =
     let
         (General internals) =
             general
-
-        cache_ =
-            Cache iCache
     in
-    ( General { internals | cache = cache_ }
-    , setCache <| cache_
+    ( General { internals | cache = cache }
+    , setCache <| cache
     )
 
 
@@ -376,16 +381,20 @@ dismissProblem index (General internals) =
 
 
 navigateTo : Route -> General -> ( General, Cmd msg )
-navigateTo route general =
+navigateTo routeTarget general =
     ( general
-    , Browser.Navigation.pushUrl (key general) (Route.toPath route)
+    , pushUrl general (Route.toPath routeTarget)
     )
 
 
-mapCache : Cache -> General -> ( General, Cmd msg )
-mapCache cache_ (General general_) =
-    ( General { general_ | cache = cache_ }
-    , setCache cache_
+mapCache : (Cache -> Cache) -> General -> ( General, Cmd msg )
+mapCache transform (General internals) =
+    let
+        cache =
+            transform internals.cache
+    in
+    ( General { internals | cache = cache }
+    , setCache cache
     )
 
 
@@ -396,6 +405,59 @@ updateTemp general temp =
             general
     in
     General { internals | temp = temp }
+
+
+toggleTagList : Tag -> List Tag -> List Tag
+toggleTagList tag =
+    let
+        toggled =
+            Tag.mapWatched (\n -> not n) tag
+    in
+    List.map
+        (\t ->
+            if t == tag then
+                toggled
+
+            else
+                t
+        )
+
+
+togglePostList : Post Core Preview -> List (Post Core Preview) -> List (Post Core Preview)
+togglePostList post list =
+    List.Extra.updateIf
+        (Post.compare post)
+        (Post.mapFavorite
+            (\m ->
+                case m of
+                    Just b ->
+                        Just <| not b
+
+                    Nothing ->
+                        Nothing
+            )
+        )
+        list
+
+
+toggleAuthorList : Author -> List Author -> List Author
+toggleAuthorList author =
+    let
+        toggled =
+            Author.mapWatched not author
+    in
+    List.map
+        (\a ->
+            if a == author then
+                toggled
+
+            else
+                a
+        )
+
+
+
+{- HTTP -}
 
 
 type alias UpdateResourceInfo t =
@@ -498,59 +560,6 @@ updateResource info =
             ( updatedGeneral, Cmd.none )
 
 
-toggleTagList : Tag -> List Tag -> List Tag
-toggleTagList tag =
-    let
-        toggled =
-            Tag.mapWatched (\n -> not n) tag
-    in
-    List.map
-        (\t ->
-            if t == tag then
-                toggled
-
-            else
-                t
-        )
-
-
-togglePostList : Post Core Preview -> List (Post Core Preview) -> List (Post Core Preview)
-togglePostList post list =
-    List.Extra.updateIf
-        (Post.compare post)
-        (Post.mapFavorite
-            (\m ->
-                case m of
-                    Just b ->
-                        Just <| not b
-
-                    Nothing ->
-                        Nothing
-            )
-        )
-        list
-
-
-toggleAuthorList : Author -> List Author -> List Author
-toggleAuthorList author =
-    let
-        toggled =
-            Author.mapWatched not author
-    in
-    List.map
-        (\a ->
-            if a == author then
-                toggled
-
-            else
-                a
-        )
-
-
-
-{- HTTP -}
-
-
 updateAuthors : General -> Cmd Msg
 updateAuthors general =
     updateAuthorsAt general 0
@@ -651,6 +660,25 @@ tryLogout general =
 
 
 
+{- Navigation -}
+
+
+pushUrl : General -> String -> Cmd msg
+pushUrl =
+    toInternals >> .key >> Nav.pushUrl
+
+
+replaceUrl : General -> String -> Cmd msg
+replaceUrl =
+    toInternals >> .key >> Nav.replaceUrl
+
+
+back : General -> Int -> Cmd msg
+back =
+    toInternals >> .key >> Nav.back
+
+
+
 {- Ports -}
 
 
@@ -713,6 +741,13 @@ fullscreenSub =
 {- Accessors (public) -}
 
 
+route : General -> Route
+route general =
+    general
+        |> toInternals
+        |> .route
+
+
 fullscreen : General -> Bool
 fullscreen (General internals) =
     internals.fullscreen
@@ -721,6 +756,7 @@ fullscreen (General internals) =
 version : General -> Version
 version general =
     general
+        |> toInternals
         |> .cache
         |> .version
 
@@ -728,6 +764,7 @@ version general =
 theme : General -> Theme
 theme general =
     general
+        |> toInternals
         |> .cache
         |> .theme
 
@@ -735,6 +772,7 @@ theme general =
 tags : General -> List Tag
 tags general =
     general
+        |> toInternals
         |> .cache
         |> .tags
 
@@ -742,6 +780,7 @@ tags general =
 authors : General -> List Author
 authors general =
     general
+        |> toInternals
         |> .cache
         |> .authors
 
@@ -749,6 +788,7 @@ authors general =
 postPreviews : General -> List (Post Core Preview)
 postPreviews general =
     general
+        |> toInternals
         |> .cache
         |> .postPreviews
 
@@ -756,6 +796,7 @@ postPreviews general =
 user : General -> Maybe UUID
 user general =
     general
+        |> toInternals
         |> .cache
         |> .user
 
@@ -766,14 +807,7 @@ user general =
 
 mapUser : UUID -> General -> ( General, Cmd msg )
 mapUser uuid general =
-    let
-        (General internals) =
-            general
-
-        cache =
-            internals.cache
-    in
-    mapCache (Cache { cache | user = Just uuid }) general
+    mapCache (\c -> { c | user = Just uuid }) general
 
 
 problems : General -> List (Problem Msg)
@@ -787,14 +821,25 @@ pushProblem problem (General general) =
         |> General
 
 
-key : General -> Key
-key (General internals) =
-    internals.key
-
-
 mode : General -> Mode
 mode (General internals) =
     internals.config.mode
+
+
+{-| Although "Key" is not used, it enforces that only Main can call this transform
+-}
+changeRoute : Key -> Route -> General -> General
+changeRoute _ freshRoute (General internals) =
+    General { internals | route = freshRoute }
+
+
+
+{- Accessors (private) -}
+
+
+toInternals : General -> IGeneral
+toInternals (General internals) =
+    internals
 
 
 
@@ -815,16 +860,16 @@ cacheDecoder =
     Decode.succeed Cache
         |> required "version" Data.Version.decoder
         |> required "theme" Theme.decoder
+        |> optional "user" (Decode.nullable UUID.decoder) Nothing
+        |> optional "postPreviews"
+            (Decode.list <| Post.previewDecoder <| Just False)
+            []
         |> optional "tags"
             (Decode.list Tag.decoder)
             []
         |> optional "authors"
             (Decode.list Author.decoder)
             []
-        |> optional "postPreviews"
-            (Decode.list <| Post.previewDecoder <| Just False)
-            []
-        |> optional "user" (Decode.nullable UUID.decoder) Nothing
 
 
 defaultCacheDecoder : Version -> Decoder Cache

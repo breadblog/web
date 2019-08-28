@@ -13,7 +13,6 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, id)
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
-import Message exposing (Compound(..), Msg(..))
 import Page.About
 import Page.Changelog
 import Page.Donate
@@ -33,7 +32,18 @@ import Url exposing (Url)
 -- Model --
 
 
-type Model
+type alias Model =
+    { page : PageModel
+
+    {-
+       It is ok for key to be duplicated here and in general
+       because it is impossible to have conflicting values
+    -}
+    , key : Key
+    }
+
+
+type PageModel
     = Redirect General
       -- | NotFound General
       -- | About Page.About.Model
@@ -181,7 +191,10 @@ changeRoute : Route -> Model -> ( Model, Cmd Msg )
 changeRoute route model =
     let
         general =
-            toGeneral model
+            model
+                |> .page
+                |> toGeneral
+                |> General.changeRoute model.key route
 
         ( pageModel, cmd ) =
             case route of

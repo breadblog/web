@@ -20,7 +20,6 @@ import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events as Events exposing (onClick, onInput)
 import Http
 import List.Extra
-import Message exposing (Compound(..), Msg(..))
 import Style.Button
 import Style.Card
 import Style.Color as Color
@@ -31,7 +30,6 @@ import Style.Shadow as Shadow
 import Svg.Styled.Attributes as SvgAttributes
 import Svg.Styled.Events as SvgEvents
 import Time
-import Update
 import View.Loading
 import View.Page as Page exposing (PageUpdateOutput)
 import View.Svg
