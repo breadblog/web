@@ -11,10 +11,8 @@ import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events as Events exposing (onClick, onInput)
 import Http
 import Json.Decode
-import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
-import Update
-import View.Page as Page exposing (PageUpdateOutput)
+import View.Page as Page
 
 
 
@@ -22,106 +20,94 @@ import View.Page as Page exposing (PageUpdateOutput)
 
 
 type alias Model =
-    Page.PageModel Internals
+    Model Internals
 
 
 type alias Internals =
     { username : String
     , password : Password
     , error : Maybe String
+    , general : General
     }
 
 
-init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
-init =
-    Page.init initInternals Cmd.none Login
-
-
-initInternals : Internals
-initInternals =
-    { username = ""
-    , password = Password.create ""
-    , error = Nothing
-    }
+init : General -> ( Model, Cmd Msg )
+init general =
+    Model
+        { username = ""
+        , password = Password.create ""
+        , error = Nothing
+        , general = general
+        }
 
 
 toGeneral : Model -> General
-toGeneral =
-    Page.toGeneral
+toGeneral (Model internals) =
+    internals.general
 
 
 fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
+fromGeneral general (Model internals) =
+    Model { internals | general = general }
 
 
 
 {- Message -}
 
 
-type alias Msg =
-    Page.Msg ModMsg
-
-
-type ModMsg
+type Msg
     = OnLogin (Result Http.Error Data.Login.Response)
     | TryLogin
     | UpdateUsername String
     | UpdatePassword Password
     | InputKeyUp Int
+    | GeneralMsg General.Msg
 
 
 
 {- Update -}
 
 
-update : Msg -> Model -> PageUpdateOutput ModMsg Internals
-update =
-    Page.update updateMod
-
-
-updateMod : ModMsg -> General -> Internals -> Update.Output ModMsg Internals
-updateMod msg general internals =
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    let
+        (Model internals) =
+            model
+    in
     case msg of
         OnLogin res ->
             case res of
                 Err err ->
-                    { model = { internals | error = Just "failed to login" }
-                    , general = general
-                    , cmd = Cmd.none
-                    }
+                    ( Model { internals | error = Just "failed to login" }
+                    , Cmd.none
+                    )
 
                 Ok info ->
                     let
-                        ( updated, cmd ) =
-                            General.mapUser info.uuid general
+                        ( updatedGeneral, generalCmd ) =
+                            General.mapUser info.uuid internals.general
+
+                        cmd =
+                            Cmd.map GeneralMsg generalCmd
                     in
-                    { model = internals
-                    , general = updated
-                    , cmd = cmd
-                    }
+                    ( Model { internals | general = updatedGeneral }
+                    , cmd
+                    )
 
         TryLogin ->
-            let
-                cmd =
-                    attemptLogin general internals.username internals.password
-            in
-            { model = internals
-            , general = general
-            , cmd = cmd
-            }
+            ( model
+            , attemptLogin general internals.username internals.password
+            )
 
         UpdateUsername username ->
-            { model = { internals | username = username }
-            , general = general
-            , cmd = Cmd.none
-            }
+            ( Model { internals | username = username }
+            , Cmd.none
+            )
 
         UpdatePassword password ->
-            { model = { internals | password = password }
-            , general = general
-            , cmd = Cmd.none
-            }
+            ( Model { internals | password = password }
+            , Cmd.none
+            )
 
         InputKeyUp code ->
             let
@@ -134,10 +120,9 @@ updateMod msg general internals =
                         _ ->
                             Cmd.none
             in
-            { model = internals
-            , general = general
-            , cmd = cmd
-            }
+            ( model
+            , cmd
+            )
 
 
 attemptLogin : General -> String -> Password -> Cmd (Compound ModMsg)

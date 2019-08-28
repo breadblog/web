@@ -1,4 +1,4 @@
-module View.Footer exposing (Model, Msg, init, update, view)
+module View.Footer exposing (view)
 
 import Css exposing (..)
 import Css.Transitions as Transitions exposing (transition)
@@ -8,11 +8,9 @@ import Data.Theme exposing (Theme)
 import Data.Version exposing (Version)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
-import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Svg.Styled.Attributes
-import Update
 import View.Svg as Svg exposing (Icon)
 
 
@@ -27,69 +25,22 @@ type alias Profile =
 -- Model --
 
 
-type alias Model =
-    { page : FooterPage
-    }
-
-
-
-{--
-    Mobile only, the footer page is used to determine whether
-    to show the user one of the menus that would be provided
-    to a desktop user via a dropdown (dropup in this case)
---}
-
-
 type FooterPage
     = None
     | Github
     | LinkedIn
 
 
-init : Model
-init =
-    { page = None
-    }
-
-
-
--- Message --
-
-
-type Msg
-    = SetPage FooterPage
-
-
-
--- Update --
-
-
-update : Msg -> General -> Model -> Update.Output Msg Model
-update msg general model =
-    let
-        simpleOutput m =
-            { model = m
-            , cmd = Cmd.none
-            , general = general
-            }
-    in
-    case msg of
-        SetPage page ->
-            simpleOutput { model | page = page }
-
-
 
 -- View --
 
 
-view : (Compound Msg -> msg) -> Theme -> Version -> List (Html msg)
-view transform theme version =
-    List.map
-        (Html.Styled.map transform)
-        (viewFooter theme version)
+view : Theme -> Version -> List (Html msg)
+view theme version =
+    viewFooter theme version
 
 
-viewFooter : Theme -> Version -> List (Html (Compound Msg))
+viewFooter : Theme -> Version -> List (Html msg)
 viewFooter theme version =
     [ footer
         [ css
@@ -108,7 +59,7 @@ viewFooter theme version =
     ]
 
 
-footerLeft : Theme -> Version -> Html (Compound msg)
+footerLeft : Theme -> Version -> Html msg
 footerLeft theme version =
     div
         [ css
@@ -133,7 +84,7 @@ footerLeft theme version =
         ]
 
 
-footerRight : Theme -> Html (Compound msg)
+footerRight : Theme -> Html msg
 footerRight theme =
     div
         [ css
@@ -145,33 +96,6 @@ footerRight theme =
         [ options theme Svg.linkedin linkedinData
         , options theme Svg.github githubData
         ]
-
-
-
--- (List.map
---     (\x ->
---         a
---             [ href x.path
---             , Attr.target "_blank"
---             , css
---                 [ textDecoration none
---                 , color inherit
---                 ]
---             ]
---         [ x.icon
---             [ SvgAttr.css
---                 [ margin (px 5) ]
---             ]
---         ]
---     )
---     [ { icon = Svg.github
---       , path = "https://www.google.com"
---       }
---     , { icon = Svg.linkedin
---       , path = "https://www.google.com"
---       }
---     ]
--- )
 
 
 options : Theme -> Icon msg -> List Profile -> Html msg

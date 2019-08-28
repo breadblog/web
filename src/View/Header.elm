@@ -1,4 +1,4 @@
-module View.Header exposing (Model, Msg(..), init, update, view)
+module View.Header exposing (Model, Msg, init, update, view)
 
 import Css exposing (..)
 import Css.Media as Media exposing (only, screen, withMedia)
@@ -13,82 +13,36 @@ import Data.Username as Username exposing (Username)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events exposing (onBlur, onClick, onFocus, onInput)
-import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Style.Font as Font
 import Style.Screen as Screen exposing (Screen(..))
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes
-import Update
 import View.Svg as Svg
 
 
 
-{-
-   Application Header
-   ==================
-
-   Although this is on many of the pages in the application, this is not
-   a hard and fast rule. There are several pages where we might not want
-   to show the header (such as the error pages) where we want more fine
-   tuned control over how the user navigates on a page
-
-   Layouts
-   =======
-
-   The header supports two different layouts, depending on screen it is
-   being used on
-
-   Full
-   ----
-
-   The full experience makes use of the extra space and dexterity using
-   a series of dropdowns & links for navigation and for more accessible
-   control of displayed content
-
-   ---------------------------------------
-   | Logo Dropdowns Search Links Profile |
-   ---------------------------------------
-
-   Mobile
-   ------
-
-   The mobile experience has to accommodate the fat fingered among us,
-   so everything needs to be either clickable or toggleable. Hence the
-   addition of a hamburger menu which opens into a drawer on the left,
-   allowing navigation to the different pages here. Control over content
-   is not accessible from the header in this layout
-
-   ---------------------------------------
-   | Hamburger                    Search |
-   ---------------------------------------
-   |                   |
-   |   Home            |
-   |   Authors         |
-   |   About           |
-   |   Donate          |
-   |                   |
-
--}
 {- Model -}
 
 
-type alias Model =
-    { searchBarFocused : Bool
-    , searchTerm : String
+type Model
+    = Model Internals
+
+
+type alias Internals =
+    { searchTerm : String
+    , searchOpen : Bool
     , drawerOpenOnMobile : Bool
-    , searchOpenOnMobile : Bool
     , route : Route
     }
 
 
 init : Route -> Model
 init route =
-    { searchBarFocused = False
-    , searchTerm = ""
+    { searchTerm = ""
+    , searchOpen = False
     , drawerOpenOnMobile = False
-    , searchOpenOnMobile = False
     , route = route
     }
 
@@ -98,7 +52,8 @@ init route =
 
 
 type Msg
-    = FocusSearch Bool
+    = OpenSearch
+    | CloseSearch
     | SetSearchTerm String
     | ToggleDrawer
     | ToggleSearch
@@ -108,47 +63,33 @@ type Msg
 {- Update -}
 
 
-update : Msg -> General -> Model -> Update.Output Msg Model
-update msg general model =
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
     let
-        simpleOutput m =
-            { model = m
-            , cmd = Cmd.none
-            , general = general
-            }
+        (Model internals) =
+            model
+
+        ( updatedInternals, cmd ) =
+            case msg of
+                OpenSearch ->
+                    ( { internals | searchBarFocused = True }
+                    , Cmd.none
+                    )
+
+                CloseSearch ->
+                    ( { internals | searchBarFocused = False, searchTerm = "" }
+                    , Cmd.none
+                    )
+
+                SetSearchTerm value ->
+                    ( { internals | searchTerm = value }
+                    , Cmd.none
+                    )
+
+                ToggleDrawer ->
+                    { internals | drawerOpenOnMobile = not internals.drawerOpenOnMobile }
     in
-    case msg of
-        FocusSearch value ->
-            simpleOutput <| focusSearch value model
-
-        SetSearchTerm value ->
-            simpleOutput <| { model | searchTerm = value }
-
-        ToggleDrawer ->
-            simpleOutput <| { model | drawerOpenOnMobile = not model.drawerOpenOnMobile }
-
-        ToggleSearch ->
-            let
-                focusedModel =
-                    focusSearch True model
-
-                updatedValue =
-                    not model.searchOpenOnMobile
-
-                updatedModel =
-                    { focusedModel | searchOpenOnMobile = updatedValue }
-
-                cmd =
-                    if updatedValue then
-                        General.focus "search"
-
-                    else
-                        Cmd.none
-            in
-            { model = updatedModel
-            , cmd = cmd
-            , general = general
-            }
+    ( Model updatedInternals, cmd )
 
 
 focusSearch : Bool -> Model -> Model
@@ -171,19 +112,16 @@ focusSearch value model =
 {- View -}
 
 
-view : (Compound Msg -> msg) -> Theme -> List Author -> List Tag -> Model -> List (Html msg)
-view transform theme authors tags model =
-    List.map
-        (Html.Styled.map transform)
-        (viewHeader theme authors tags model)
+view : Theme -> List Author -> List Tag -> Model -> List (Html Msg)
+view theme authors tags model =
+    viewHeader theme authors tags model
 
 
-viewHeader : Theme -> List Author -> List Tag -> Model -> List (Html (Compound Msg))
+viewHeader : Theme -> List Author -> List Tag -> Model -> List (Html Msg)
 viewHeader theme authors tags model =
     let
         sources =
-            [ Tag.toSource (Global NoOp) tags
-            ]
+            []
     in
     [ header
         [ css
@@ -219,8 +157,10 @@ viewHeader theme authors tags model =
 
         -- DESKTOP
         , dropdown Screen.desktop theme "theme" <| themeContent theme
-        , navLink Screen.desktop theme "about" About
-        , navLink Screen.desktop theme "donate" Donate
+
+        -- TODO: uncomment
+        -- , navLink Screen.desktop theme "about" About
+        -- , navLink Screen.desktop theme "donate" Donate
         , spacer Screen.desktop
         , profile Screen.desktop theme
         , fixedSpacer Screen.desktop (px 25)
@@ -244,7 +184,7 @@ viewHeader theme authors tags model =
 -- Search
 
 
-searchBar : Theme -> Bool -> String -> Html (Compound Msg)
+searchBar : Theme -> Bool -> String -> Html Msg
 searchBar theme openOnMobile searchTerm =
     div
         [ class "search-bar"
@@ -289,9 +229,8 @@ searchBar theme openOnMobile searchTerm =
                 , fontSize (rem 1)
                 , fontFamilies Font.montserrat
                 ]
-            , onInput (\s -> Mod <| SetSearchTerm s)
-            , onFocus <| Mod (FocusSearch True)
-            , onBlur <| Mod (FocusSearch False)
+            , onInput SetSearchTerm
+            , onFocus OpenSearch
             , value searchTerm
             ]
             []
@@ -313,7 +252,7 @@ searchBar theme openOnMobile searchTerm =
 -- MOBILE --
 
 
-drawerMenu : Bool -> Html (Compound Msg)
+drawerMenu : Bool -> Html Msg
 drawerMenu showOnMobile =
     let
         iconSize =
@@ -335,7 +274,7 @@ drawerMenu showOnMobile =
                 else
                     [ display none ]
             ]
-        , onClick <| Mod <| ToggleDrawer
+        , onClick ToggleDrawer
         ]
         [ Svg.menu
             [ Svg.Styled.Attributes.css
@@ -346,7 +285,7 @@ drawerMenu showOnMobile =
         ]
 
 
-searchOpen : Bool -> Html (Compound Msg)
+searchOpen : Bool -> Html Msg
 searchOpen showOnMobile =
     let
         iconSize =
@@ -368,7 +307,7 @@ searchOpen showOnMobile =
                 else
                     [ display none ]
             ]
-        , onClick <| Mod <| ToggleSearch
+        , onClick ToggleSearch
         ]
         [ Svg.search
             [ Svg.Styled.Attributes.css
@@ -450,7 +389,7 @@ logo shownScreens theme =
 -- Tags
 
 
-tagsContent : Theme -> List Tag -> List (Html (Compound Msg))
+tagsContent : Theme -> List Tag -> List (Html Msg)
 tagsContent theme =
     List.map
         (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (Global <| GeneralMsg <| ToggleTag t))

@@ -1,4 +1,4 @@
-module Page.Donate exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.Donate exposing (view)
 
 import Css exposing (..)
 import Data.General as General exposing (General)
@@ -8,84 +8,22 @@ import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
-import Message exposing (Compound)
 import Style.Card as Card
 import Style.Color as Color
 import Style.Post
 import Style.Screen as Screen exposing (Screen(..))
 import Svg.Styled.Attributes as SvgAttr
-import Update
-import View.Page as Page exposing (PageUpdateOutput)
+import View.Page as Page
 import View.Svg as Svg
 
 
-
--- Model --
-
-
-type alias Model =
-    Page.PageModel Internals
+view : General -> Html msg
+view general =
+    Page.viewSimple general viewDonate
 
 
-type alias Internals =
-    {}
-
-
-init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
-init =
-    Page.init {} Cmd.none Donate
-
-
-toGeneral : Model -> General
-toGeneral =
-    Page.toGeneral
-
-
-fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
-
-
-
--- Message --
-
-
-type alias Msg =
-    Page.Msg ModMsg
-
-
-type ModMsg
-    = NoOp
-
-
-
--- Update --
-
-
-update : Msg -> Model -> PageUpdateOutput ModMsg Internals
-update =
-    Page.update updateMod
-
-
-updateMod : msg -> General -> Internals -> Update.Output ModMsg Internals
-updateMod _ general internals =
-    { model = internals
-    , general = general
-    , cmd = Cmd.none
-    }
-
-
-
--- View --
-
-
-view : Model -> Page.ViewResult msg
-view model =
-    Page.view model viewDonate
-
-
-viewDonate : General -> Internals -> List (Html (Compound m))
-viewDonate general _ =
+viewDonate : General -> List (Html msg)
+viewDonate general =
     let
         theme =
             General.theme general

@@ -8,8 +8,7 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound)
-import Update
-import View.Page as Page exposing (PageUpdateOutput)
+import View.Page as Page
 
 
 
@@ -17,7 +16,7 @@ import View.Page as Page exposing (PageUpdateOutput)
 
 
 type alias Model =
-    Page.PageModel Internals
+    Model Internals
 
 
 type alias Internals =

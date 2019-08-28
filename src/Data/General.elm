@@ -50,22 +50,18 @@ type alias IGeneral =
     }
 
 
-type Cache
-    = Cache ICache
-
-
-type alias ICache =
+type alias Cache =
     { version : Version
-    , theme : Theme
+    , postPreviews : List (Post Core Preview)
     , tags : List Tag
     , authors : List Author
-    , postPreviews : List (Post Core Preview)
+    , theme : Theme
     , user : Maybe UUID
     }
 
 
 type alias Temp =
-    { postPreviews : List (Post Core Preview)
+    { previews : List (Post Core Preview)
     , authors : List Author
     , tags : List Tag
     }
@@ -139,7 +135,6 @@ defaultCache currentVersion =
     , postPreviews = []
     , user = Nothing
     }
-        |> Cache
 
 
 defaultTemp =
@@ -201,11 +196,11 @@ type Msg
 update : Msg -> General -> ( General, Cmd Msg )
 update msg general =
     let
-        (Cache iCache) =
-            cache general
-
         (General internals) =
             general
+
+        cache =
+            internals.cache
 
         temp =
             internals.temp
@@ -213,28 +208,28 @@ update msg general =
         ( newGeneral, cmd ) =
             case msg of
                 SetTheme theme_ ->
-                    updateCache general { iCache | theme = theme_ }
+                    updateCache general { cache | theme = theme_ }
 
                 ToggleTag tag ->
                     let
                         tags_ =
-                            toggleTagList tag iCache.tags
+                            toggleTagList tag cache.tags
                     in
-                    updateCache general { iCache | tags = tags_ }
+                    updateCache general { cache | tags = tags_ }
 
                 ToggleAuthor author ->
                     let
                         authors_ =
-                            toggleAuthorList author iCache.authors
+                            toggleAuthorList author cache.authors
                     in
-                    updateCache general { iCache | authors = authors_ }
+                    updateCache general { cache | authors = authors_ }
 
                 TogglePost post ->
                     let
                         posts_ =
-                            togglePostList post iCache.postPreviews
+                            togglePostList post cache.postPreviews
                     in
-                    updateCache general { iCache | postPreviews = posts_ }
+                    updateCache general { cache | postPreviews = posts_ }
 
                 UpdateNetwork network ->
                     ( General { internals | network = network }
@@ -295,7 +290,7 @@ update msg general =
                         , general = general
                         , triggerUpdate = updateTagsAt
                         , setInTemp = \tags_ temp_ -> { temp_ | tags = tags_ }
-                        , setInCache = \tags_ iCache_ -> { iCache | tags = tags_ }
+                        , setInCache = \tags_ iCache_ -> { cache | tags = tags_ }
                         , getFromTemp = .tags
                         , getFromCache = .tags
                         , name = "tag"
@@ -307,7 +302,7 @@ update msg general =
                 OnLogout res ->
                     case res of
                         Ok _ ->
-                            updateCache general { iCache | user = Nothing }
+                            updateCache general { cache | user = Nothing }
 
                         Err err ->
                             let
@@ -361,7 +356,7 @@ update msg general =
     )
 
 
-updateCache : General -> ICache -> ( General, Cmd Msg )
+updateCache : General -> Cache -> ( General, Cmd Msg )
 updateCache general iCache =
     let
         (General internals) =
@@ -421,13 +416,13 @@ type alias UpdateResourceInfo t =
     , setInTemp : List t -> Temp -> Temp
 
     -- set resource list in cache
-    , setInCache : List t -> ICache -> ICache
+    , setInCache : List t -> Cache -> Cache
 
     -- get resource list from temp
     , getFromTemp : Temp -> List t
 
     -- get resource list from cache
-    , getFromCache : ICache -> List t
+    , getFromCache : Cache -> List t
 
     -- name of resource
     , name : String
@@ -452,11 +447,11 @@ updateResource info =
                 -- If list is empty, then we have retrieved all of
                 -- the values, and it's time to update the cache
                 let
-                    (Cache iCache) =
+                    cache =
                         internals.cache
 
                     fromCache =
-                        info.getFromCache iCache
+                        info.getFromCache cache
 
                     updatedCacheList =
                         Util.joinLeftWith
@@ -470,7 +465,7 @@ updateResource info =
                     updatedTempGeneral =
                         updateTemp info.general (info.setInTemp [] temp)
                 in
-                updateCache updatedTempGeneral (info.setInCache updatedCacheList iCache)
+                updateCache updatedTempGeneral (info.setInCache updatedCacheList cache)
 
             else
                 -- If list is not empty should append to temp list and
@@ -723,57 +718,50 @@ fullscreen (General internals) =
     internals.fullscreen
 
 
-cache : General -> Cache
-cache (General internals) =
-    internals.cache
-
-
 version : General -> Version
 version general =
     general
-        |> cache
-        |> cacheInternals
+        |> .cache
         |> .version
 
 
 theme : General -> Theme
 theme general =
     general
-        |> cache
-        |> cacheInternals
+        |> .cache
         |> .theme
 
 
 tags : General -> List Tag
 tags general =
     general
-        |> cache
-        |> cacheInternals
+        |> .cache
         |> .tags
 
 
 authors : General -> List Author
 authors general =
     general
-        |> cache
-        |> cacheInternals
+        |> .cache
         |> .authors
 
 
 postPreviews : General -> List (Post Core Preview)
 postPreviews general =
     general
-        |> cache
-        |> cacheInternals
+        |> .cache
         |> .postPreviews
 
 
 user : General -> Maybe UUID
 user general =
     general
-        |> cache
-        |> cacheInternals
+        |> .cache
         |> .user
+
+
+
+-- TODO: if caching user must check if valid when application starts
 
 
 mapUser : UUID -> General -> ( General, Cmd msg )
@@ -782,10 +770,10 @@ mapUser uuid general =
         (General internals) =
             general
 
-        (Cache iCache) =
+        cache =
             internals.cache
     in
-    mapCache (Cache { iCache | user = Just uuid }) general
+    mapCache (Cache { cache | user = Just uuid }) general
 
 
 problems : General -> List (Problem Msg)
@@ -810,15 +798,6 @@ mode (General internals) =
 
 
 
-{- Accessors (private) -}
-
-
-cacheInternals : Cache -> ICache
-cacheInternals (Cache iCache) =
-    iCache
-
-
-
 {- JSON -}
 
 
@@ -833,7 +812,7 @@ flagsDecoder currentVersion =
 
 cacheDecoder : Decoder Cache
 cacheDecoder =
-    Decode.succeed ICache
+    Decode.succeed Cache
         |> required "version" Data.Version.decoder
         |> required "theme" Theme.decoder
         |> optional "tags"
@@ -846,7 +825,6 @@ cacheDecoder =
             (Decode.list <| Post.previewDecoder <| Just False)
             []
         |> optional "user" (Decode.nullable UUID.decoder) Nothing
-        |> Decode.map Cache
 
 
 defaultCacheDecoder : Version -> Decoder Cache
@@ -855,7 +833,7 @@ defaultCacheDecoder currentVersion =
 
 
 encodeCache : Cache -> Value
-encodeCache (Cache c) =
+encodeCache c =
     Encode.object
         [ ( "version", Data.Version.encode c.version )
         , ( "theme", Theme.encode c.theme )

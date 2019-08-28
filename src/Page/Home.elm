@@ -8,39 +8,12 @@ import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import Message exposing (Compound(..))
 import Style.Color as Color
-import Update
 import View.Footer as Footer
 import View.Header as Header
-import View.Page as Page exposing (PageUpdateOutput)
 
 
 
-{--
-
-    Home Page
-    =========
-
-    Present
-    -------
-
-    Simple homescreen that simply shows cards for the various posts
-    in chronological order
-
-    Future
-    ------
-
-    Intention of the home page is to allow discovery of blog posts
-    that may be of interest to the user. We do this through a
-    Netflix styled interface that shows various categories and/or
-    authors to the user depending on what the web client
-    belieaves they would be most interested in. Similar to Netflix,
-    it allows for duplicates to occur between rows. Unlike Netflix
-    however, we allow the user to customize the content they will
-    see (by authors or tags).
-
---}
 -- Model
 
 

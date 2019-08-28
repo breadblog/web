@@ -26,7 +26,6 @@ import Page.Redirect
 import Style.Color
 import Style.Font as Font
 import Style.Global
-import Update
 import Url exposing (Url)
 
 
@@ -36,35 +35,24 @@ import Url exposing (Url)
 
 type Model
     = Redirect General
-    | NotFound General
-    | Donate Page.Donate.Model
-    | About Page.About.Model
+      -- | NotFound General
+      -- | About Page.About.Model
+      -- | Login Page.Login.Model
+      -- | Post Page.Post.Model
     | Home Page.Home.Model
-    | Login Page.Login.Model
-    | Post Page.Post.Model
-    | Changelog Page.Changelog.Model
 
 
 
 -- Message --
 
 
-type alias Msg =
-    Compound InternalMsg
-
-
-type InternalMsg
-    = HomeMsg Page.Home.Msg
-    | LoginMsg Page.Login.Msg
-    | PostMsg Page.Post.Msg
-    | DonateMsg Page.Donate.Msg
-    | AboutMsg Page.About.Msg
-    | ChangelogMsg Page.Changelog.Msg
-
-
-toMsg : (e -> InternalMsg) -> e -> Msg
-toMsg transform msg =
-    Mod <| transform <| msg
+type Msg
+    = ClickedLink Browser.UrlRequest
+    | ChangedUrl Url
+    | ChangedRoute (Maybe Route)
+      -- | GotLoginMsg Page.Home.Msg
+      -- | GotPostMsg Page.Post.Msg
+    | GotHomeMsg Page.Home.Msg
 
 
 
