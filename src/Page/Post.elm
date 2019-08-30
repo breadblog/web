@@ -1,42 +1,5 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
-import Api
-import Browser.Navigation as Navigation
-import Css exposing (..)
-import Css.Transitions as Transitions exposing (transition)
-import Data.Author as Author exposing (Author)
-import Data.General as General exposing (General, Msg(..))
-import Data.Markdown as Markdown exposing (Markdown)
-import Data.Post as Post exposing (Client, Core, Full, Post)
-import Data.Problem as Problem exposing (Description(..), Problem)
-import Data.Route as Route exposing (PostType, Route(..))
-import Data.Tag as Tag exposing (Tag)
-import Data.Theme exposing (Theme)
-import Data.UUID as UUID exposing (UUID)
-import Data.Username as Username exposing (Username)
-import Html
-import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (..)
-import Html.Styled.Events as Events exposing (onClick, onInput)
-import Http
-import List.Extra
-import Style.Button
-import Style.Card
-import Style.Color as Color
-import Style.Font as Font
-import Style.Post
-import Style.Screen as Screen exposing (Screen(..))
-import Style.Shadow as Shadow
-import Svg.Styled.Attributes as SvgAttributes
-import Svg.Styled.Events as SvgEvents
-import Time
-import View.Loading
-import View.Page as Page exposing (PageUpdateOutput)
-import View.Svg
-import View.Tag
-
-
-
 {- Model -}
 
 

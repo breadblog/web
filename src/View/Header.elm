@@ -56,54 +56,73 @@ type Msg
     | SetSearchTerm String
     | ToggleDrawer
     | ToggleSearch
+    | GeneralMsg General.Msg
 
 
 
 {- Update -}
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Msg -> General -> Model -> { model : Model, general : General, cmd : Cmd Msg }
+update msg general model =
     let
         (Model internals) =
             model
 
-        ( updatedInternals, cmd ) =
-            case msg of
-                OpenSearch ->
-                    ( { internals | searchOpen = True }
-                    , Cmd.none
-                    )
-
-                CloseSearch ->
-                    ( { internals | searchOpen = False, searchTerm = "" }
-                    , Cmd.none
-                    )
-
-                SetSearchTerm value ->
-                    ( { internals | searchTerm = value }
-                    , Cmd.none
-                    )
-
-                ToggleDrawer ->
-                    ( { internals | drawerOpenOnMobile = not internals.drawerOpenOnMobile }
-                    , Cmd.none
-                    )
+        simpleOutput ( m, c ) =
+            { model = m
+            , cmd = c
+            , general = general
+            }
     in
-    ( Model updatedInternals, cmd )
+    case msg of
+        OpenSearch ->
+            simpleOutput
+                ( Model { internals | searchOpen = True }
+                , Cmd.none
+                )
+
+        CloseSearch ->
+            simpleOutput
+                ( Model { internals | searchOpen = False, searchTerm = "" }
+                , Cmd.none
+                )
+
+        SetSearchTerm value ->
+            simpleOutput
+                ( Model { internals | searchTerm = value }
+                , Cmd.none
+                )
+
+        ToggleDrawer ->
+            simpleOutput
+                ( Model { internals | drawerOpenOnMobile = not internals.drawerOpenOnMobile }
+                , Cmd.none
+                )
+
+        ToggleSearch ->
+            simpleOutput
+                ( Model { internals | searchOpen = not internals.searchOpen }
+                , Cmd.none
+                )
+
+        GeneralMsg generalMsg ->
+            let
+                ( updatedGeneral, generalCmd ) =
+                    General.update generalMsg general
+            in
+            { model = model
+            , general = updatedGeneral
+            , cmd = Cmd.map GeneralMsg generalCmd
+            }
 
 
 
 {- View -}
 
 
-view : General -> List Author -> List Tag -> Model -> List (Html Msg)
-view general authors tags model =
-    viewHeader general authors tags model
-
-
-viewHeader : General -> List Author -> List Tag -> Model -> List (Html Msg)
-viewHeader general authors tags (Model internals) =
+view : General -> Model -> List (Html Msg)
+view general (Model internals) =
     let
         sources =
             []
@@ -113,6 +132,12 @@ viewHeader general authors tags (Model internals) =
 
         route =
             General.route general
+
+        authors =
+            General.authors general
+
+        tags =
+            General.tags general
     in
     [ header
         [ css
@@ -383,7 +408,7 @@ logo shownScreens theme =
 tagsContent : Theme -> List Tag -> List (Html Msg)
 tagsContent theme =
     List.map
-        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (ToggleTag t))
+        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (GeneralMsg <| ToggleTag t))
 
 
 
@@ -393,7 +418,7 @@ tagsContent theme =
 authorsContent : Theme -> List Author -> List (Html Msg)
 authorsContent theme =
     List.map
-        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (GeneralMsg << ToggleAuthor a))
+        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (GeneralMsg <| ToggleAuthor a))
 
 
 
@@ -403,7 +428,7 @@ authorsContent theme =
 themeContent : Theme -> List (Html Msg)
 themeContent theme =
     List.map
-        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (SetTheme t))
+        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (GeneralMsg <| SetTheme t))
         Theme.all
 
 

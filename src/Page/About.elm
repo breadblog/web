@@ -7,74 +7,106 @@ import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import View.Page as Page
+import View.Footer as Footer
+import View.Header as Header
 
 
 
--- Model --
+{- Model -}
 
 
-type alias Model =
-    Model Internals
+type Model
+    = Model Internals
 
 
 type alias Internals =
-    {}
+    { header : Header.Model
+    , general : General
+    }
 
 
-init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
-init =
-    Page.init {} Cmd.none About
+toInternals : Model -> Internals
+toInternals (Model internals) =
+    internals
+
+
+init : General -> ( Model, Cmd Msg )
+init general =
+    ( Model
+        { header = Header.init
+        , general = general
+        }
+    , Cmd.none
+    )
 
 
 toGeneral : Model -> General
 toGeneral =
-    Page.toGeneral
+    toInternals >> .general
 
 
 fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
+fromGeneral general (Model internals) =
+    Model { internals | general = general }
 
 
 
--- Message --
+{- Message -}
 
 
-type alias Msg =
-    Page.Msg ModMsg
-
-
-type ModMsg
-    = NoOp
+type Msg
+    = HeaderMsg Header.Msg
 
 
 
--- Update --
+{- Update -}
 
 
-update : Msg -> Model -> PageUpdateOutput ModMsg Internals
-update =
-    Page.update updateMod
-
-
-updateMod : msg -> General -> Internals -> Update.Output ModMsg Internals
-updateMod _ general internals =
-    { model = internals
-    , general = general
-    , cmd = Cmd.none
-    }
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    let
+        (Model internals) =
+            model
+    in
+    case msg of
+        HeaderMsg headerMsg ->
+            let
+                ( updatedHeaderModel, updatedGeneral, headerCmd ) =
+                    Header.update headerMsg internals.general internals.header
+            in
+            ( Model { internals | header = updatedHeaderModel, general = updatedGeneral }
+            , Cmd.map HeaderMsg headerCmd
+            )
 
 
 
 -- View --
 
 
-view : Model -> Page.ViewResult msg
-view model =
-    Page.view model viewAbout
+view : Model -> List (Html Msg)
+view (Model internals) =
+    let
+        general =
+            internals.general
+
+        theme =
+            General.theme general
+
+        version =
+            General.theme general
+    in
+    List.concat
+        [ Html.Styled.map HeaderMsg (Header.view internals.general internals.header)
+        , viewAbout internals
+        , Footer.view theme version
+        ]
 
 
-viewAbout : General -> Internals -> List (Html (Compound m))
-viewAbout _ _ =
-    []
+viewAbout : Internals -> List (Html Msg)
+viewAbout _ =
+    [ main_
+        [ css
+            [ flexGrow (num 1) ]
+        ]
+        []
+    ]

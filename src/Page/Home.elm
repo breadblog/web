@@ -1,107 +1,70 @@
-module Page.Home exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.Home exposing (Model, init, toGeneral, update, view)
 
 import Css exposing (..)
 import Data.General as General exposing (General)
-import Data.Post as Post exposing (Core, Post, Preview)
-import Data.Route as Route exposing (Route(..))
-import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (class, css, href)
-import Html.Styled.Events exposing (onClick)
-import Style.Color as Color
-import View.Footer as Footer
+import Html.Styled.Attributes exposing (..)
 import View.Header as Header
 
 
 
--- Model
+{- Model -}
 
 
-type alias Model =
-    Page.PageModel Internals
+type Model
+    = Model Internals
 
 
 type alias Internals =
-    { posts : List (Post Core Preview) }
-
-
-type alias Row =
-    { posts : List (Post Core Preview)
+    { header : Header.Model
+    , general : General
     }
 
 
-init : General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init =
-    Page.init
-        { posts = [] }
-        Cmd.none
-        Home
+init : General -> Model
+init general =
+    Model
+        { header = Header.init
+        , general = general
+        }
 
 
 toGeneral : Model -> General
 toGeneral =
-    Page.toGeneral
+    toInternals >> .general
 
 
-fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
-
-
-
--- Message --
-
-
-type alias Msg =
-    Page.Msg ModMsg
-
-
-type ModMsg
-    = NoOp
+toInternals : Model -> Internals
+toInternals (Model internals) =
+    internals
 
 
 
--- Update --
+{- Message -}
 
 
-update : Msg -> Model -> PageUpdateOutput ModMsg Internals
-update =
-    Page.update updateMod
+type Msg
+    = HeaderMsg Header.Msg
 
 
-updateMod : ModMsg -> General -> Internals -> Update.Output ModMsg Internals
-updateMod msg general internals =
+
+{- Update -}
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg (Model internals) =
     case msg of
-        NoOp ->
-            { model = internals
-            , cmd = Cmd.none
-            , general = general
-            }
+        HeaderMsg headerMsg ->
+            Header.update headerMsg internals.general internals.header
+                -- TODO: this returns a record now
+                |> Tuple.mapFirst (\h -> Model { internals | header = h })
+                |> Tuple.mapSecond (Cmd.map HeaderMsg)
 
 
 
--- View --
+{- View -}
 
 
-view : Model -> Page.ViewResult ModMsg
-view model =
-    Page.view model viewHome
-
-
-viewHome : General -> Internals -> List (Html (Compound ModMsg))
-viewHome general internals =
-    let
-        new =
-            { posts = internals.posts
-            }
-
-        theme =
-            General.theme general
-    in
-    [ main_
-        [ css
-            [ flexGrow <| num 1
-            ]
-        ]
-        []
-    ]
+view : Model -> List (Html Msg)
+view (Model internals) =
+    []

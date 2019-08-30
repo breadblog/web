@@ -1,18 +1,7 @@
-module Page.Login exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.Login exposing (Model, Msg, init, toGeneral, update, view)
 
-import Api
-import Css exposing (..)
-import Data.General as General exposing (General, Msg(..))
-import Data.Login
+import Data.General as General exposing (General)
 import Data.Password as Password exposing (Password)
-import Data.Route as Route exposing (Route(..))
-import Html.Styled exposing (..)
-import Html.Styled.Attributes as Attr exposing (..)
-import Html.Styled.Events as Events exposing (onClick, onInput)
-import Http
-import Json.Decode
-import Style.Color as Color
-import View.Page as Page
 
 
 
@@ -44,11 +33,6 @@ init general =
 toGeneral : Model -> General
 toGeneral (Model internals) =
     internals.general
-
-
-fromGeneral : General -> Model -> Model
-fromGeneral general (Model internals) =
-    Model { internals | general = general }
 
 
 
