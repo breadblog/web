@@ -1,4 +1,4 @@
-module Data.Tag exposing (Tag, compare, decoder, encode, find, mapWatched, mergeFromApi, name, toSource, watched)
+module Data.Tag exposing (Tag, compare, decoder, encode, find, name, toSources)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -19,7 +19,6 @@ type Tag
 type alias Internals =
     { name : String
     , description : String
-    , watched : Bool
     , uuid : UUID
     }
 
@@ -29,18 +28,18 @@ type alias Internals =
 
 
 name : Tag -> String
-name (Tag internals) =
-    internals.name
+name =
+    toInternals >> .name
 
 
-watched : Tag -> Bool
-watched (Tag internals) =
-    internals.watched
+description : Tag -> String
+description =
+    toInternals >> .description
 
 
-mapWatched : (Bool -> Bool) -> Tag -> Tag
-mapWatched transform (Tag internals) =
-    Tag { internals | watched = transform internals.watched }
+toInternals : Tag -> Internals
+toInternals (Tag internals) =
+    internals
 
 
 
@@ -58,27 +57,28 @@ find tagUUID list =
         list
 
 
-toSource : msg -> List Tag -> Source msg
-toSource msg tags =
+toSources : msg -> List Tag -> List (Source msg)
+toSources msg tags =
+    List.map (toSource msg) tags
+
+
+toSource : msg -> Tag -> Source msg
+toSource msg tag =
     Search.source
-        (List.map
-            (\(Tag t) ->
-                t.name
-            )
-            tags
-        )
-        "tag"
-        msg
+        { category = "tag"
+        , onClick = msg
+        , name = name tag
+        , values =
+            [ name tag
+            , description tag
+            ]
+        , description = description tag
+        }
 
 
 compare : Tag -> Tag -> Bool
 compare (Tag a) (Tag b) =
     a.uuid == b.uuid
-
-
-mergeFromApi : Tag -> Tag -> Tag
-mergeFromApi (Tag fromApi) (Tag fromCache) =
-    Tag { fromApi | watched = fromCache.watched }
 
 
 
@@ -90,7 +90,6 @@ decoder =
     Decode.succeed Internals
         |> required "name" Decode.string
         |> required "description" Decode.string
-        |> optional "watched" Decode.bool True
         |> required "uuid" UUID.decoder
         |> Decode.map Tag
 
@@ -100,6 +99,5 @@ encode (Tag tag) =
     Encode.object
         [ ( "name", Encode.string tag.name )
         , ( "description", Encode.string tag.description )
-        , ( "watched", Encode.bool tag.watched )
         , ( "uuid", UUID.encode tag.uuid )
         ]

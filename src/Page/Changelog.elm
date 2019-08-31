@@ -70,12 +70,13 @@ view (Model internals) =
             General.theme general
 
         version =
-            General.theme general
+            General.version general
     in
-    [ Html.Styled.map HeaderMsg (Header.view general internals.header)
-    , viewChangelog internals
-    , Footer.view theme version
-    ]
+    List.concat
+        [ List.map (Html.Styled.map HeaderMsg) (Header.view general internals.header)
+        , viewChangelog internals
+        , Footer.view theme version
+        ]
 
 
 viewChangelog : Internals -> List (Html Msg)

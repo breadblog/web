@@ -1,8 +1,20 @@
-module Api exposing (Url, count, delete, get, post, put, url)
+module Api exposing (Url, deletePost, getAuthor, getAuthors, getPost, getPostPreviews, getTag, getTags, logout, toOffset)
 
+import Data.Author as Author exposing (Author)
+import Data.Login
 import Data.Mode exposing (Mode(..))
+import Data.Password as Password exposing (Password)
+import Data.Post as Post exposing (Client, Core, Full, Post, Preview)
+import Data.Tag as Tag exposing (Tag)
+import Data.UUID as UUID exposing (UUID)
+import Data.Username as Username exposing (Username)
 import Http exposing (Body, Expect, Header)
-import Json.Encode exposing (Value)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
+
+
+
+{- Model -}
 
 
 type Url
@@ -15,9 +27,166 @@ type alias Internals =
     }
 
 
+type alias GetOne r m =
+    { msg : Result Http.Error r -> m
+    , user : Maybe UUID
+    , uuid : UUID
+    , mode : Mode
+    }
+
+
+type alias GetMany r m =
+    { msg : Result Http.Error (List r) -> m
+    , user : Maybe UUID
+    , offset : Int
+    , mode : Mode
+    }
+
+
+type alias UpdateOne r m =
+    { msg : Result Http.Error r -> m
+    , user : Maybe UUID
+    , resource : r
+    , mode : Mode
+    }
+
+
+type alias CreateOne r m =
+    { msg : Result Http.Error r -> m
+    , user : Maybe UUID
+    , resource : r
+    , mode : Mode
+    }
+
+
+type alias DeleteOne m =
+    { msg : Result Http.Error () -> m
+    , user : Maybe UUID
+    , uuid : UUID
+    , mode : Mode
+    }
+
+
+type alias Login m =
+    { username : Username
+    , password : Password
+    , msg : Result Http.Error Data.Login.Response -> m
+    , mode : Mode
+    }
+
+
+type alias Logout m =
+    { msg : Result Http.Error () -> m
+    , mode : Mode
+    }
+
+
+
+{- Public API -}
+
+
+getPost : GetOne (Post Core Full) msg -> Cmd msg
+getPost req =
+    let
+        path =
+            case req.user of
+                Just _ ->
+                    UUID.toPath "/post/private" req.uuid
+
+                Nothing ->
+                    UUID.toPath "/post/public" req.uuid
+    in
+    get
+        { url = url req.mode path
+        , expect = Http.expectJson req.msg Post.fullDecoder
+        }
+
+
+getPostPreviews : GetMany (Post Core Preview) msg -> Cmd msg
+getPostPreviews req =
+    getPage "post" Post.previewDecoder req
+
+
+deletePost : DeleteOne msg -> Cmd msg
+deletePost req =
+    delete
+        { url = url req.mode <| UUID.toPath "/post/owner" req.uuid
+        , expect = Http.expectWhatever req.msg
+        }
+
+
+getAuthor : GetOne Author msg -> Cmd msg
+getAuthor req =
+    let
+        path =
+            UUID.toPath "/author/public/" req.uuid
+    in
+    get
+        { url = url req.mode path
+        , expect = Http.expectJson req.msg Author.decoder
+        }
+
+
+getAuthors : GetMany Author msg -> Cmd msg
+getAuthors req =
+    getPage "author" Author.decoder req
+
+
+getTag : GetOne Tag msg -> Cmd msg
+getTag req =
+    let
+        path =
+            UUID.toPath "/tag/public/" req.uuid
+    in
+    get
+        { url = url req.mode path
+        , expect = Http.expectJson req.msg Tag.decoder
+        }
+
+
+getTags : GetMany Tag msg -> Cmd msg
+getTags req =
+    getPage "tag" Tag.decoder req
+
+
+login : Login msg -> Cmd msg
+login req =
+    let
+        path =
+            "/login/"
+    in
+    post
+        { url = url req.mode path
+        , expect = Http.expectJson req.msg Data.Login.decodeResponse
+        , body = Http.jsonBody <| Data.Login.encodeRequest <| Data.Login.Request req.username req.password
+        }
+
+
+logout : Logout msg -> Cmd msg
+logout req =
+    post
+        { url = url req.mode "/logout/"
+        , expect = Http.expectWhatever req.msg
+        , body = Http.emptyBody
+        }
+
+
+toOffset : Int -> Int
+toOffset length =
+    length // paginationCount
+
+
+
+{- Constructors -}
+
+
 url : Mode -> String -> Url
 url mode path =
     Url <| Internals mode path
+
+
+
+{- Util -}
 
 
 urlToString : Url -> String
@@ -39,8 +208,8 @@ urlToString (Url internals) =
     host ++ path
 
 
-count : Int
-count =
+paginationCount : Int
+paginationCount =
     10
 
 
@@ -104,6 +273,35 @@ get args =
         , expect = args.expect
         , timeout = Nothing
         , tracker = Nothing
+        }
+
+
+getPage : String -> Decoder r -> GetMany r msg -> Cmd msg
+getPage resourceRoute decoder req =
+    let
+        access =
+            case req.user of
+                Just _ ->
+                    "private/"
+
+                Nothing ->
+                    "public/"
+
+        path =
+            String.join ""
+                [ "/"
+                , resourceRoute
+                , "/"
+                , access
+                , "?count="
+                , String.fromInt paginationCount
+                , "&start="
+                , String.fromInt req.offset
+                ]
+    in
+    get
+        { url = url req.mode path
+        , expect = Http.expectJson req.msg (Decode.list decoder)
         }
 
 

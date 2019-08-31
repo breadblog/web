@@ -71,11 +71,11 @@ update msg model =
     case msg of
         HeaderMsg headerMsg ->
             let
-                ( updatedHeaderModel, updatedGeneral, headerCmd ) =
+                updatedHeader =
                     Header.update headerMsg internals.general internals.header
             in
-            ( Model { internals | header = updatedHeaderModel, general = updatedGeneral }
-            , Cmd.map HeaderMsg headerCmd
+            ( Model { internals | header = updatedHeader.model, general = updatedHeader.general }
+            , Cmd.map HeaderMsg updatedHeader.cmd
             )
 
 
@@ -93,10 +93,10 @@ view (Model internals) =
             General.theme general
 
         version =
-            General.theme general
+            General.version general
     in
     List.concat
-        [ Html.Styled.map HeaderMsg (Header.view internals.general internals.header)
+        [ List.map (Html.Styled.map HeaderMsg) (Header.view internals.general internals.header)
         , viewAbout internals
         , Footer.view theme version
         ]

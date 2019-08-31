@@ -1,15 +1,25 @@
 module Page.Login exposing (Model, Msg, init, toGeneral, update, view)
 
-import Data.General as General exposing (General)
+import Api
+import Css exposing (..)
+import Data.General as General exposing (General, Msg(..))
+import Data.Login
 import Data.Password as Password exposing (Password)
+import Data.Username as Username exposing (Username)
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (..)
+import Html.Styled.Events as Events
+import Http
+import Json.Decode
+import Style.Color as Color
 
 
 
 {- Model -}
 
 
-type alias Model =
-    Model Internals
+type Model
+    = Model Internals
 
 
 type alias Internals =
@@ -22,12 +32,14 @@ type alias Internals =
 
 init : General -> ( Model, Cmd Msg )
 init general =
-    Model
-        { username = ""
-        , password = Password.create ""
+    ( Model
+        { username = Username.empty
+        , password = Password.empty
         , error = Nothing
         , general = general
         }
+    , Cmd.none
+    )
 
 
 toGeneral : Model -> General
@@ -42,7 +54,7 @@ toGeneral (Model internals) =
 type Msg
     = OnLogin (Result Http.Error Data.Login.Response)
     | TryLogin
-    | UpdateUsername String
+    | UpdateUsername Username
     | UpdatePassword Password
     | InputKeyUp Int
     | GeneralMsg General.Msg
@@ -57,6 +69,9 @@ update msg model =
     let
         (Model internals) =
             model
+
+        general =
+            internals.general
     in
     case msg of
         OnLogin res ->
@@ -108,21 +123,20 @@ update msg model =
             , cmd
             )
 
+        GeneralMsg generalMsg ->
+            General.update generalMsg general
+                |> Tuple.mapFirst (\g -> Model { internals | general = g })
+                |> Tuple.mapSecond (Cmd.map GeneralMsg)
 
-attemptLogin : General -> String -> Password -> Cmd (Compound ModMsg)
+
+attemptLogin : General -> String -> Password -> Cmd Msg
 attemptLogin general username password =
     let
         mode =
             General.mode general
-
-        msg =
-            \r ->
-                r
-                    |> OnLogin
-                    |> Mod
     in
     Api.post
-        { expect = Http.expectJson msg <| Data.Login.decodeResponse
+        { expect = Http.expectJson OnLogin <| Data.Login.decodeResponse
         , body =
             Http.jsonBody <|
                 Data.Login.encodeRequest <|
@@ -135,16 +149,11 @@ attemptLogin general username password =
 {- View -}
 
 
-view : Model -> Page.ViewResult ModMsg
-view model =
-    Page.view model viewLogin
-
-
-viewLogin : General -> Internals -> List (Html (Compound ModMsg))
-viewLogin general internals =
+view : Model -> List (Html Msg)
+view (Model internals) =
     let
         theme =
-            General.theme general
+            General.theme internals.general
     in
     [ div
         [ class "login"
@@ -172,14 +181,14 @@ viewLogin general internals =
                 [ text "Login" ]
             , input
                 [ type_ "text"
-                , onInput (\u -> Mod <| UpdateUsername u)
-                , onKeyUp (\i -> Mod <| InputKeyUp i)
+                , Username.onInput UpdateUsername
+                , onKeyUp InputKeyUp
                 ]
                 []
             , input
                 [ type_ "password"
-                , onInput (\p -> Mod <| UpdatePassword <| Password.create p)
-                , onKeyUp (\i -> Mod <| InputKeyUp i)
+                , Password.onInput UpdatePassword
+                , onKeyUp InputKeyUp
                 ]
                 []
             , div
@@ -191,11 +200,11 @@ viewLogin general internals =
                     ]
                 ]
                 [ button
-                    [ onClick <| Global <| GeneralMsg <| TryLogout
+                    [ Events.onClick <| GeneralMsg TryLogout
                     ]
                     [ text "logout" ]
                 , button
-                    [ onClick <| Mod TryLogin
+                    [ Events.onClick TryLogin
                     ]
                     [ text "submit" ]
                 ]
@@ -204,6 +213,6 @@ viewLogin general internals =
     ]
 
 
-onKeyUp : (Int -> Compound ModMsg) -> Attribute (Compound ModMsg)
+onKeyUp : (Int -> Msg) -> Attribute Msg
 onKeyUp tagger =
     Events.on "keyup" <| Json.Decode.map tagger Events.keyCode

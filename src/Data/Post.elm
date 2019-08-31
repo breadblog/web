@@ -1,4 +1,4 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, favorite, fullDecoder, mapBody, mapDescription, mapFavorite, mapPublished, mapTitle, mergeFromApi, previewDecoder, published, tags, title, toPreview, uuid)
+module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, favorite, fullDecoder, mapBody, mapDescription, mapFavorite, mapPublished, mapTitle, mergeFromApi, previewDecoder, published, tags, title, toPreview, toSources, uuid)
 
 import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
@@ -13,17 +13,16 @@ import Time
 
 
 {- Model -}
--- Represents a Post
--- location: where the post is stored (client/server)
--- fields: what fields post contains (preview/full)
 
 
+{-| Represents a blog post.
+
+    The location describes where the post is stored (server vs client), and
+    the fields describe what a post contains (preview vs full)
+
+-}
 type Post location fields
     = Post location fields Internals
-
-
-
--- For posts stored on core
 
 
 type Core
@@ -37,16 +36,8 @@ type alias CoreInternals =
     }
 
 
-
--- For posts stored on client (hasn't been created on server yet)
-
-
 type Client
     = Client
-
-
-
--- For posts containing all data
 
 
 type Full
@@ -58,16 +49,8 @@ type alias FullInternals =
     }
 
 
-
--- For posts only containing low-storage data
-
-
 type Preview
     = Preview
-
-
-
--- fields contained by ALL posts
 
 
 type alias Internals =
@@ -77,6 +60,45 @@ type alias Internals =
     , author : UUID
     , published : Bool
     }
+
+
+
+{- Constructors -}
+
+
+empty : UUID -> Post Client Full
+empty userUUID =
+    Post
+        Client
+        (Full
+            { body = Markdown.create ""
+            }
+        )
+        { title = ""
+        , description = ""
+        , tags = []
+        , author = userUUID
+        , published = False
+        }
+
+
+toSources : msg -> List (Post Core Preview) -> List (Source msg)
+toSources msg posts =
+    List.map (toSource msg) posts
+
+
+toSource : msg -> Post Core Preview -> Source msg
+toSource msg post =
+    Search.source
+        { category = "post"
+        , onClick = msg
+        , name = title post
+        , values =
+            [ title post
+            , description post
+            ]
+        , description = description post
+        }
 
 
 
@@ -200,33 +222,6 @@ mapFull transform (Post l (Full full) i) =
     Post l (Full <| transform full) i
 
 
-empty : UUID -> Post Client Full
-empty userUUID =
-    Post
-        Client
-        (Full
-            { body = Markdown.create ""
-            }
-        )
-        { title = ""
-        , description = ""
-        , tags = []
-        , author = userUUID
-        , published = False
-        }
-
-
-toSource : msg -> List (Post l f) -> Source msg
-toSource msg posts =
-    Search.source
-        (List.map
-            title
-            posts
-        )
-        "post"
-        msg
-
-
 mergeFromApi : Post Core Preview -> Post Core Preview -> Post Core Preview
 mergeFromApi fromAPI (Post (Core fromCache) _ _) =
     mapFavorite (\_ -> fromCache.favorite) fromAPI
@@ -234,7 +229,6 @@ mergeFromApi fromAPI (Post (Core fromCache) _ _) =
 
 
 {- JSON -}
--- Encoders
 
 
 encodeInternalsHelper : Internals -> List ( String, Value )
@@ -296,10 +290,6 @@ encodeFreshFull (Post _ (Full fullInternals) internals) =
         )
 
 
-
--- Decoders
-
-
 internalsDecoder : Decoder Internals
 internalsDecoder =
     Decode.succeed Internals
@@ -310,12 +300,12 @@ internalsDecoder =
         |> required "published" Decode.bool
 
 
-coreDecodeHelper : Maybe Bool -> Decoder Core
-coreDecodeHelper defaultFav =
+coreDecodeHelper : Decoder Core
+coreDecodeHelper =
     Decode.succeed CoreInternals
         |> required "uuid" UUID.decoder
         |> required "date" timeDecoder
-        |> optional "favorite" (Decode.maybe Decode.bool) defaultFav
+        |> optional "favorite" (Decode.maybe Decode.bool) (Just False)
         |> Decode.map Core
 
 
@@ -335,10 +325,10 @@ timeDecoder =
             )
 
 
-previewDecoder : Maybe Bool -> Decoder (Post Core Preview)
-previewDecoder defaultFav =
+previewDecoder : Decoder (Post Core Preview)
+previewDecoder =
     Decode.succeed Post
-        |> custom (coreDecodeHelper defaultFav)
+        |> custom coreDecodeHelper
         |> hardcoded Preview
         |> custom internalsDecoder
 
@@ -346,6 +336,6 @@ previewDecoder defaultFav =
 fullDecoder : Decoder (Post Core Full)
 fullDecoder =
     Decode.succeed Post
-        |> custom (coreDecodeHelper Nothing)
+        |> custom coreDecodeHelper
         |> custom fullDecodeHelper
         |> custom internalsDecoder

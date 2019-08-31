@@ -1,5 +1,7 @@
-module Data.Password exposing (Password, create, encode)
+module Data.Password exposing (Password, encode, onInput)
 
+import Html.Styled exposing (Attribute)
+import Html.Styled.Events as Events
 import Json.Encode as Encode exposing (Value)
 
 
@@ -15,9 +17,18 @@ type Password
 {- Constructors -}
 
 
-create : String -> Password
-create str =
-    Password str
+empty : Password
+empty =
+    Password ""
+
+
+
+{- Util -}
+
+
+onInput : (Password -> msg) -> Attribute msg
+onInput createMsg =
+    Events.onInput <| Password >> createMsg
 
 
 

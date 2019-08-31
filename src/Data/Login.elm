@@ -2,13 +2,14 @@ module Data.Login exposing (Request, Response, decodeResponse, encodeRequest)
 
 import Data.Password as Password exposing (Password)
 import Data.UUID as UUID exposing (UUID)
+import Data.Username as Username exposing (Username)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
 
 
 type alias Request =
-    { username : String
+    { username : Username
     , password : Password
     }
 
@@ -25,7 +26,7 @@ type alias Response =
 encodeRequest : Request -> Value
 encodeRequest request =
     Encode.object
-        [ ( "username", Encode.string request.username )
+        [ ( "username", Username.encode request.username )
         , ( "password", Password.encode request.password )
         ]
 

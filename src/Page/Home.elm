@@ -55,10 +55,13 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg (Model internals) =
     case msg of
         HeaderMsg headerMsg ->
-            Header.update headerMsg internals.general internals.header
-                -- TODO: this returns a record now
-                |> Tuple.mapFirst (\h -> Model { internals | header = h })
-                |> Tuple.mapSecond (Cmd.map HeaderMsg)
+            let
+                updatedHeader =
+                    Header.update headerMsg internals.general internals.header
+            in
+            ( Model { internals | header = updatedHeader.model, general = updatedHeader.general }
+            , Cmd.map HeaderMsg updatedHeader.cmd
+            )
 
 
 

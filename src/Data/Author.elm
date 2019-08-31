@@ -1,4 +1,4 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, mapWatched, mergeFromApi, name, username, uuid, watched)
+module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, name, toSources, username, uuid)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -23,7 +23,6 @@ type alias Internals =
     { username : Username
     , name : String
     , bio : String
-    , watched : Bool
     , uuid : UUID
     }
 
@@ -37,48 +36,57 @@ username (Author internals) =
     internals.username
 
 
-mapWatched : (Bool -> Bool) -> Author -> Author
-mapWatched transform (Author internals) =
-    Author { internals | watched = transform internals.watched }
-
-
-watched : Author -> Bool
-watched (Author internals) =
-    internals.watched
-
-
 name : Author -> String
-name (Author internals) =
-    internals.name
+name =
+    toInternals >> .name
 
 
 bio : Author -> String
-bio (Author internals) =
-    internals.bio
+bio =
+    toInternals >> .bio
 
 
 uuid : Author -> UUID
-uuid (Author internals) =
-    internals.uuid
+uuid =
+    toInternals >> .uuid
+
+
+description : Author -> String
+description =
+    \a -> "Placeholder description"
+
+
+toInternals : Author -> Internals
+toInternals (Author internals) =
+    internals
 
 
 
 {- Util -}
 
 
-toSource : msg -> List Author -> Source msg
-toSource msg authors =
+toSources : msg -> List Author -> List (Source msg)
+toSources msg authors =
+    List.map (toSource msg) authors
+
+
+toSource : msg -> Author -> Source msg
+toSource msg author =
     Search.source
-        (List.map
-            (\(Author a) ->
-                a
-                    |> .username
-                    |> Username.toString
-            )
-            authors
-        )
-        "author"
-        msg
+        { category = "author"
+        , onClick = msg
+        , name =
+            author
+                |> username
+                |> Username.toString
+        , values =
+            [ author
+                |> username
+                |> Username.toString
+            , name author
+            ]
+        , description = description author
+        }
 
 
 fromUUID : UUID -> List Author -> Maybe Author
@@ -97,11 +105,6 @@ compare (Author a) (Author b) =
     a.uuid == b.uuid
 
 
-mergeFromApi : Author -> Author -> Author
-mergeFromApi (Author a) (Author b) =
-    Author { a | watched = b.watched }
-
-
 
 {- JSON -}
 
@@ -112,9 +115,6 @@ decoder =
         |> required "username" Username.decoder
         |> required "name" Decode.string
         |> required "bio" Decode.string
-        -- Default "watched" because core doesn't provide
-        -- don't hardcode because need to decode from cache
-        |> optional "watched" Decode.bool True
         |> required "uuid" UUID.decoder
         |> Decode.map Author
 
@@ -125,6 +125,5 @@ encode (Author internals) =
         [ ( "username", Username.encode internals.username )
         , ( "name", Encode.string internals.name )
         , ( "bio", Encode.string internals.bio )
-        , ( "watched", Encode.bool internals.watched )
         , ( "uuid", UUID.encode internals.uuid )
         ]

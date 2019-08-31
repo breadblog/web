@@ -1,94 +1,98 @@
-module Data.Search exposing (Result, Source, context, onClick, search, source, value)
+module Data.Search exposing (Create, Source, category, description, name, onClick, search, source, toInternals)
 
+import Html.Styled exposing (Attribute)
+import Html.Styled.Events as Events
 import Simple.Fuzzy as Fuzzy
 
 
 
--- Model --
+{- Model -}
 
 
 type Source msg
-    = Source (ISource msg)
+    = Source (Internals msg)
 
 
-type alias ISource msg =
-    { values : List String
-    , context : String
+type alias Internals msg =
+    { category : String
     , onClick : msg
+    , name : String
+    , values : List String
+    , description : String
     }
 
 
-
-{-
-   Result
-
-   The only way to receive a result is to call the "search" function.
-   should not be constructed outside this module
--}
-
-
-type Result msg
-    = Result (IResult msg)
-
-
-type alias IResult msg =
-    { value : String
-    , context : String
-    , onClick : msg
-    }
+type alias Create msg =
+    Internals msg
 
 
 
--- Constructors
+{- Constructors -}
 
 
-source : List String -> String -> msg -> Source msg
-source values context_ msg =
-    Source <| ISource values context_ msg
-
-
-
--- Accessors
-
-
-value : Result msg -> String
-value (Result r) =
-    r.value
-
-
-onClick : Result msg -> msg
-onClick (Result r) =
-    r.onClick
-
-
-context : Result msg -> String
-context (Result r) =
-    r.context
-
-
-
--- Util
-
-
-search : List (Source msg) -> String -> List (Result msg)
-search sources searchTerm =
+source : Create msg -> Source msg
+source internals =
     let
-        values =
-            sources
-                |> List.map
-                    (\(Source s) ->
-                        List.map
-                            (\v ->
-                                IResult v s.context s.onClick
-                            )
-                            s.values
-                    )
-                |> List.concat
+        breakpoint =
+            50
 
-        filteredValues =
-            Fuzzy.filter .value searchTerm values
+        updatedDesc =
+            if String.length internals.description > breakpoint then
+                internals.description
+                    |> String.left breakpoint
+                    |> String.words
+                    |> List.reverse
+                    |> List.drop 1
+                    |> List.reverse
+                    |> String.join " "
 
-        topValues =
-            List.take 10 filteredValues
+            else
+                internals.description
     in
-    List.map Result topValues
+    Source
+        { internals
+            | description = updatedDesc
+        }
+
+
+
+{- Accessors -}
+
+
+toInternals : Source m -> Internals m
+toInternals (Source internals) =
+    internals
+
+
+category : Source m -> String
+category =
+    toInternals >> .category
+
+
+onClick : Source msg -> Attribute msg
+onClick =
+    toInternals >> .onClick >> Events.onClick
+
+
+name : Source m -> String
+name =
+    toInternals >> .name
+
+
+description : Source m -> String
+description =
+    toInternals >> .description
+
+
+
+{- Util -}
+
+
+search : List (Source m) -> String -> List (Source m)
+search sources searchTerm =
+    List.filter (searchPredicate searchTerm) sources
+
+
+searchPredicate : String -> Source m -> Bool
+searchPredicate searchTerm (Source internals) =
+    List.any (\v -> String.contains searchTerm v) internals.values

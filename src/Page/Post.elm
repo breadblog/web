@@ -1,19 +1,30 @@
 module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
 
+import Data.Author as Author exposing (Author)
+import Data.Post exposing (Client, Core, Full, Post)
+import Data.Route as Route exposing (PostType(..), Route(..))
+import Data.UUID as UUID exposing (UUID)
+import Html.Styled exposing (..)
+import Html.Styled.Attributes exposing (..)
+import Html.Styled.Events as Events
+import Http
+
+
+
 {- Model -}
 
 
-type alias Model =
-    Page.PageModel Internals
+type Model
+    = Model Internals
 
 
 type
     Internals
     {------------------ Public States ---------------------}
     -- loading state for when we are fetching post info
-    = LoadingReady
+    = LoadingView
       -- we are now ready to display an existing post
-    | Ready (Post Core Full) Author
+    | View (Post Core Full) Author
       -- page shown when failure occurs, waiting for redirect
       -- to home page
     | Redirect
@@ -23,92 +34,56 @@ type
       -- in code to avoid conflicts
     | Peek (Post Core Full) Author
     | LoadingEdit
-      -- the following two states are very similar, just one
-      -- doesn't have info from core (such as uuid)
     | Edit (Post Core Full) Author
     | Create (Post Client Full) Author
-    | Delete UUID
+    | LoadingDelete
+    | Delete (Post Core Full)
+    | NotLoggedIn
 
 
-
-{------------------------------------------------------}
-
-
-init : PostType -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
-init postType general =
+init : General -> PostRoute -> ( Model, Cmd Msg )
+init general postRoute =
     let
-        maybeUserUUID =
-            General.user general
+        route =
+            General.route general
 
-        authors =
-            General.authors general
-
-        getAuthor =
-            \uuid -> Author.fromUUID uuid authors
+        mode =
+            General.mode general
     in
-    case postType of
-        Route.Ready postUUID ->
-            Page.init
-                LoadingReady
-                (getPost general postUUID maybeUserUUID Ready)
-                (Post <| Route.Ready postUUID)
-                general
-
-        Route.Edit postUUID ->
-            Page.init
-                LoadingEdit
-                (getPost general postUUID maybeUserUUID Edit)
-                (Post <| Route.Edit postUUID)
-                general
-
-        Route.Delete postUUID ->
-            Page.init
-                (Delete postUUID)
-                Cmd.none
-                (Post <| Route.Delete postUUID)
-                general
-
+    case postRoute of
         Route.Create ->
-            case maybeUserUUID of
+            case General.user general of
                 Just userUUID ->
-                    case Author.fromUUID userUUID authors of
-                        Just author ->
-                            Page.init
-                                (Create (Post.empty userUUID) author)
-                                Cmd.none
-                                (Post Route.Create)
-                                general
-
-                        Nothing ->
-                            Page.init
-                                Redirect
-                                (redirect404 general)
-                                (Post Route.Create)
-                                general
+                    Create (Post.empty userUUID)
 
                 Nothing ->
-                    let
-                        problem =
-                            Problem.create
-                                "Not Logged In"
-                                (MarkdownError <| Markdown.create "you must be logged in to create a post")
-                                (Just <| Problem.createHandler "Log In" (NavigateTo Login))
-                    in
-                    Page.init
-                        LoadingReady
-                        Cmd.none
-                        (Post Route.Create)
-                        (General.pushProblem problem general)
+                    ( NotLoggedIn, Cmd.none )
 
+        Route.View postUUID ->
+            case General.user general of
+                Just userUUID ->
+                    ( LoadingView, Api.getPost mode postUUID )
 
-fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
+        Route.Edit postUUID ->
+            case General.use general of
+                Just userUUID ->
+                    ( LoadingEdit, Api.getPost mode postUUID )
+
+                Nothing ->
+                    ( NotLoggedIn, Cmd.none )
+
+        Route.Delete postUUID ->
+            case General.user general of
+                Just userUUID ->
+                    ( LoadingDelete, Api.getPost mode postUUID )
+
+                Nothing ->
+                    ( NotLoggedIn, Cmd.none )
 
 
 toGeneral : Model -> General
-toGeneral =
-    Page.toGeneral
+toGeneral (Model internals) =
+    internals.general
 
 
 
@@ -289,9 +264,9 @@ updateMod msg general internals =
             let
                 onOk =
                     \post author ->
-                        { model = Ready post author
+                        { model = View post author
                         , general = general
-                        , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Route.Ready <| Post.uuid post)
+                        , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Route.View <| Post.uuid post)
                         }
             in
             case internals of
@@ -318,7 +293,7 @@ updateMod msg general internals =
 
         EditCurrentPost ->
             case internals of
-                Ready post author ->
+                View post author ->
                     { model = internals
                     , general = general
                     , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Edit <| Post.uuid post)
@@ -329,7 +304,7 @@ updateMod msg general internals =
 
         DeleteCurrentPost ->
             case internals of
-                Ready post author ->
+                View post author ->
                     { model = internals
                     , general = general
                     , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Delete <| Post.uuid post)
@@ -427,13 +402,13 @@ viewPost general internals =
 
         contents =
             case internals of
-                LoadingReady ->
+                LoadingView ->
                     loadingView theme
 
                 Redirect ->
                     [ div [ css [ flexGrow <| num 1 ] ] [] ]
 
-                Ready post author ->
+                View post author ->
                     let
                         authors =
                             General.authors general

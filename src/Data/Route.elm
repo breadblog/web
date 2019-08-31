@@ -1,4 +1,4 @@
-port module Data.Route exposing (PostType(..), Route(..), changeRoute, fromUrl, toClass, toName, toPath)
+port module Data.Route exposing (PostRoute(..), Route(..), changeRoute, fromUrl, toClass, toName, toPath)
 
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode
@@ -10,7 +10,7 @@ import Url.Parser as Parser exposing ((</>), Parser, oneOf, parse, s, string, to
 
 type Route
     = NotFound
-      -- | Post PostType
+    | Post PostRoute
       -- | About
       -- | Donate
       -- | Changelog
@@ -18,8 +18,8 @@ type Route
     | Home
 
 
-type PostType
-    = Ready UUID
+type PostRoute
+    = View UUID
     | Create
     | Edit UUID
     | Delete UUID
@@ -37,10 +37,11 @@ urlParser =
 
         -- , Parser.map Login (s "login")
         -- Posts
-        -- , Parser.map (Post Create) (s "post" </> s "create")
-        -- , Parser.map (Post << Ready) (s "post" </> UUID.urlParser)
-        -- , Parser.map (Post << Edit) (s "post" </> s "edit" </> UUID.urlParser)
-        -- , Parser.map (Post << Delete) (s "post" </> s "delete" </> UUID.urlParser)
+        , Parser.map (Post Create) (s "post" </> s "create")
+        , Parser.map (Post << View) (s "post" </> UUID.urlParser)
+        , Parser.map (Post << Edit) (s "post" </> s "edit" </> UUID.urlParser)
+        , Parser.map (Post << Delete) (s "post" </> s "delete" </> UUID.urlParser)
+
         -- Info
         -- , Parser.map About (s "about")
         -- , Parser.map Donate (s "donate")
@@ -110,16 +111,20 @@ toName route =
         --     "About"
         -- Donate ->
         --     "Donate"
-        -- Post postType ->
-        --     case postType of
-        --         Create ->
-        --             "Create Post"
-        --         Delete _ ->
-        --             "Delete Post"
-        --         Edit _ ->
-        --             "Edit Post"
-        --         Ready _ ->
-        --             "Post"
+        Post postRoute ->
+            case postRoute of
+                Create ->
+                    "Create Post"
+
+                Delete _ ->
+                    "Delete Post"
+
+                Edit _ ->
+                    "Edit Post"
+
+                View _ ->
+                    "Post"
+
         -- Changelog ->
         --     "Changelog"
         NotFound ->
@@ -150,16 +155,20 @@ toPath route =
 
         -- Login ->
         --     relative [ "/login" ] []
-        -- Post postType ->
-        --     case postType of
-        --         Create ->
-        --             relative [ "/post/create" ] []
-        --         Ready postUUID ->
-        --             relative [ UUID.toPath "/post" postUUID ] []
-        --         Edit postUUID ->
-        --             relative [ UUID.toPath "/post/edit" postUUID ] []
-        --         Delete postUUID ->
-        --             relative [ UUID.toPath "/post/delete" postUUID ] []
+        Post postRoute ->
+            case postRoute of
+                Create ->
+                    relative [ "/post/create" ] []
+
+                View postUUID ->
+                    relative [ UUID.toPath "/post" postUUID ] []
+
+                Edit postUUID ->
+                    relative [ UUID.toPath "/post/edit" postUUID ] []
+
+                Delete postUUID ->
+                    relative [ UUID.toPath "/post/delete" postUUID ] []
+
         -- About ->
         --     relative [ "/about" ] []
         -- Donate ->
