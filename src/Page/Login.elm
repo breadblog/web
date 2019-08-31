@@ -23,7 +23,7 @@ type Model
 
 
 type alias Internals =
-    { username : String
+    { username : Username
     , password : Password
     , error : Maybe String
     , general : General
@@ -95,7 +95,12 @@ update msg model =
 
         Login ->
             ( model
-            , General.login internals.username internals.password general
+            , Api.login
+                { msg = GotLogin
+                , username = internals.username
+                , password = internals.password
+                , mode = General.mode general
+                }
             )
 
         UpdateUsername username ->
@@ -114,7 +119,12 @@ update msg model =
                     case code of
                         -- enter
                         13 ->
-                            Api.login internals.username internals.password internals.general
+                            Api.login
+                                { msg = GotLogin
+                                , username = internals.username
+                                , password = internals.password
+                                , mode = General.mode general
+                                }
 
                         _ ->
                             Cmd.none
@@ -184,11 +194,11 @@ view (Model internals) =
                     ]
                 ]
                 [ button
-                    [ Events.onClick <| GeneralMsg TryLogout
+                    [ Events.onClick <| GeneralMsg Logout
                     ]
                     [ text "logout" ]
                 , button
-                    [ Events.onClick TryLogin
+                    [ Events.onClick Login
                     ]
                     [ text "submit" ]
                 ]

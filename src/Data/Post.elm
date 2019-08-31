@@ -32,7 +32,6 @@ type Core
 type alias CoreInternals =
     { uuid : UUID
     , date : Time.Posix
-    , favorite : Maybe Bool
     }
 
 
@@ -59,6 +58,7 @@ type alias Internals =
     , tags : List UUID
     , author : UUID
     , published : Bool
+    , favorite : Bool
     }
 
 
@@ -79,6 +79,7 @@ empty userUUID =
         , tags = []
         , author = userUUID
         , published = False
+        , favorite = False
         }
 
 
@@ -102,7 +103,7 @@ toSource msg post =
 
 
 
-{- Accessors -}
+{- Accessors (public) -}
 
 
 uuid : Post Core f -> UUID
@@ -150,14 +151,14 @@ date post =
     accessCore .date post
 
 
-favorite : Post Core f -> Maybe Bool
-favorite post =
-    accessCore .favorite post
+favorite : Post l f -> Bool
+favorite =
+    toInternals >> .favorite
 
 
-mapFavorite : (Maybe Bool -> Maybe Bool) -> Post Core f -> Post Core f
+mapFavorite : (Bool -> Bool) -> Post l f -> Post l f
 mapFavorite transform post =
-    mapCore (\i -> { i | favorite = transform i.favorite }) post
+    mapInternals (\i -> { i | favorite = transform i.favorite }) post
 
 
 tags : Post l f -> List UUID
@@ -173,6 +174,15 @@ published post =
 mapPublished : (Bool -> Bool) -> Post l f -> Post l f
 mapPublished transform post =
     mapInternals (\i -> { i | published = transform i.published }) post
+
+
+
+{- Accessors (private) -}
+
+
+toInternals : Post l f -> Internals
+toInternals (Post l f internals) =
+    internals
 
 
 
@@ -222,9 +232,13 @@ mapFull transform (Post l (Full full) i) =
     Post l (Full <| transform full) i
 
 
+
+-- TODO: should use this
+
+
 mergeFromApi : Post Core Preview -> Post Core Preview -> Post Core Preview
-mergeFromApi fromAPI (Post (Core fromCache) _ _) =
-    mapFavorite (\_ -> fromCache.favorite) fromAPI
+mergeFromApi fromAPI (Post _ _ internals) =
+    mapFavorite (\_ -> internals.favorite) fromAPI
 
 
 
@@ -238,6 +252,7 @@ encodeInternalsHelper i =
     , ( "tags", Encode.list UUID.encode i.tags )
     , ( "author", UUID.encode i.author )
     , ( "published", Encode.bool i.published )
+    , ( "favorite", Encode.bool i.favorite )
     ]
 
 
@@ -249,17 +264,9 @@ encodeFullHelper i =
 
 encodeCoreHelper : CoreInternals -> List ( String, Value )
 encodeCoreHelper i =
-    List.append
-        [ ( "date", Encode.int <| Time.posixToMillis i.date )
-        , ( "uuid", UUID.encode i.uuid )
-        ]
-        (case i.favorite of
-            Just v ->
-                [ ( "favorite", Encode.bool v ) ]
-
-            Nothing ->
-                []
-        )
+    [ ( "date", Encode.int <| Time.posixToMillis i.date )
+    , ( "uuid", UUID.encode i.uuid )
+    ]
 
 
 encodeFull : Post Core Full -> Value
@@ -298,6 +305,7 @@ internalsDecoder =
         |> required "tags" (Decode.list UUID.decoder)
         |> required "author" UUID.decoder
         |> required "published" Decode.bool
+        |> required "favorite" Decode.bool
 
 
 coreDecodeHelper : Decoder Core
@@ -305,7 +313,6 @@ coreDecodeHelper =
     Decode.succeed CoreInternals
         |> required "uuid" UUID.decoder
         |> required "date" timeDecoder
-        |> optional "favorite" (Decode.maybe Decode.bool) (Just False)
         |> Decode.map Core
 
 

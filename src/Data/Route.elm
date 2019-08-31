@@ -1,4 +1,4 @@
-port module Data.Route exposing (PostRoute(..), Route(..), changeRoute, fromUrl, toClass, toName, toPath)
+module Data.Route exposing (PostRoute(..), Route(..), fromUrl, toClass, toName, toPath)
 
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode
@@ -19,7 +19,7 @@ type Route
 
 
 type PostRoute
-    = View UUID
+    = Read UUID
     | Create
     | Edit UUID
     | Delete UUID
@@ -38,7 +38,7 @@ urlParser =
         -- , Parser.map Login (s "login")
         -- Posts
         , Parser.map (Post Create) (s "post" </> s "create")
-        , Parser.map (Post << View) (s "post" </> UUID.urlParser)
+        , Parser.map (Post << Read) (s "post" </> UUID.urlParser)
         , Parser.map (Post << Edit) (s "post" </> s "edit" </> UUID.urlParser)
         , Parser.map (Post << Delete) (s "post" </> s "delete" </> UUID.urlParser)
 
@@ -50,19 +50,7 @@ urlParser =
 
 
 
-{- Ports -}
-
-
-port changeRoutePort : Value -> Cmd msg
-
-
-
 {- Util -}
-
-
-changeRoute : Route -> Cmd msg
-changeRoute route =
-    changeRoutePort <| encode route
 
 
 fromUrl : Url -> Route
@@ -122,7 +110,7 @@ toName route =
                 Edit _ ->
                     "Edit Post"
 
-                View _ ->
+                Read _ ->
                     "Post"
 
         -- Changelog ->
@@ -160,7 +148,7 @@ toPath route =
                 Create ->
                     relative [ "/post/create" ] []
 
-                View postUUID ->
+                Read postUUID ->
                     relative [ UUID.toPath "/post" postUUID ] []
 
                 Edit postUUID ->

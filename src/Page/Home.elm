@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, init, toGeneral, update, view)
+module Page.Home exposing (Model, Msg, init, mapGeneral, toGeneral, update, view)
 
 import Css exposing (..)
 import Data.General as General exposing (General)
@@ -24,17 +24,24 @@ type alias Internals =
     }
 
 
-init : General -> Model
+init : General -> ( Model, Cmd Msg )
 init general =
-    Model
+    ( Model
         { header = Header.init
         , general = general
         }
+    , Cmd.map GeneralMsg (General.updateAll general)
+    )
 
 
 toGeneral : Model -> General
 toGeneral =
     toInternals >> .general
+
+
+mapGeneral : (General -> General) -> Model -> Model
+mapGeneral transform (Model internals) =
+    Model { internals | general = transform internals.general }
 
 
 toInternals : Model -> Internals
@@ -48,6 +55,7 @@ toInternals (Model internals) =
 
 type Msg
     = HeaderMsg Header.Msg
+    | GeneralMsg General.Msg
 
 
 
@@ -65,6 +73,11 @@ update msg (Model internals) =
             ( Model { internals | header = updatedHeader.model, general = updatedHeader.general }
             , Cmd.map HeaderMsg updatedHeader.cmd
             )
+
+        GeneralMsg generalMsg ->
+            General.update generalMsg internals.general
+                |> Tuple.mapFirst (\g -> Model { internals | general = g })
+                |> Tuple.mapSecond (Cmd.map GeneralMsg)
 
 
 

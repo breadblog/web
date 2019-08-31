@@ -1,17 +1,35 @@
-module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.Post exposing (Model, Msg, init, mapGeneral, toGeneral, update, view)
 
 import Api
+import Css exposing (..)
+import Css.Transitions as Transitions exposing (transition)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.Post as Post exposing (Client, Core, Full, Post)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route as Route exposing (PostRoute(..), Route(..))
+import Data.Tag as Tag exposing (Tag)
+import Data.Theme as Theme exposing (Theme)
 import Data.UUID as UUID exposing (UUID)
+import Data.Username as Username exposing (Username)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events as Events
 import Http
+import List.Extra
+import Style.Button
+import Style.Card
+import Style.Color as Color
+import Style.Font as Font
+import Style.Post
+import Style.Screen as Screen
+import Style.Shadow as Shadow
+import Svg.Styled.Attributes as SvgAttributes
+import Svg.Styled.Events as SvgEvents
+import View.Loading
+import View.Svg
+import View.Tag
 
 
 
@@ -26,9 +44,9 @@ type
     Internals
     {------------------ Public States ---------------------}
     -- loading state for when we are fetching post info
-    = LoadingView
+    = LoadingRead
       -- we are now ready to display an existing post
-    | View (Post Core Full) Author
+    | Read (Post Core Full) Author
       -- page shown when failure occurs, waiting for redirect
       -- to home page
     | Redirect
@@ -79,18 +97,26 @@ init general postRoute =
                     , Cmd.map GeneralMsg <| General.logout general
                     )
 
-        Route.View postUUID ->
-            case General.user general of
-                Just userUUID ->
-                    ( Model general LoadingView
-                    , Api.getPost mode postUUID
-                    )
+        Route.Read postUUID ->
+            ( Model general LoadingRead
+            , Api.getPost
+                { mode = General.mode general
+                , user = General.user general
+                , uuid = postUUID
+                , msg = GotPost
+                }
+            )
 
         Route.Edit postUUID ->
             case General.user general of
                 Just userUUID ->
                     ( Model general LoadingEdit
-                    , Api.getPost mode postUUID
+                    , Api.getPost
+                        { mode = General.mode general
+                        , user = General.user general
+                        , uuid = postUUID
+                        , msg = GotPost
+                        }
                     )
 
                 Nothing ->
@@ -101,15 +127,29 @@ init general postRoute =
         Route.Delete postUUID ->
             case General.user general of
                 Just userUUID ->
-                    ( LoadingDelete, Api.getPost mode postUUID )
+                    ( Model general LoadingDelete
+                    , Api.getPost
+                        { mode = General.mode general
+                        , user = General.user general
+                        , uuid = postUUID
+                        , msg = GotPost
+                        }
+                    )
 
                 Nothing ->
-                    ( NotLoggedIn, Cmd.none )
+                    ( Model general NotLoggedIn
+                    , Cmd.none
+                    )
 
 
 toGeneral : Model -> General
 toGeneral (Model general _) =
     general
+
+
+mapGeneral : (General -> General) -> Model -> Model
+mapGeneral transform (Model general internals) =
+    Model (transform general) internals
 
 
 
@@ -129,9 +169,11 @@ type Msg
     | ConfirmDelete
     | GotDelete (Result Http.Error ())
     | TogglePublished
+    | ToggleFavorite
 
 
 
+-- TODO: when we write to post, should update General previews
 {- Update -}
 
 
@@ -233,6 +275,9 @@ update msg model =
                         }
                     )
 
+                _ ->
+                    ( model, Cmd.none )
+
         GotWrite res ->
             case res of
                 Ok post ->
@@ -240,16 +285,19 @@ update msg model =
                         Create _ author _ ->
                             ( Model
                                 general
-                                (View post author)
+                                (Read post author)
                             , Cmd.none
                             )
 
                         Edit _ author _ ->
                             ( Model
                                 general
-                                (View post author)
+                                (Read post author)
                             , Cmd.none
                             )
+
+                        _ ->
+                            ( model, Cmd.none )
 
                 Err writeErr ->
                     let
@@ -304,7 +352,7 @@ update msg model =
 
         EditCurrentPost ->
             case internals of
-                View post author ->
+                Read post author ->
                     ( Model
                         general
                         (Edit post author 0)
@@ -323,10 +371,15 @@ update msg model =
                                 "Cannot delete post"
                                 (MarkdownError <| Markdown.create "Only the author can delete a post")
                                 Nothing
+
+                        isAuthor post =
+                            General.user general
+                                |> Maybe.map (UUID.compare <| Post.author post)
+                                |> Maybe.withDefault False
                     in
                     case internals of
-                        View post author ->
-                            if UUID.compare (General.user general) (Post.author post) then
+                        Read post author ->
+                            if isAuthor post then
                                 ( Model
                                     general
                                     (Delete post author 0)
@@ -335,13 +388,13 @@ update msg model =
 
                             else
                                 ( Model
-                                    (General.pushProblem general)
+                                    (General.pushProblem unauthorizedProblem general)
                                     internals
                                 , Cmd.none
                                 )
 
                         Edit post author attempts ->
-                            if UUID.compare (General.user general) (Post.author post) then
+                            if isAuthor post then
                                 ( Model
                                     general
                                     (Delete post author 0)
@@ -350,10 +403,13 @@ update msg model =
 
                             else
                                 ( Model
-                                    (General.pushProblem general)
+                                    (General.pushProblem unauthorizedProblem general)
                                     internals
                                 , Cmd.none
                                 )
+
+                        _ ->
+                            ( model, Cmd.none )
 
                 Nothing ->
                     let
@@ -364,7 +420,7 @@ update msg model =
                                 Nothing
                     in
                     ( Model
-                        (General.pushProblem general)
+                        (General.pushProblem problem general)
                         internals
                     , Cmd.none
                     )
@@ -408,6 +464,28 @@ update msg model =
                     , Cmd.none
                     )
 
+        ToggleFavorite ->
+            case internals of
+                Edit post author attempts ->
+                    ( Model
+                        general
+                        (Edit (Post.mapFavorite not post) author attempts)
+                    , Cmd.none
+                    )
+
+                Create post author attempts ->
+                    -- favorites are not an edit thing
+                    ( Model
+                        general
+                        (Create (Post.mapFavorite not post) author attempts)
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model
+                    , Cmd.none
+                    )
+
 
 gotPost : Model -> Result Http.Error (Post Core Full) -> ( Model, Cmd Msg )
 gotPost model res =
@@ -429,14 +507,15 @@ gotPost model res =
 
                 userIsAuthor =
                     maybeAuthor
+                        |> Maybe.map Author.uuid
                         |> Maybe.map2 UUID.compare (General.user general)
                         |> Maybe.withDefault False
             in
             case maybeAuthor of
                 Just author ->
                     case internals of
-                        LoadingView ->
-                            ( Model general (View post author)
+                        LoadingRead ->
+                            ( Model general (Read post author)
                             , Cmd.none
                             )
 
@@ -449,7 +528,9 @@ gotPost model res =
                             else
                                 let
                                     handler =
-                                        Problem.createHandler "View Post" (GotPost res)
+                                        Problem.createHandler
+                                            "View Post"
+                                            (NavigateTo <| Route.Post <| Route.Read <| Post.uuid post)
 
                                     problem =
                                         Problem.create
@@ -459,7 +540,7 @@ gotPost model res =
                                 in
                                 ( Model
                                     (General.pushProblem problem general)
-                                    LoadingView
+                                    LoadingRead
                                 , Cmd.none
                                 )
 
@@ -472,7 +553,7 @@ gotPost model res =
                             else
                                 let
                                     handlerMsg =
-                                        GotPost res
+                                        NavigateTo <| Route.Post <| Route.Read <| Post.uuid post
 
                                     handler =
                                         Problem.createHandler "View Post" handlerMsg
@@ -486,20 +567,26 @@ gotPost model res =
                                     updatedGeneral =
                                         General.pushProblem problem general
                                 in
-                                ( Model updatedGeneral LoadingView
+                                ( Model updatedGeneral LoadingRead
                                 , Cmd.none
                                 )
+
+                        _ ->
+                            ( model, Cmd.none )
 
                 Nothing ->
                     let
                         handlerMsg =
-                            GeneralMsg (NavigateTo Home)
+                            NavigateTo Home
 
                         handler =
                             Problem.createHandler "Go Home" handlerMsg
 
                         problem =
-                            Problem.create "Post Author Missing"
+                            Problem.create
+                                "Post Author Missing"
+                                (MarkdownError <| Markdown.create "Cannot find author for the post you were trying to look at")
+                                (Just handler)
 
                         updatedGeneral =
                             General.pushProblem problem general
@@ -548,13 +635,22 @@ view (Model general internals) =
 
         contents =
             case internals of
-                LoadingView ->
+                LoadingRead ->
                     loadingView theme
+
+                LoadingEdit ->
+                    loadingView theme
+
+                LoadingDelete ->
+                    loadingView theme
+
+                NotLoggedIn ->
+                    notLoggedInView theme
 
                 Redirect ->
                     [ div [ css [ flexGrow <| num 1 ] ] [] ]
 
-                View post author ->
+                Read post author ->
                     let
                         authors =
                             General.authors general
@@ -564,17 +660,14 @@ view (Model general internals) =
                 Peek post author ->
                     peekView general post
 
-                LoadingEdit ->
-                    loadingView theme
-
-                Edit post author ->
+                Edit post author _ ->
                     editView general post author
 
-                Create post author ->
+                Create post author _ ->
                     createView general post author
 
-                Delete postUUID ->
-                    deleteView theme postUUID
+                Delete post author _ ->
+                    deleteView theme (Post.uuid post)
     in
     [ div
         [ class "page post-page"
@@ -591,7 +684,12 @@ view (Model general internals) =
     ]
 
 
-loadingView : Theme -> List (Html (Compound ModMsg))
+notLoggedInView : Theme -> List (Html Msg)
+notLoggedInView theme =
+    []
+
+
+loadingView : Theme -> List (Html Msg)
 loadingView theme =
     [ div
         [ css
@@ -610,7 +708,7 @@ loadingView theme =
     ]
 
 
-peekView : General -> Post Core Full -> List (Html (Compound ModMsg))
+peekView : General -> Post Core Full -> List (Html Msg)
 peekView general post =
     let
         theme =
@@ -621,7 +719,7 @@ peekView general post =
     ]
 
 
-editView : General -> Post Core Full -> Author -> List (Html (Compound ModMsg))
+editView : General -> Post Core Full -> Author -> List (Html Msg)
 editView general post author =
     let
         theme =
@@ -658,7 +756,7 @@ editView general post author =
             [ css [ displayFlex ]
             ]
             [ button
-                [ onClick <| Global <| GeneralMsg <| GoBack
+                [ Events.onClick <| GeneralMsg <| GoBack
                 , css
                     [ Style.Button.default
                     , Style.Button.danger theme
@@ -674,7 +772,7 @@ editView general post author =
                     , margin4 (px 0) (px 10) (px 10) (px 10)
                     , flex3 (num 1) (num 0) (num 0)
                     ]
-                , onClick <| Mod <| WritePost
+                , Events.onClick Write
                 ]
                 [ text "Edit" ]
             ]
@@ -682,7 +780,7 @@ editView general post author =
     ]
 
 
-createView : General -> Post Client Full -> Author -> List (Html (Compound ModMsg))
+createView : General -> Post Client Full -> Author -> List (Html Msg)
 createView general post author =
     let
         theme =
@@ -721,7 +819,7 @@ createView general post author =
                 [ displayFlex ]
             ]
             [ button
-                [ onClick <| Global <| GeneralMsg <| GoBack
+                [ Events.onClick <| GeneralMsg <| GoBack
                 , css
                     [ Style.Button.default
                     , Style.Button.danger theme
@@ -737,7 +835,7 @@ createView general post author =
                     , margin4 (px 0) (px 10) (px 10) (px 10)
                     , flex3 (num 1) (num 0) (num 0)
                     ]
-                , onClick <| Mod <| WritePost
+                , Events.onClick Write
                 ]
                 [ text "Create" ]
             ]
@@ -745,7 +843,7 @@ createView general post author =
     ]
 
 
-deleteView : Theme -> UUID -> List (Html (Compound ModMsg))
+deleteView : Theme -> UUID -> List (Html Msg)
 deleteView theme postUUID =
     [ div
         [ class "delete-post"
@@ -796,7 +894,7 @@ deleteView theme postUUID =
                     ]
                 ]
                 [ button
-                    [ onClick <| Global <| GeneralMsg GoBack
+                    [ Events.onClick <| GeneralMsg GoBack
                     , css
                         [ Style.Button.default
                         , backgroundColor <| Color.danger theme
@@ -805,7 +903,7 @@ deleteView theme postUUID =
                     ]
                     [ text "Go Back" ]
                 , button
-                    [ onClick <| Mod <| ConfirmDelete
+                    [ Events.onClick <| ConfirmDelete
                     , css
                         [ Style.Button.default
                         , Style.Button.submit
@@ -818,7 +916,7 @@ deleteView theme postUUID =
     ]
 
 
-readyView : General -> Post Core Full -> Author -> List (Html (Compound ModMsg))
+readyView : General -> Post Core Full -> Author -> List (Html Msg)
 readyView general post author =
     let
         theme =
@@ -917,10 +1015,10 @@ viewTags general post =
         )
 
 
-edit : Theme -> List Style -> Html (Compound ModMsg)
+edit : Theme -> List Style -> Html Msg
 edit theme styles =
     View.Svg.edit
-        [ SvgEvents.onClick <| Mod <| EditCurrentPost
+        [ SvgEvents.onClick EditCurrentPost
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles
@@ -928,10 +1026,10 @@ edit theme styles =
         ]
 
 
-delete : Theme -> List Style -> Html (Compound ModMsg)
+delete : Theme -> List Style -> Html Msg
 delete theme styles =
     View.Svg.trash2
-        [ SvgEvents.onClick <| Mod <| DeleteCurrentPost
+        [ SvgEvents.onClick DeleteCurrentPost
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles
@@ -939,51 +1037,36 @@ delete theme styles =
         ]
 
 
-favorite : General -> Post Core f -> List Style -> Html (Compound ModMsg)
+favorite : General -> Post Core f -> List Style -> Html Msg
 favorite general post styles =
     let
         theme =
             General.theme general
 
-        maybeFav =
-            case Post.favorite post of
-                Just f ->
-                    Just f
-
-                Nothing ->
-                    case List.Extra.find (Post.compare post) (General.postPreviews general) of
-                        Just p ->
-                            Post.favorite p
-
-                        Nothing ->
-                            Nothing
+        fav =
+            Post.favorite post
     in
-    case maybeFav of
-        Just fav ->
-            View.Svg.heart
-                [ SvgEvents.onClick <| Global <| GeneralMsg <| TogglePost <| Post.toPreview post
-                , SvgAttributes.css
-                    (List.append
-                        [ svgStyle theme
-                        , marginRight (px 15)
-                        , fillIf fav Color.favorite
-                        , color <|
-                            if fav then
-                                Color.favorite
+    View.Svg.heart
+        [ SvgEvents.onClick ToggleFavorite
+        , SvgAttributes.css
+            (List.append
+                [ svgStyle theme
+                , marginRight (px 15)
+                , fillIf fav Color.favorite
+                , color <|
+                    if fav then
+                        Color.favorite
 
-                            else
-                                Color.tertiaryFont <| theme
-                        , hover
-                            [ fillIf fav Color.favorite
-                            , color Color.favorite
-                            ]
-                        ]
-                        styles
-                    )
+                    else
+                        Color.tertiaryFont <| theme
+                , hover
+                    [ fillIf fav Color.favorite
+                    , color Color.favorite
+                    ]
                 ]
-
-        Nothing ->
-            text ""
+                styles
+            )
+        ]
 
 
 fillIf : Bool -> Color -> Style
@@ -996,7 +1079,7 @@ fillIf bool color =
             []
 
 
-togglePublished : Theme -> Post l f -> List Style -> Html (Compound ModMsg)
+togglePublished : Theme -> Post l f -> List Style -> Html Msg
 togglePublished theme post styles =
     let
         published =
@@ -1010,7 +1093,7 @@ togglePublished theme post styles =
                 View.Svg.lock
     in
     svg
-        [ SvgEvents.onClick <| Mod <| TogglePublished
+        [ SvgEvents.onClick TogglePublished
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles
@@ -1018,10 +1101,10 @@ togglePublished theme post styles =
         ]
 
 
-maximize : Theme -> List Style -> Html (Compound ModMsg)
+maximize : Theme -> List Style -> Html Msg
 maximize theme styles =
     View.Svg.maximize
-        [ SvgEvents.onClick <| Global <| GeneralMsg <| FullscreenElement "post-page"
+        [ SvgEvents.onClick (GeneralMsg <| FullscreenElement "post-page")
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles
@@ -1029,10 +1112,10 @@ maximize theme styles =
         ]
 
 
-minimize : Theme -> List Style -> Html (Compound ModMsg)
+minimize : Theme -> List Style -> Html Msg
 minimize theme styles =
     View.Svg.minimize
-        [ SvgEvents.onClick <| Global <| GeneralMsg <| ExitFullscreen
+        [ SvgEvents.onClick (GeneralMsg ExitFullscreen)
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles
@@ -1071,7 +1154,7 @@ filler =
         []
 
 
-authorLink : Author -> Theme -> Html (Compound ModMsg)
+authorLink : Author -> Theme -> Html Msg
 authorLink author theme =
     a
         [ class "author"
@@ -1107,12 +1190,12 @@ viewTitle theme title =
         [ text title ]
 
 
-titleInput : Theme -> String -> Html (Compound ModMsg)
+titleInput : Theme -> String -> Html Msg
 titleInput theme title =
     input
         [ class "title-input"
         , value title
-        , onInput <| OnTitleInput >> Mod
+        , Events.onInput OnTitleInput
         , autofocus True
         , css
             [ inputStyle theme
@@ -1128,12 +1211,12 @@ titleInput theme title =
         []
 
 
-descInput : Theme -> String -> Html (Compound ModMsg)
+descInput : Theme -> String -> Html Msg
 descInput theme desc =
     textarea
         [ class "desc-input"
         , value desc
-        , onInput <| OnDescriptionInput >> Mod
+        , Events.onInput OnDescriptionInput
         , css
             [ inputStyle theme
             , fontWeight <| int 500
@@ -1146,12 +1229,12 @@ descInput theme desc =
         []
 
 
-bodyInput : Theme -> Markdown -> Html (Compound ModMsg)
+bodyInput : Theme -> Markdown -> Html Msg
 bodyInput theme body =
     textarea
         [ class "desc-input"
         , Markdown.toValue body
-        , onInput <| OnBodyInput >> Mod
+        , Events.onInput OnBodyInput
         , css
             [ inputStyle theme
             , fontWeight <| int 500

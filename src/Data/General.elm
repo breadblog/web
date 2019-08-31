@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, back, dismissProblem, fullscreen, login, logout, mapRoute, mapTheme, mapUser, mode, network, postPreviews, problems, pushProblem, pushUrl, replaceUrl, route, tags, theme, update, user)
+port module Data.General exposing (General, Msg(..), authors, back, dismissProblem, fullscreen, fullscreenSub, init, login, logout, mapRoute, mapTheme, mapUser, mode, network, networkSub, postPreviews, problems, pushProblem, pushUrl, replaceUrl, route, tags, theme, update, updateAll, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation as Nav exposing (Key)
@@ -381,6 +381,11 @@ theme =
     toCache >> .theme
 
 
+version : General -> Version
+version =
+    toCache >> .version
+
+
 user : General -> Maybe UUID
 user =
     toCache >> .user
@@ -451,6 +456,15 @@ mapProblems transform (General internals) =
 
 
 {- Http -}
+
+
+updateAll : General -> Cmd Msg
+updateAll general =
+    Cmd.batch
+        [ updateAuthors general
+        , updateTags general
+        , updatePostPreviews general
+        ]
 
 
 updateAuthors : General -> Cmd Msg
