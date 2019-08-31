@@ -1,18 +1,21 @@
-port module Data.General exposing (General, Msg(..), update)
+port module Data.General exposing (General, Msg(..), authors, back, dismissProblem, fullscreen, login, mapRoute, mapTheme, mapUser, mode, network, postPreviews, problems, pushProblem, pushUrl, replaceUrl, route, tags, theme, update, user)
 
 import Api exposing (Url)
 import Browser.Navigation as Nav exposing (Key)
 import Data.Author as Author exposing (Author)
 import Data.Config exposing (Config)
+import Data.Login as Login
 import Data.Markdown as Markdown
 import Data.Mode as Mode exposing (Mode(..))
 import Data.Network as Network exposing (Network(..))
+import Data.Password exposing (Password)
 import Data.Post as Post exposing (Core, Post, Preview)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route as Route exposing (Route(..))
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.UUID as UUID exposing (UUID)
+import Data.Username exposing (Username)
 import Data.Version exposing (Version)
 import Http
 import Json.Decode as Decode exposing (Decoder)
@@ -170,6 +173,7 @@ type Msg
     | UpdateAuthors
     | UpdatePostPreviews
     | UpdateTags
+    | Login Username Password
     | Logout
     | SetTheme Theme
     | NavigateTo Route
@@ -186,6 +190,7 @@ type IMsg
     = GotAuthors (Result Http.Error (List Author))
     | GotPostPreviews (Result Http.Error (List (Post Core Preview)))
     | GotTags (Result Http.Error (List Tag))
+    | GotLogin (Result Http.Error Login.Response)
     | GotLogout (Result Http.Error ())
     | SetFullscreen Bool
     | SetNetwork Network
@@ -209,6 +214,11 @@ update msg general =
 
         UpdateTags ->
             ( general, updateTags general )
+
+        Login username password ->
+            ( general
+            , login username password general
+            )
 
         Logout ->
             ( general, logout general )
@@ -282,6 +292,14 @@ internalsUpdate msg general =
         GotTags res ->
             case res of
                 Ok freshTags ->
+                    replaceMe
+
+                Err err ->
+                    replaceMe
+
+        GotLogin res ->
+            case res of
+                Ok { uuid } ->
                     replaceMe
 
                 Err err ->
@@ -462,6 +480,16 @@ updatePostPreviews general =
         , user = user general
         , mode = mode general
         , offset = 0
+        }
+
+
+login : Username -> Password -> General -> Cmd Msg
+login username password general =
+    Api.login
+        { username = username
+        , password = password
+        , msg = GotLogin >> InternalMsg
+        , mode = mode general
         }
 
 

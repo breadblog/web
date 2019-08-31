@@ -9,7 +9,7 @@ import Style.Color as Color
 
 
 
--- Model
+{- View -}
 
 
 view : General -> List (Html msg)

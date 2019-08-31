@@ -8,6 +8,9 @@ import View.Header as Header
 
 
 
+-- TODO: shouldn't load home until it has either updated
+-- resources, or loaded content from cache (depending on
+-- network conditions)
 {- Model -}
 
 

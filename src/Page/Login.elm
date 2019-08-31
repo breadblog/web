@@ -52,8 +52,8 @@ toGeneral (Model internals) =
 
 
 type Msg
-    = OnLogin (Result Http.Error Data.Login.Response)
-    | TryLogin
+    = GotLogin (Result Http.Error Data.Login.Response)
+    | Login
     | UpdateUsername Username
     | UpdatePassword Password
     | InputKeyUp Int
@@ -74,7 +74,7 @@ update msg model =
             internals.general
     in
     case msg of
-        OnLogin res ->
+        GotLogin res ->
             case res of
                 Err err ->
                     ( Model { internals | error = Just "failed to login" }
@@ -84,7 +84,7 @@ update msg model =
                 Ok info ->
                     let
                         ( updatedGeneral, generalCmd ) =
-                            General.mapUser info.uuid internals.general
+                            General.mapUser (always (Just info.uuid)) internals.general
 
                         cmd =
                             Cmd.map GeneralMsg generalCmd
@@ -93,9 +93,9 @@ update msg model =
                     , cmd
                     )
 
-        TryLogin ->
+        Login ->
             ( model
-            , attemptLogin general internals.username internals.password
+            , General.login internals.username internals.password general
             )
 
         UpdateUsername username ->
@@ -114,7 +114,7 @@ update msg model =
                     case code of
                         -- enter
                         13 ->
-                            attemptLogin general internals.username internals.password
+                            Api.login internals.username internals.password internals.general
 
                         _ ->
                             Cmd.none
@@ -127,22 +127,6 @@ update msg model =
             General.update generalMsg general
                 |> Tuple.mapFirst (\g -> Model { internals | general = g })
                 |> Tuple.mapSecond (Cmd.map GeneralMsg)
-
-
-attemptLogin : General -> String -> Password -> Cmd Msg
-attemptLogin general username password =
-    let
-        mode =
-            General.mode general
-    in
-    Api.post
-        { expect = Http.expectJson OnLogin <| Data.Login.decodeResponse
-        , body =
-            Http.jsonBody <|
-                Data.Login.encodeRequest <|
-                    Data.Login.Request username password
-        , url = Api.url mode "/login/"
-        }
 
 
 

@@ -1,4 +1,4 @@
-module Data.Password exposing (Password, encode, onInput)
+module Data.Password exposing (Password, empty, encode, onInput)
 
 import Html.Styled exposing (Attribute)
 import Html.Styled.Events as Events

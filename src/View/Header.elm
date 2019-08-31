@@ -6,7 +6,7 @@ import Css.Transitions as Transitions exposing (transition)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Route as Route exposing (Route(..))
-import Data.Search as Search exposing (Result, Source)
+import Data.Search as Search exposing (Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.Username as Username exposing (Username)
@@ -399,26 +399,6 @@ logo shownScreens theme =
             [ text "Bits n' Bites"
             ]
         ]
-
-
-
--- Tags
-
-
-tagsContent : Theme -> List Tag -> List (Html Msg)
-tagsContent theme =
-    List.map
-        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (GeneralMsg <| ToggleTag t))
-
-
-
--- Authors
-
-
-authorsContent : Theme -> List Author -> List (Html Msg)
-authorsContent theme =
-    List.map
-        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (GeneralMsg <| ToggleAuthor a))
 
 
 

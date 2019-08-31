@@ -1,4 +1,4 @@
-module Api exposing (Url, deletePost, getAuthor, getAuthors, getPost, getPostPreviews, getTag, getTags, logout, toOffset)
+module Api exposing (Url, deletePost, getAuthor, getAuthors, getPost, getPostPreviews, getTag, getTags, login, logout, toOffset)
 
 import Data.Author as Author exposing (Author)
 import Data.Login

@@ -20,6 +20,10 @@ import Svg.Styled.Attributes as SvgAttr
 import View.Svg as Svg
 
 
+
+-- TODO: if the user reports, should disable button & allow them to take action
+
+
 view : List (Problem Msg) -> Html Msg
 view problems =
     div
