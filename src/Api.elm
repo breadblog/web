@@ -1,4 +1,4 @@
-module Api exposing (Url, deletePost, getAuthor, getAuthors, getPost, getPostPreviews, getTag, getTags, login, logout, toOffset)
+module Api exposing (Url, createPost, deletePost, getAuthor, getAuthors, getPost, getPostPreviews, getTag, getTags, login, logout, toOffset, updatePost)
 
 import Data.Author as Author exposing (Author)
 import Data.Login
@@ -51,10 +51,10 @@ type alias UpdateOne r m =
     }
 
 
-type alias CreateOne r m =
-    { msg : Result Http.Error r -> m
+type alias CreateOne create response m =
+    { msg : Result Http.Error response -> m
     , user : Maybe UUID
-    , resource : r
+    , resource : create
     , mode : Mode
     }
 
@@ -105,6 +105,24 @@ getPost req =
 getPostPreviews : GetMany (Post Core Preview) msg -> Cmd msg
 getPostPreviews req =
     getPage "post" Post.previewDecoder req
+
+
+createPost : CreateOne (Post Client Full) (Post Core Full) msg -> Cmd msg
+createPost req =
+    put
+        { url = url req.mode "/post/private"
+        , expect = Http.expectJson req.msg Post.fullDecoder
+        , body = Http.jsonBody <| Post.encodeFreshFull req.resource
+        }
+
+
+updatePost : UpdateOne (Post Core Full) msg -> Cmd msg
+updatePost req =
+    post
+        { url = url req.mode "/post/private"
+        , expect = Http.expectJson req.msg Post.fullDecoder
+        , body = Http.jsonBody <| Post.encodeFull req.resource
+        }
 
 
 deletePost : DeleteOne msg -> Cmd msg

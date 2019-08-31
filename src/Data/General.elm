@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, back, dismissProblem, fullscreen, login, mapRoute, mapTheme, mapUser, mode, network, postPreviews, problems, pushProblem, pushUrl, replaceUrl, route, tags, theme, update, user)
+port module Data.General exposing (General, Msg(..), authors, back, dismissProblem, fullscreen, login, logout, mapRoute, mapTheme, mapUser, mode, network, postPreviews, problems, pushProblem, pushUrl, replaceUrl, route, tags, theme, update, user)
 
 import Api exposing (Url)
 import Browser.Navigation as Nav exposing (Key)

@@ -160,8 +160,6 @@ view general (Model internals) =
         , fixedSpacer Screen.desktop <| px 25
         , logo Screen.desktop theme
         , spacer Screen.desktop
-        , dropdown Screen.desktop theme "tags" <| tagsContent theme tags
-        , dropdown Screen.desktop theme "author" <| authorsContent theme authors
 
         -- BOTH
         , spacer Screen.desktop

@@ -2,8 +2,10 @@ module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, vie
 
 import Api
 import Data.Author as Author exposing (Author)
-import Data.General as General exposing (General)
+import Data.General as General exposing (General, Msg(..))
+import Data.Markdown as Markdown exposing (Markdown)
 import Data.Post as Post exposing (Client, Core, Full, Post)
+import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route as Route exposing (PostRoute(..), Route(..))
 import Data.UUID as UUID exposing (UUID)
 import Html.Styled exposing (..)
@@ -36,11 +38,15 @@ type
       -- in code to avoid conflicts
     | Peek (Post Core Full) Author
     | LoadingEdit
-    | Edit (Post Core Full) Author
-    | Create (Post Client Full) Author
+    | Edit (Post Core Full) Author Attempts
+    | Create (Post Client Full) Author Attempts
     | LoadingDelete
-    | Delete (Post Core Full)
+    | Delete (Post Core Full) Author Attempts
     | NotLoggedIn
+
+
+type alias Attempts =
+    Int
 
 
 init : General -> PostRoute -> ( Model, Cmd Msg )
@@ -62,7 +68,9 @@ init general postRoute =
             in
             case maybeAuthor of
                 Just author ->
-                    ( Model general (Create <| Post.empty <| Author.uuid author)
+                    ( Model
+                        general
+                        (Create (Post.empty (Author.uuid author)) author 0)
                     , Cmd.none
                     )
 
@@ -100,7 +108,7 @@ init general postRoute =
 
 
 toGeneral : Model -> General
-toGeneral (Model general internals) =
+toGeneral (Model general _) =
     general
 
 
@@ -109,7 +117,8 @@ toGeneral (Model general internals) =
 
 
 type Msg
-    = GotPost (Result Http.Error (Post Core Full))
+    = GeneralMsg General.Msg
+    | GotPost (Result Http.Error (Post Core Full))
     | OnTitleInput String
     | OnDescriptionInput String
     | OnBodyInput String
@@ -136,15 +145,27 @@ update msg model =
             ( model, Cmd.none )
     in
     case msg of
+        GeneralMsg generalMsg ->
+            General.update generalMsg general
+                |> Tuple.mapFirst (\updatedGeneral -> Model updatedGeneral internals)
+                |> Tuple.mapSecond (Cmd.map GeneralMsg)
+
         GotPost res ->
             gotPost model res
 
         OnTitleInput str ->
             case internals of
-                Create post author ->
+                Create post author attempts ->
+                    let
+                        updatedPost =
+                            str
+                                |> String.left 64
+                                |> always
+                                |> (\m -> Post.mapTitle m post)
+                    in
                     ( Model
                         general
-                        (Create (Post.mapTitle (always <| String.left 64 <| str) post) author)
+                        (Create updatedPost author attempts)
                     , Cmd.none
                     )
 
@@ -152,33 +173,233 @@ update msg model =
                     ( model, Cmd.none )
 
         OnDescriptionInput str ->
-            replaceMe
+            case internals of
+                Create post author attempts ->
+                    let
+                        updatedPost =
+                            str
+                                |> String.left 256
+                                |> always
+                                |> (\m -> Post.mapTitle m post)
+                    in
+                    ( Model
+                        general
+                        (Create updatedPost author attempts)
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
         OnBodyInput str ->
-            replaceMe
+            case internals of
+                Create post author attempts ->
+                    let
+                        updatedPost =
+                            str
+                                |> String.left 100000
+                                |> Markdown.create
+                                |> always
+                                |> (\m -> Post.mapBody m post)
+                    in
+                    ( Model
+                        general
+                        (Create updatedPost author attempts)
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
         Write ->
-            replaceMe
+            case internals of
+                Create post author _ ->
+                    ( model
+                    , Api.createPost
+                        { msg = GotWrite
+                        , resource = post
+                        , user = General.user general
+                        , mode = General.mode general
+                        }
+                    )
+
+                Edit post author _ ->
+                    ( model
+                    , Api.updatePost
+                        { msg = GotWrite
+                        , resource = post
+                        , user = General.user general
+                        , mode = General.mode general
+                        }
+                    )
 
         GotWrite res ->
-            replaceMe
+            case res of
+                Ok post ->
+                    case internals of
+                        Create _ author _ ->
+                            ( Model
+                                general
+                                (View post author)
+                            , Cmd.none
+                            )
+
+                        Edit _ author _ ->
+                            ( Model
+                                general
+                                (View post author)
+                            , Cmd.none
+                            )
+
+                Err writeErr ->
+                    let
+                        maxAttempts =
+                            5
+
+                        createProblem err =
+                            Problem.create
+                                "Failed to write post"
+                                (HttpError err)
+                                Nothing
+                    in
+                    case internals of
+                        Create post author attempts ->
+                            if attempts < maxAttempts then
+                                ( Model general (Create post author (attempts + 1))
+                                , Api.createPost
+                                    { msg = GotWrite
+                                    , resource = post
+                                    , user = General.user general
+                                    , mode = General.mode general
+                                    }
+                                )
+
+                            else
+                                ( Model
+                                    (General.pushProblem (createProblem writeErr) general)
+                                    (Create post author 0)
+                                , Cmd.none
+                                )
+
+                        Edit post author attempts ->
+                            if attempts < maxAttempts then
+                                ( Model general (Edit post author (attempts + 1))
+                                , Api.updatePost
+                                    { msg = GotWrite
+                                    , resource = post
+                                    , user = General.user general
+                                    , mode = General.mode general
+                                    }
+                                )
+
+                            else
+                                ( Model
+                                    (General.pushProblem (createProblem writeErr) general)
+                                    (Edit post author 0)
+                                , Cmd.none
+                                )
+
+                        _ ->
+                            ( model, Cmd.none )
 
         EditCurrentPost ->
-            replaceMe
+            case internals of
+                View post author ->
+                    ( Model
+                        general
+                        (Edit post author 0)
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
         DeleteCurrentPost ->
-            replaceMe
+            case General.user general of
+                Just userUUID ->
+                    let
+                        unauthorizedProblem =
+                            Problem.create
+                                "Cannot delete post"
+                                (MarkdownError <| Markdown.create "Only the author can delete a post")
+                                Nothing
+                    in
+                    case internals of
+                        View post author ->
+                            if UUID.compare (General.user general) (Post.author post) then
+                                ( Model
+                                    general
+                                    (Delete post author 0)
+                                , Cmd.none
+                                )
+
+                            else
+                                ( Model
+                                    (General.pushProblem general)
+                                    internals
+                                , Cmd.none
+                                )
+
+                        Edit post author attempts ->
+                            if UUID.compare (General.user general) (Post.author post) then
+                                ( Model
+                                    general
+                                    (Delete post author 0)
+                                , Cmd.none
+                                )
+
+                            else
+                                ( Model
+                                    (General.pushProblem general)
+                                    internals
+                                , Cmd.none
+                                )
+
+                Nothing ->
+                    let
+                        problem =
+                            Problem.create
+                                "Not Logged In"
+                                (MarkdownError <| Markdown.create "Only the author can delete a post")
+                                Nothing
+                    in
+                    ( Model
+                        (General.pushProblem general)
+                        internals
+                    , Cmd.none
+                    )
 
         ConfirmDelete ->
-            replaceMe
+            case internals of
+                Delete post _ _ ->
+                    ( model
+                    , Api.deletePost
+                        { msg = GotDelete
+                        , uuid = Post.uuid post
+                        , mode = General.mode general
+                        , user = General.user general
+                        }
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
         GotDelete res ->
             replaceMe
 
         TogglePublished ->
             case internals of
-                Edit post _ ->
-                    ( Post.mapPublished not post
+                Edit post author attempts ->
+                    ( Model
+                        general
+                        (Edit (Post.mapPublished not post) author attempts)
+                    , Cmd.none
+                    )
+
+                Create post author attempts ->
+                    ( Model
+                        general
+                        (Create (Post.mapPublished not post) author attempts)
                     , Cmd.none
                     )
 
@@ -219,9 +440,32 @@ gotPost model res =
                             , Cmd.none
                             )
 
+                        LoadingDelete ->
+                            if userIsAuthor then
+                                ( Model general (Delete post author 0)
+                                , Cmd.none
+                                )
+
+                            else
+                                let
+                                    handler =
+                                        Problem.createHandler "View Post" (GotPost res)
+
+                                    problem =
+                                        Problem.create
+                                            "Cannot delete post"
+                                            (MarkdownError <| Markdown.create "Only author can remove post")
+                                            (Just handler)
+                                in
+                                ( Model
+                                    (General.pushProblem problem general)
+                                    LoadingView
+                                , Cmd.none
+                                )
+
                         LoadingEdit ->
                             if userIsAuthor then
-                                ( Model general (Edit post author)
+                                ( Model general (Edit post author 0)
                                 , Cmd.none
                                 )
 
@@ -233,8 +477,11 @@ gotPost model res =
                                     handler =
                                         Problem.createHandler "View Post" handlerMsg
 
+                                    md =
+                                        Markdown.create "Only author can remove post"
+
                                     problem =
-                                        Problem.create "Cannot edit post" (HttpError err) (Just handler)
+                                        Problem.create "Cannot edit post" (MarkdownError md) (Just handler)
 
                                     updatedGeneral =
                                         General.pushProblem problem general
@@ -246,7 +493,7 @@ gotPost model res =
                 Nothing ->
                     let
                         handlerMsg =
-                            NavigateTo Home
+                            GeneralMsg (NavigateTo Home)
 
                         handler =
                             Problem.createHandler "Go Home" handlerMsg
