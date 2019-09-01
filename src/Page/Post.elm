@@ -47,8 +47,6 @@ type
     = LoadingRead
       -- we are now ready to display an existing post
     | Read (Post Core Full) Author
-      -- page shown when failure occurs, waiting for redirect
-      -- to home page
     | Redirect
       {------------------ Private States --------------------}
       -- "sneak peek" of what a post will look like
@@ -182,9 +180,6 @@ update msg model =
     let
         (Model general internals) =
             model
-
-        replaceMe =
-            ( model, Cmd.none )
     in
     case msg of
         GeneralMsg generalMsg ->
@@ -441,7 +436,20 @@ update msg model =
                     ( model, Cmd.none )
 
         GotDelete res ->
-            replaceMe
+            case res of
+                Ok _ ->
+                    ( Model general Redirect
+                    , General.pushUrl general (Route.toPath Home)
+                    )
+
+                Err err ->
+                    let
+                        problem =
+                            Problem.create "Failed to delete post" (HttpError err) Nothing
+                    in
+                    ( Model (General.pushProblem problem general) internals
+                    , Cmd.none
+                    )
 
         TogglePublished ->
             case internals of

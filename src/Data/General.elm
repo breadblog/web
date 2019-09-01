@@ -1,4 +1,4 @@
-port module Data.General exposing (Attempt, General, Msg(..), authors, back, dismissProblem, firstAttempt, fullscreen, fullscreenSub, init, login, logout, mapRoute, mapTheme, mapUser, mode, network, networkSub, postPreviews, problems, pushProblem, pushUrl, replaceUrl, route, tags, theme, update, updateAll, user, version)
+port module Data.General exposing (General, Msg(..), authors, back, dismissProblem, fullscreen, fullscreenSub, init, login, logout, mapRoute, mapTheme, mode, network, networkSub, postPreviews, problems, pushProblem, pushUrl, replaceUrl, route, tags, theme, update, updateAll, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation as Nav exposing (Key)
@@ -174,6 +174,7 @@ type Msg
     | UpdatePostPreviews
     | UpdateTags
     | Login Username Password
+    | GotLogin (Result Http.Error Login.Response)
     | Logout
     | SetTheme Theme
     | NavigateTo Route
@@ -187,17 +188,12 @@ type Msg
 
 
 type IMsg
-    = GotAuthors Attempt (Result Http.Error (List Author))
-    | GotPostPreviews Attempt (Result Http.Error (List (Post Core Preview)))
-    | GotTags Attempt (Result Http.Error (List Tag))
-    | GotLogin Attempt (Result Http.Error Login.Response)
-    | GotLogout Attempt (Result Http.Error ())
+    = GotAuthors (Result Http.Error (List Author))
+    | GotPostPreviews (Result Http.Error (List (Post Core Preview)))
+    | GotTags (Result Http.Error (List Tag))
+    | GotLogout (Result Http.Error ())
     | SetFullscreen Bool
     | SetNetwork Network
-
-
-type alias Attempt =
-    Int
 
 
 
@@ -223,6 +219,21 @@ update msg general =
             ( general
             , login username password general
             )
+
+        GotLogin res ->
+            case res of
+                Ok { uuid } ->
+                    mapUser (always (Just uuid)) general
+
+                Err err ->
+                    case err of
+                        Http.BadStatus 403 ->
+                            mapUser (always Nothing) general
+
+                        _ ->
+                            ( general
+                            , Cmd.none
+                            )
 
         Logout ->
             ( general, logout general )
@@ -280,77 +291,69 @@ internalsUpdate msg general =
     let
         (General internals) =
             general
-
-        maxAttempts =
-            5
     in
     case msg of
-        GotAuthors attempt res ->
+        GotAuthors res ->
             onResourceResponse
                 { makeReq = Api.getAuthors
                 , response = res
                 , mapTemp = \transform temp -> { temp | authors = transform temp.authors }
                 , mapCache = \transform cache -> { cache | authors = transform cache.authors }
                 , fromTemp = .authors
-                , fromCache = .authors
                 , general = general
                 , msg = GotAuthors
-                , attempt = attempt
                 , name = "authors"
                 , merge = Author.mergeFromApi
                 , compare = Author.compare
                 }
-                |> Tuple.mapSecond (Cmd.map InternalMsg)
 
-        GotPostPreviews attempt res ->
+        GotPostPreviews res ->
             onResourceResponse
                 { makeReq = Api.getPostPreviews
                 , response = res
                 , mapTemp = \transform temp -> { temp | postPreviews = transform temp.postPreviews }
                 , mapCache = \transform cache -> { cache | postPreviews = transform cache.postPreviews }
                 , fromTemp = .postPreviews
-                , fromCache = .postPreviews
                 , general = general
                 , msg = GotPostPreviews
-                , attempt = attempt
                 , name = "posts"
                 , merge = Post.mergeFromApi
                 , compare = Post.compare
                 }
-                |> Tuple.mapSecond (Cmd.map InternalMsg)
 
-        GotTags attempt res ->
+        GotTags res ->
             onResourceResponse
                 { makeReq = Api.getTags
                 , response = res
                 , mapTemp = \transform temp -> { temp | tags = transform temp.tags }
                 , mapCache = \transform cache -> { cache | tags = transform cache.tags }
                 , fromTemp = .tags
-                , fromCache = .tags
                 , general = general
                 , msg = GotTags
-                , attempt = attempt
                 , name = "tags"
                 , merge = Tag.mergeFromApi
                 , compare = Tag.compare
                 }
-                |> Tuple.mapSecond (Cmd.map InternalMsg)
 
-        GotLogin attempt res ->
-            case res of
-                Ok { uuid } ->
-                    replaceMe
-
-                Err err ->
-                    replaceMe
-
-        GotLogout attempt res ->
+        GotLogout res ->
             case res of
                 Ok _ ->
-                    replaceMe
+                    mapUser (always Nothing) general
 
                 Err err ->
-                    replaceMe
+                    let
+                        handler =
+                            Problem.createHandler "Try Again" Logout
+
+                        problem =
+                            Problem.create
+                                "Failed to log out"
+                                (MarkdownError <| Markdown.create "")
+                                (Just handler)
+                    in
+                    ( pushProblem problem general
+                    , Cmd.none
+                    )
 
         SetFullscreen value ->
             ( General { internals | fullscreen = value }
@@ -363,109 +366,77 @@ internalsUpdate msg general =
             )
 
 
-type alias OnResourceResponse r m =
-    { makeReq : Api.GetMany r m -> Cmd m
-    , msg : Int -> Result Http.Error (List r) -> m
+type alias OnResourceResponse r =
+    { makeReq : Api.GetMany r Msg -> Cmd Msg
+    , msg : Result Http.Error (List r) -> IMsg
     , response : Result Http.Error (List r)
     , mapTemp : (List r -> List r) -> Temp -> Temp
     , mapCache : (List r -> List r) -> Cache -> Cache
     , fromTemp : Temp -> List r
-    , fromCache : Cache -> List r
     , compare : r -> r -> Bool
     , merge : { fresh : r, old : r } -> r
     , general : General
-    , attempt : Int
     , name : String
     }
 
 
-onResourceResponse : OnResourceResponse r m -> ( General, Cmd m )
+onResourceResponse : OnResourceResponse r -> ( General, Cmd Msg )
 onResourceResponse args =
-    let
-        maxAttempts =
-            5
-
-        (General internals) =
-            args.general
-
-        fromTemp =
-            args.fromTemp internals.temp
-
-        offset =
-            Api.toOffset fromTemp
-    in
     case args.response of
         Ok freshList ->
             let
+                (General internals) =
+                    args.general
+
                 updatedTemp =
-                    args.mapTemp (\r -> List.append r freshList) internals.temp
+                    args.mapTemp (\oldList -> List.append oldList freshList) internals.temp
+
+                tempResources =
+                    args.fromTemp updatedTemp
+
+                totalLength =
+                    List.length tempResources
 
                 finished =
-                    Api.finished <| args.fromTemp updatedTemp
+                    Api.finished totalLength
             in
             if finished then
                 let
-                    fromCache =
-                        args.fromCache internals.cache
-
-                    transform fresh =
-                        case List.Extra.find (args.compare fresh) fromCache of
-                            Just old ->
-                                args.merge { old = old, fresh = fresh }
-
-                            Nothing ->
-                                fresh
-
-                    updatedList =
-                        List.map transform (args.fromTemp updatedTemp)
+                    updatedCache =
+                        args.mapCache (always tempResources) internals.cache
 
                     emptyTemp =
-                        args.mapTemp (always []) updatedTemp
-
-                    updatedCache =
-                        args.mapCache (always updatedList) internals.cache
+                        args.mapTemp (always []) internals.temp
                 in
-                ( General
-                    { internals | temp = emptyTemp, cache = updatedCache }
+                ( General { internals | temp = emptyTemp, cache = updatedCache }
                 , Cmd.none
                 )
 
             else
                 let
-                    transform =
-                        args.mapTemp (\r -> List.append r freshList)
+                    offset =
+                        Api.toOffset totalLength
                 in
                 ( General { internals | temp = updatedTemp }
                 , args.makeReq
-                    { msg = args.msg 0
+                    { msg = args.msg >> InternalMsg
                     , user = user args.general
                     , mode = mode args.general
-                    , offset = offset + 1
+                    , offset = offset
                     }
                 )
 
         Err err ->
-            if args.attempt < maxAttempts then
-                ( args.general
-                , args.makeReq
-                    { msg = args.msg (args.attempt + 1)
-                    , offset = offset
-                    , mode = mode args.general
-                    , user = user args.general
-                    }
-                )
-
-            else
-                let
-                    problem =
-                        Problem.create
-                            ("Failed to update " ++ args.name)
-                            (HttpError err)
-                            Nothing
-                in
-                ( pushProblem problem args.general
-                , Cmd.none
-                )
+            let
+                problem =
+                    Problem.create
+                        ("Failed to update " ++ args.name)
+                        (HttpError err)
+                        Nothing
+            in
+            ( pushProblem problem args.general
+            , Cmd.none
+            )
 
 
 
@@ -600,14 +571,6 @@ mapProblems transform (General internals) =
 
 
 {- Util -}
-
-
-firstAttempt : Attempt
-firstAttempt =
-    0
-
-
-
 {- Http -}
 
 
@@ -623,7 +586,7 @@ updateAll general =
 updateAuthors : General -> Cmd Msg
 updateAuthors general =
     Api.getAuthors
-        { msg = GotAuthors firstAttempt >> InternalMsg
+        { msg = GotAuthors >> InternalMsg
         , user = user general
         , mode = mode general
         , offset = 0
@@ -633,7 +596,7 @@ updateAuthors general =
 updateTags : General -> Cmd Msg
 updateTags general =
     Api.getTags
-        { msg = GotTags firstAttempt >> InternalMsg
+        { msg = GotTags >> InternalMsg
         , user = user general
         , mode = mode general
         , offset = 0
@@ -643,7 +606,7 @@ updateTags general =
 updatePostPreviews : General -> Cmd Msg
 updatePostPreviews general =
     Api.getPostPreviews
-        { msg = GotPostPreviews firstAttempt >> InternalMsg
+        { msg = GotPostPreviews >> InternalMsg
         , user = user general
         , mode = mode general
         , offset = 0
@@ -655,7 +618,7 @@ login username password general =
     Api.login
         { username = username
         , password = password
-        , msg = GotLogin firstAttempt >> InternalMsg
+        , msg = GotLogin
         , mode = mode general
         }
 
@@ -663,7 +626,7 @@ login username password general =
 logout : General -> Cmd Msg
 logout general =
     Api.logout
-        { msg = GotLogout firstAttempt >> InternalMsg
+        { msg = GotLogout >> InternalMsg
         , mode = mode general
         }
 

@@ -77,6 +77,7 @@ update msg model =
         GotLogin res ->
             case res of
                 Err err ->
+                    -- intercept error
                     ( Model { internals | error = Just "failed to login" }
                     , Cmd.none
                     )
@@ -84,7 +85,7 @@ update msg model =
                 Ok info ->
                     let
                         ( updatedGeneral, generalCmd ) =
-                            General.mapUser (always (Just info.uuid)) internals.general
+                            General.update (General.GotLogin (Ok info)) general
 
                         cmd =
                             Cmd.map GeneralMsg generalCmd

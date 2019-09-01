@@ -189,14 +189,14 @@ logout req =
         }
 
 
-toOffset : List a -> Int
-toOffset list =
-    List.length list // paginationCount
+toOffset : Int -> Int
+toOffset length =
+    length // paginationCount
 
 
-finished : List a -> Bool
-finished list =
-    modBy paginationCount (List.length list) == 0
+finished : Int -> Bool
+finished length =
+    modBy paginationCount length == 0
 
 
 
