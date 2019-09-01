@@ -236,9 +236,9 @@ mapFull transform (Post l (Full full) i) =
 -- TODO: should use this
 
 
-mergeFromApi : Post Core Preview -> Post Core Preview -> Post Core Preview
-mergeFromApi fromAPI (Post _ _ internals) =
-    mapFavorite (\_ -> internals.favorite) fromAPI
+mergeFromApi : { old : Post l f, fresh : Post l f } -> Post l f
+mergeFromApi { old, fresh } =
+    mapFavorite (always (favorite old)) fresh
 
 
 

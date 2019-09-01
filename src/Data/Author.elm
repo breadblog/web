@@ -1,4 +1,4 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, name, toSources, username, uuid)
+module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, mergeFromApi, name, toSources, username, uuid)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -63,6 +63,11 @@ toInternals (Author internals) =
 
 
 {- Util -}
+
+
+mergeFromApi : { old : Author, fresh : Author } -> Author
+mergeFromApi { old, fresh } =
+    fresh
 
 
 toSources : msg -> List Author -> List (Source msg)

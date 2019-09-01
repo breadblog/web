@@ -1,4 +1,4 @@
-port module Data.General exposing (General, Msg(..), authors, back, dismissProblem, fullscreen, fullscreenSub, init, login, logout, mapRoute, mapTheme, mapUser, mode, network, networkSub, postPreviews, problems, pushProblem, pushUrl, replaceUrl, route, tags, theme, update, updateAll, user, version)
+port module Data.General exposing (Attempt, General, Msg(..), authors, back, dismissProblem, firstAttempt, fullscreen, fullscreenSub, init, login, logout, mapRoute, mapTheme, mapUser, mode, network, networkSub, postPreviews, problems, pushProblem, pushUrl, replaceUrl, route, tags, theme, update, updateAll, user, version)
 
 import Api exposing (Url)
 import Browser.Navigation as Nav exposing (Key)
@@ -187,13 +187,17 @@ type Msg
 
 
 type IMsg
-    = GotAuthors (Result Http.Error (List Author))
-    | GotPostPreviews (Result Http.Error (List (Post Core Preview)))
-    | GotTags (Result Http.Error (List Tag))
-    | GotLogin (Result Http.Error Login.Response)
-    | GotLogout (Result Http.Error ())
+    = GotAuthors Attempt (Result Http.Error (List Author))
+    | GotPostPreviews Attempt (Result Http.Error (List (Post Core Preview)))
+    | GotTags Attempt (Result Http.Error (List Tag))
+    | GotLogin Attempt (Result Http.Error Login.Response)
+    | GotLogout Attempt (Result Http.Error ())
     | SetFullscreen Bool
     | SetNetwork Network
+
+
+type alias Attempt =
+    Int
 
 
 
@@ -260,44 +264,79 @@ update msg general =
 
 
 {- Update (private) -}
+-- TODO: only retry on valid requests (network errors, etc)
+
+
+resourceUpdateFailed : String -> Http.Error -> Problem Msg
+resourceUpdateFailed name err =
+    Problem.create
+        ("Failed to update " ++ name)
+        (HttpError err)
+        Nothing
 
 
 internalsUpdate : IMsg -> General -> ( General, Cmd Msg )
 internalsUpdate msg general =
     let
-        -- TODO: replace me
-        replaceMe =
-            ( General internals, Cmd.none )
-
         (General internals) =
             general
+
+        maxAttempts =
+            5
     in
     case msg of
-        GotAuthors res ->
-            case res of
-                Ok freshAuthors ->
-                    replaceMe
+        GotAuthors attempt res ->
+            onResourceResponse
+                { makeReq = Api.getAuthors
+                , response = res
+                , mapTemp = \transform temp -> { temp | authors = transform temp.authors }
+                , mapCache = \transform cache -> { cache | authors = transform cache.authors }
+                , fromTemp = .authors
+                , fromCache = .authors
+                , general = general
+                , msg = GotAuthors
+                , attempt = attempt
+                , name = "authors"
+                , merge = Author.mergeFromApi
+                , compare = Author.compare
+                }
+                |> Tuple.mapSecond (Cmd.map InternalMsg)
 
-                Err err ->
-                    replaceMe
+        GotPostPreviews attempt res ->
+            onResourceResponse
+                { makeReq = Api.getPostPreviews
+                , response = res
+                , mapTemp = \transform temp -> { temp | postPreviews = transform temp.postPreviews }
+                , mapCache = \transform cache -> { cache | postPreviews = transform cache.postPreviews }
+                , fromTemp = .postPreviews
+                , fromCache = .postPreviews
+                , general = general
+                , msg = GotPostPreviews
+                , attempt = attempt
+                , name = "posts"
+                , merge = Post.mergeFromApi
+                , compare = Post.compare
+                }
+                |> Tuple.mapSecond (Cmd.map InternalMsg)
 
-        GotPostPreviews res ->
-            case res of
-                Ok freshPosts ->
-                    replaceMe
+        GotTags attempt res ->
+            onResourceResponse
+                { makeReq = Api.getTags
+                , response = res
+                , mapTemp = \transform temp -> { temp | tags = transform temp.tags }
+                , mapCache = \transform cache -> { cache | tags = transform cache.tags }
+                , fromTemp = .tags
+                , fromCache = .tags
+                , general = general
+                , msg = GotTags
+                , attempt = attempt
+                , name = "tags"
+                , merge = Tag.mergeFromApi
+                , compare = Tag.compare
+                }
+                |> Tuple.mapSecond (Cmd.map InternalMsg)
 
-                Err posts ->
-                    replaceMe
-
-        GotTags res ->
-            case res of
-                Ok freshTags ->
-                    replaceMe
-
-                Err err ->
-                    replaceMe
-
-        GotLogin res ->
+        GotLogin attempt res ->
             case res of
                 Ok { uuid } ->
                     replaceMe
@@ -305,7 +344,7 @@ internalsUpdate msg general =
                 Err err ->
                     replaceMe
 
-        GotLogout res ->
+        GotLogout attempt res ->
             case res of
                 Ok _ ->
                     replaceMe
@@ -322,6 +361,111 @@ internalsUpdate msg general =
             ( General { internals | network = value }
             , Cmd.none
             )
+
+
+type alias OnResourceResponse r m =
+    { makeReq : Api.GetMany r m -> Cmd m
+    , msg : Int -> Result Http.Error (List r) -> m
+    , response : Result Http.Error (List r)
+    , mapTemp : (List r -> List r) -> Temp -> Temp
+    , mapCache : (List r -> List r) -> Cache -> Cache
+    , fromTemp : Temp -> List r
+    , fromCache : Cache -> List r
+    , compare : r -> r -> Bool
+    , merge : { fresh : r, old : r } -> r
+    , general : General
+    , attempt : Int
+    , name : String
+    }
+
+
+onResourceResponse : OnResourceResponse r m -> ( General, Cmd m )
+onResourceResponse args =
+    let
+        maxAttempts =
+            5
+
+        (General internals) =
+            args.general
+
+        fromTemp =
+            args.fromTemp internals.temp
+
+        offset =
+            Api.toOffset fromTemp
+    in
+    case args.response of
+        Ok freshList ->
+            let
+                updatedTemp =
+                    args.mapTemp (\r -> List.append r freshList) internals.temp
+
+                finished =
+                    Api.finished <| args.fromTemp updatedTemp
+            in
+            if finished then
+                let
+                    fromCache =
+                        args.fromCache internals.cache
+
+                    transform fresh =
+                        case List.Extra.find (args.compare fresh) fromCache of
+                            Just old ->
+                                args.merge { old = old, fresh = fresh }
+
+                            Nothing ->
+                                fresh
+
+                    updatedList =
+                        List.map transform (args.fromTemp updatedTemp)
+
+                    emptyTemp =
+                        args.mapTemp (always []) updatedTemp
+
+                    updatedCache =
+                        args.mapCache (always updatedList) internals.cache
+                in
+                ( General
+                    { internals | temp = emptyTemp, cache = updatedCache }
+                , Cmd.none
+                )
+
+            else
+                let
+                    transform =
+                        args.mapTemp (\r -> List.append r freshList)
+                in
+                ( General { internals | temp = updatedTemp }
+                , args.makeReq
+                    { msg = args.msg 0
+                    , user = user args.general
+                    , mode = mode args.general
+                    , offset = offset + 1
+                    }
+                )
+
+        Err err ->
+            if args.attempt < maxAttempts then
+                ( args.general
+                , args.makeReq
+                    { msg = args.msg (args.attempt + 1)
+                    , offset = offset
+                    , mode = mode args.general
+                    , user = user args.general
+                    }
+                )
+
+            else
+                let
+                    problem =
+                        Problem.create
+                            ("Failed to update " ++ args.name)
+                            (HttpError err)
+                            Nothing
+                in
+                ( pushProblem problem args.general
+                , Cmd.none
+                )
 
 
 
@@ -455,6 +599,15 @@ mapProblems transform (General internals) =
 
 
 
+{- Util -}
+
+
+firstAttempt : Attempt
+firstAttempt =
+    0
+
+
+
 {- Http -}
 
 
@@ -470,7 +623,7 @@ updateAll general =
 updateAuthors : General -> Cmd Msg
 updateAuthors general =
     Api.getAuthors
-        { msg = GotAuthors >> InternalMsg
+        { msg = GotAuthors firstAttempt >> InternalMsg
         , user = user general
         , mode = mode general
         , offset = 0
@@ -480,7 +633,7 @@ updateAuthors general =
 updateTags : General -> Cmd Msg
 updateTags general =
     Api.getTags
-        { msg = GotTags >> InternalMsg
+        { msg = GotTags firstAttempt >> InternalMsg
         , user = user general
         , mode = mode general
         , offset = 0
@@ -490,7 +643,7 @@ updateTags general =
 updatePostPreviews : General -> Cmd Msg
 updatePostPreviews general =
     Api.getPostPreviews
-        { msg = GotPostPreviews >> InternalMsg
+        { msg = GotPostPreviews firstAttempt >> InternalMsg
         , user = user general
         , mode = mode general
         , offset = 0
@@ -502,7 +655,7 @@ login username password general =
     Api.login
         { username = username
         , password = password
-        , msg = GotLogin >> InternalMsg
+        , msg = GotLogin firstAttempt >> InternalMsg
         , mode = mode general
         }
 
@@ -510,7 +663,7 @@ login username password general =
 logout : General -> Cmd Msg
 logout general =
     Api.logout
-        { msg = GotLogout >> InternalMsg
+        { msg = GotLogout firstAttempt >> InternalMsg
         , mode = mode general
         }
 

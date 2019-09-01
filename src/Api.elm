@@ -1,4 +1,4 @@
-module Api exposing (Url, createPost, deletePost, getAuthor, getAuthors, getPost, getPostPreviews, getTag, getTags, login, logout, toOffset, updatePost)
+module Api exposing (GetMany, Url, createPost, deletePost, finished, getAuthor, getAuthors, getPost, getPostPreviews, getTag, getTags, login, logout, toOffset, updatePost)
 
 import Data.Author as Author exposing (Author)
 import Data.Login
@@ -189,9 +189,14 @@ logout req =
         }
 
 
-toOffset : Int -> Int
-toOffset length =
-    length // paginationCount
+toOffset : List a -> Int
+toOffset list =
+    List.length list // paginationCount
+
+
+finished : List a -> Bool
+finished list =
+    modBy paginationCount (List.length list) == 0
 
 
 

@@ -1,4 +1,4 @@
-module Data.Tag exposing (Tag, compare, decoder, encode, find, name, toSources)
+module Data.Tag exposing (Tag, compare, decoder, encode, find, mergeFromApi, name, toSources)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -44,6 +44,11 @@ toInternals (Tag internals) =
 
 
 {- Util -}
+
+
+mergeFromApi : { old : Tag, fresh : Tag } -> Tag
+mergeFromApi { old, fresh } =
+    fresh
 
 
 find : UUID -> List Tag -> Maybe Tag
