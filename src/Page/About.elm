@@ -80,7 +80,7 @@ update msg model =
 
 
 
--- View --
+{- View -}
 
 
 view : Model -> List (Html Msg)

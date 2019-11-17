@@ -24,6 +24,8 @@
     "url": "https://github.com/breadblog/web/issues"
   },
   "dependencies": {
+    "@shards/maybe": "^1.2.0",
+    "@shards/result": "^2.2.0",
     "animate.css": "^3.7.2"
   },
   "devDependencies": {

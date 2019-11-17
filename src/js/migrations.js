@@ -1,3 +1,5 @@
+import { Ok, Err } from '@shards/result'
+
 const { migrate, createMigration } = createHelpers()
 
 /********************************/
@@ -102,19 +104,23 @@ function createHelpers () {
    *
    * @param {object} value
    *
-   * @returns {object}
+   * @returns {Result<Cache>}
    */
   function migrate (value) {
-    if (!value || !value.version) { return null }
-    let curr = value
-    while (!migrationsEmpty()) {
-      const step = getMigration(curr.version)
-      // if "step" doesn't exist, we have completed the migration
-      if (!step) { break }
-      curr = step(curr)
-    }
+    try {
+      if (!value || !value.version) { return null }
+      let curr = value
+      while (!migrationsEmpty()) {
+        const step = getMigration(curr.version)
+        // if "step" doesn't exist, we have completed the migration
+        if (!step) { break }
+        curr = step(curr)
+      }
 
-    return curr
+      return Ok(curr)
+    } catch (err) {
+      return Err(err)
+    }
   }
 
   return { migrate, createMigration }

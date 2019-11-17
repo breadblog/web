@@ -257,10 +257,10 @@ update msg general =
             update nestedMsg <| dismissProblem index general
 
         FullscreenElement class ->
-            ( general, fullscreenElement class )
+            ( general, fullscreenElementPort class )
 
         ExitFullscreen ->
-            ( general, exitFullscreen () )
+            ( general, exitFullscreenPort () )
 
         PushProblem problem ->
             ( pushProblem problem general
@@ -561,7 +561,7 @@ setCache : Cache -> Cmd msg
 setCache c =
     c
         |> encodeCache
-        |> setCachePort
+        |> cacheUpdatePort
 
 
 mapProblems : (List (Problem Msg) -> List (Problem Msg)) -> General -> General
@@ -654,31 +654,28 @@ back =
 {- Ports -}
 
 
-port focus : String -> Cmd msg
+port exitFullscreenPort : () -> Cmd msg
 
 
-port exitFullscreen : () -> Cmd msg
+port fullscreenElementPort : String -> Cmd msg
 
 
-port fullscreenElement : String -> Cmd msg
-
-
-port setCachePort : Value -> Cmd msg
-
-
-port getNetworkPort : (Value -> msg) -> Sub msg
-
-
-port getFullscreenPort : (Value -> msg) -> Sub msg
+port cacheUpdatePort : Value -> Cmd msg
 
 
 
 {- Subscriptions -}
 
 
+port networkUpdatePort : (Value -> msg) -> Sub msg
+
+
+port fullscreenUpdatePort : (Value -> msg) -> Sub msg
+
+
 networkSub : Sub Msg
 networkSub =
-    getNetworkPort
+    networkUpdatePort
         (\v ->
             case Decode.decodeValue Network.decoder v of
                 Ok nw ->
@@ -695,7 +692,7 @@ networkSub =
 
 fullscreenSub : Sub Msg
 fullscreenSub =
-    getFullscreenPort
+    fullscreenUpdatePort
         (\v ->
             case Decode.decodeValue Decode.bool v of
                 Ok fs ->

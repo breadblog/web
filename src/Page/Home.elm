@@ -4,6 +4,7 @@ import Css exposing (..)
 import Data.General as General exposing (General)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
+import View.Footer as Footer
 import View.Header as Header
 
 
@@ -86,4 +87,22 @@ update msg (Model internals) =
 
 view : Model -> List (Html Msg)
 view (Model internals) =
-    []
+    let
+        general =
+            internals.general
+    in
+    List.concat
+        [ List.map (Html.Styled.map HeaderMsg) (Header.view internals.general internals.header)
+        , viewHome internals
+        , Footer.view (General.theme general) (General.version general)
+        ]
+
+
+viewHome : Internals -> List (Html Msg)
+viewHome internals =
+    [ main_
+        [ css
+            [ flexGrow (num 1) ]
+        ]
+        []
+    ]

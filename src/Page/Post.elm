@@ -27,6 +27,8 @@ import Style.Screen as Screen
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes as SvgAttributes
 import Svg.Styled.Events as SvgEvents
+import View.Footer as Footer
+import View.Header as Header
 import View.Loading
 import View.Svg
 import View.Tag
@@ -37,11 +39,18 @@ import View.Tag
 
 
 type Model
-    = Model General Internals
+    = Model Internals
+
+
+type alias Internals =
+    { header : Header.Model
+    , general : General
+    , page : Page
+    }
 
 
 type
-    Internals
+    Page
     {------------------ Public States ---------------------}
     -- loading state for when we are fetching post info
     = LoadingRead
@@ -54,15 +63,11 @@ type
       -- in code to avoid conflicts
     | Peek (Post Core Full) Author
     | LoadingEdit
-    | Edit (Post Core Full) Author Attempts
-    | Create (Post Client Full) Author Attempts
+    | Edit (Post Core Full) Author
+    | Create (Post Client Full) Author
     | LoadingDelete
-    | Delete (Post Core Full) Author Attempts
+    | Delete (Post Core Full) Author
     | NotLoggedIn
-
-
-type alias Attempts =
-    Int
 
 
 init : General -> PostRoute -> ( Model, Cmd Msg )
@@ -73,6 +78,9 @@ init general postRoute =
 
         mode =
             General.mode general
+
+        header =
+            Header.init
     in
     case postRoute of
         Route.Create ->
@@ -85,18 +93,28 @@ init general postRoute =
             case maybeAuthor of
                 Just author ->
                     ( Model
-                        general
-                        (Create (Post.empty (Author.uuid author)) author 0)
+                        { general = general
+                        , header = header
+                        , page = Create (Post.empty (Author.uuid author)) author 0
+                        }
                     , Cmd.none
                     )
 
                 Nothing ->
-                    ( Model general NotLoggedIn
+                    ( Model
+                        { general = general
+                        , header = header
+                        , page = NotLoggedIn
+                        }
                     , Cmd.map GeneralMsg <| General.logout general
                     )
 
         Route.Read postUUID ->
-            ( Model general LoadingRead
+            ( Model
+                { general = general
+                , header = header
+                , page = LoadingRead
+                }
             , Api.getPost
                 { mode = General.mode general
                 , user = General.user general
@@ -108,7 +126,11 @@ init general postRoute =
         Route.Edit postUUID ->
             case General.user general of
                 Just userUUID ->
-                    ( Model general LoadingEdit
+                    ( Model
+                        { general = general
+                        , header = header
+                        , page = LoadingEdit
+                        }
                     , Api.getPost
                         { mode = General.mode general
                         , user = General.user general
@@ -118,14 +140,22 @@ init general postRoute =
                     )
 
                 Nothing ->
-                    ( Model general NotLoggedIn
+                    ( Model
+                        { general = general
+                        , header = header
+                        , page = NotLoggedIn
+                        }
                     , Cmd.none
                     )
 
         Route.Delete postUUID ->
             case General.user general of
                 Just userUUID ->
-                    ( Model general LoadingDelete
+                    ( Model
+                        { general = general
+                        , header = header
+                        , page = LoadingDelete
+                        }
                     , Api.getPost
                         { mode = General.mode general
                         , user = General.user general
@@ -135,19 +165,23 @@ init general postRoute =
                     )
 
                 Nothing ->
-                    ( Model general NotLoggedIn
+                    ( Model
+                        { general = general
+                        , header = header
+                        , page = NotLoggedIn
+                        }
                     , Cmd.none
                     )
 
 
 toGeneral : Model -> General
-toGeneral (Model general _) =
-    general
+toGeneral (Model internals) =
+    internals.general
 
 
 mapGeneral : (General -> General) -> Model -> Model
-mapGeneral transform (Model general internals) =
-    Model (transform general) internals
+mapGeneral transform (Model internals) =
+    Model { internals | general = transform internals.general }
 
 
 
@@ -156,6 +190,7 @@ mapGeneral transform (Model general internals) =
 
 type Msg
     = GeneralMsg General.Msg
+    | HeaderMsg Header.Msg
     | GotPost (Result Http.Error (Post Core Full))
     | OnTitleInput String
     | OnDescriptionInput String
@@ -178,21 +213,27 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        (Model general internals) =
+        (Model internals) =
             model
+
+        general =
+            internals.general
+
+        page =
+            internals.page
     in
     case msg of
         GeneralMsg generalMsg ->
             General.update generalMsg general
-                |> Tuple.mapFirst (\updatedGeneral -> Model updatedGeneral internals)
+                |> Tuple.mapFirst (\updatedGeneral -> Model { internals | general = updatedGeneral })
                 |> Tuple.mapSecond (Cmd.map GeneralMsg)
 
         GotPost res ->
             gotPost model res
 
         OnTitleInput str ->
-            case internals of
-                Create post author attempts ->
+            case page of
+                Create post author ->
                     let
                         updatedPost =
                             str
@@ -200,9 +241,7 @@ update msg model =
                                 |> always
                                 |> (\m -> Post.mapTitle m post)
                     in
-                    ( Model
-                        general
-                        (Create updatedPost author attempts)
+                    ( Model { internals | page = Create updatedPost author }
                     , Cmd.none
                     )
 
@@ -210,8 +249,8 @@ update msg model =
                     ( model, Cmd.none )
 
         OnDescriptionInput str ->
-            case internals of
-                Create post author attempts ->
+            case page of
+                Create post author ->
                     let
                         updatedPost =
                             str
@@ -219,9 +258,7 @@ update msg model =
                                 |> always
                                 |> (\m -> Post.mapTitle m post)
                     in
-                    ( Model
-                        general
-                        (Create updatedPost author attempts)
+                    ( Model { internals | page = Create updatedPost author }
                     , Cmd.none
                     )
 
@@ -229,8 +266,8 @@ update msg model =
                     ( model, Cmd.none )
 
         OnBodyInput str ->
-            case internals of
-                Create post author attempts ->
+            case page of
+                Create post author ->
                     let
                         updatedPost =
                             str
@@ -249,7 +286,7 @@ update msg model =
                     ( model, Cmd.none )
 
         Write ->
-            case internals of
+            case page of
                 Create post author _ ->
                     ( model
                     , Api.createPost
@@ -276,7 +313,7 @@ update msg model =
         GotWrite res ->
             case res of
                 Ok post ->
-                    case internals of
+                    case page of
                         Create _ author _ ->
                             ( Model
                                 general
@@ -296,57 +333,32 @@ update msg model =
 
                 Err writeErr ->
                     let
-                        maxAttempts =
-                            5
-
                         createProblem err =
                             Problem.create
                                 "Failed to write post"
                                 (HttpError err)
                                 Nothing
                     in
-                    case internals of
+                    case page of
                         Create post author attempts ->
-                            if attempts < maxAttempts then
-                                ( Model general (Create post author (attempts + 1))
-                                , Api.createPost
-                                    { msg = GotWrite
-                                    , resource = post
-                                    , user = General.user general
-                                    , mode = General.mode general
-                                    }
-                                )
-
-                            else
-                                ( Model
-                                    (General.pushProblem (createProblem writeErr) general)
-                                    (Create post author 0)
-                                , Cmd.none
-                                )
+                            ( Model
+                                (General.pushProblem (createProblem writeErr) general)
+                                (Create post author 0)
+                            , Cmd.none
+                            )
 
                         Edit post author attempts ->
-                            if attempts < maxAttempts then
-                                ( Model general (Edit post author (attempts + 1))
-                                , Api.updatePost
-                                    { msg = GotWrite
-                                    , resource = post
-                                    , user = General.user general
-                                    , mode = General.mode general
-                                    }
-                                )
-
-                            else
-                                ( Model
-                                    (General.pushProblem (createProblem writeErr) general)
-                                    (Edit post author 0)
-                                , Cmd.none
-                                )
+                            ( Model
+                                (General.pushProblem (createProblem writeErr) general)
+                                (Edit post author 0)
+                            , Cmd.none
+                            )
 
                         _ ->
                             ( model, Cmd.none )
 
         EditCurrentPost ->
-            case internals of
+            case page of
                 Read post author ->
                     ( Model
                         general
@@ -372,7 +384,7 @@ update msg model =
                                 |> Maybe.map (UUID.compare <| Post.author post)
                                 |> Maybe.withDefault False
                     in
-                    case internals of
+                    case page of
                         Read post author ->
                             if isAuthor post then
                                 ( Model
@@ -421,7 +433,7 @@ update msg model =
                     )
 
         ConfirmDelete ->
-            case internals of
+            case page of
                 Delete post _ _ ->
                     ( model
                     , Api.deletePost
@@ -452,7 +464,7 @@ update msg model =
                     )
 
         TogglePublished ->
-            case internals of
+            case page of
                 Edit post author attempts ->
                     ( Model
                         general
@@ -473,7 +485,7 @@ update msg model =
                     )
 
         ToggleFavorite ->
-            case internals of
+            case page of
                 Edit post author attempts ->
                     ( Model
                         general
@@ -521,7 +533,7 @@ gotPost model res =
             in
             case maybeAuthor of
                 Just author ->
-                    case internals of
+                    case page of
                         LoadingRead ->
                             ( Model general (Read post author)
                             , Cmd.none
@@ -636,13 +648,28 @@ redirect404 general =
 
 
 view : Model -> List (Html Msg)
-view (Model general internals) =
+view (Model internals) =
+    List.concat
+        [ List.map (Html.Styled.map HeaderMsg) (Header.view internals.general internals.header)
+        , viewPost internals
+        , Footer.view (General.theme internals.general) (General.version internals.general)
+        ]
+
+
+viewPost : Model -> List (Html Msg)
+viewPost (Model internals) =
     let
+        general =
+            internals.general
+
+        page =
+            internals.page
+
         theme =
             General.theme general
 
         contents =
-            case internals of
+            case page of
                 LoadingRead ->
                     loadingView theme
 
