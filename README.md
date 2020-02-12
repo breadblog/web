@@ -1,7 +1,7 @@
 # Bits n' Bites
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/b14d6bfb-c76f-4064-9f38-cd35399b8c21/deploy-status)](https://app.netlify.com/sites/admiring-lalande-02829d/deploys)
-[![Build Status](https://travis-ci.com/BreadBlog/web.svg?branch=master)](https://travis-ci.com/BreadBlog/web)
+![](https://github.com/BreadBlog/web/workflows/tests/badge.svg)
 
 Bits n' Bites is our personal blog the two of us created together so we could share our thoughts with the world. If you like code, privacy, philosophy or food, you've come to the right place!
 
