@@ -8,16 +8,15 @@ import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.Post as Post exposing (Client, Core, Full, Post)
-import Data.Problem as Problem exposing (Description(..), Problem)
+import Data.Problem as Problem exposing (Description(..))
 import Data.Route as Route exposing (PostType, Route(..))
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme exposing (Theme)
 import Data.UUID as UUID exposing (UUID)
-import Data.Username as Username exposing (Username)
-import Html
+import Data.Username as Username
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
-import Html.Styled.Events as Events exposing (onClick, onInput)
+import Html.Styled.Events exposing (onClick, onInput)
 import Http
 import List.Extra
 import Message exposing (Compound(..), Msg(..))

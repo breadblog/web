@@ -2,7 +2,7 @@ module Api exposing (Url, count, delete, get, post, put, url)
 
 import Data.Mode exposing (Mode(..))
 import Http exposing (Body, Expect, Header)
-import Json.Encode exposing (Value)
+import Constants
 
 
 type Url
@@ -24,12 +24,7 @@ urlToString : Url -> String
 urlToString (Url internals) =
     let
         host =
-            case internals.mode of
-                Development ->
-                    "http://localhost:9081"
-
-                Production ->
-                    "https://api.parasrah.com:9091"
+            Constants.apiUrl internals.mode
 
         path =
             internals.path

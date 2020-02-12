@@ -1,17 +1,15 @@
 module View.Header exposing (Model, Msg(..), init, update, view)
 
 import Css exposing (..)
-import Css.Media as Media exposing (only, screen, withMedia)
 import Css.Transitions as Transitions exposing (transition)
 import Data.Author as Author exposing (Author)
 import Data.General as General exposing (General, Msg(..))
 import Data.Route as Route exposing (Route(..))
-import Data.Search as Search exposing (Result, Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
-import Data.Username as Username exposing (Username)
+import Data.Username as Username 
 import Html.Styled exposing (..)
-import Html.Styled.Attributes as Attr exposing (..)
+import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onBlur, onClick, onFocus, onInput)
 import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color

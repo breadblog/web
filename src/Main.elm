@@ -2,16 +2,14 @@ module Main exposing (main)
 
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
-import Css exposing (absolute, px)
+import Css
 import Data.General as General exposing (General)
-import Data.Markdown as Markdown exposing (Markdown)
-import Data.Problem as Problem exposing (Description(..), Problem)
+import Data.Markdown as Markdown
+import Data.Problem as Problem exposing (Description(..))
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme(..))
-import Html
-import Html.Styled exposing (..)
+import Html.Styled exposing (Html, toUnstyled, div)
 import Html.Styled.Attributes exposing (css, id)
-import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Message exposing (Compound(..), Msg(..))
 import Page.About
@@ -27,7 +25,7 @@ import Style.Color
 import Style.Font as Font
 import Style.Global
 import Update
-import Url exposing (Url)
+import Url
 
 
 

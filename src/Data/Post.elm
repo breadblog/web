@@ -232,8 +232,7 @@ mergeFromApi fromAPI (Post (Core fromCache) _ _) =
     mapFavorite (\_ -> fromCache.favorite) fromAPI
 
 
-
-{- JSON -}
+{- Json -}
 -- Encoders
 
 
