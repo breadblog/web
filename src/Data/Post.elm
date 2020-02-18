@@ -1,12 +1,9 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, favorite, fullDecoder, mapBody, mapDescription, mapFavorite, mapPublished, mapTitle, mergeFromApi, previewDecoder, published, tags, title, toPreview, uuid)
+module Data.Post exposing (Client, Core, Full, Post, Preview, date, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, fullDecoder, mapBody, mapDescription, mapPublished, mapTitle, previewDecoder, published, tags, title, toPreview, uuid)
 
-import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
-import Data.Search as Search exposing (Source)
-import Data.Tag as Tag exposing (Tag)
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (custom, hardcoded, optional, required)
+import Json.Decode.Pipeline exposing (custom, hardcoded, required)
 import Json.Encode as Encode exposing (Value)
 import Time
 
@@ -33,7 +30,6 @@ type Core
 type alias CoreInternals =
     { uuid : UUID
     , date : Time.Posix
-    , favorite : Maybe Bool
     }
 
 
@@ -128,15 +124,6 @@ date post =
     accessCore .date post
 
 
-favorite : Post Core f -> Maybe Bool
-favorite post =
-    accessCore .favorite post
-
-
-mapFavorite : (Maybe Bool -> Maybe Bool) -> Post Core f -> Post Core f
-mapFavorite transform post =
-    mapCore (\i -> { i | favorite = transform i.favorite }) post
-
 
 tags : Post l f -> List UUID
 tags post =
@@ -158,7 +145,7 @@ mapPublished transform post =
 
 
 toPreview : Post c f -> Post c Preview
-toPreview (Post c f i) =
+toPreview (Post c _ i) =
     Post c Preview i
 
 
@@ -168,7 +155,7 @@ compare (Post (Core a) _ _) (Post (Core b) _ _) =
 
 
 accessInternals : (Internals -> a) -> Post l f -> a
-accessInternals accessor (Post l f internals) =
+accessInternals accessor (Post _ _ internals) =
     internals
         |> accessor
 
@@ -182,11 +169,6 @@ accessCore : (CoreInternals -> a) -> Post Core f -> a
 accessCore accessor (Post (Core core) _ _) =
     core
         |> accessor
-
-
-mapCore : (CoreInternals -> CoreInternals) -> Post Core f -> Post Core f
-mapCore transform (Post (Core core) f i) =
-    Post (Core <| transform core) f i
 
 
 accessFull : (FullInternals -> a) -> Post l Full -> a
@@ -216,22 +198,6 @@ empty userUUID =
         }
 
 
-toSource : msg -> List (Post l f) -> Source msg
-toSource msg posts =
-    Search.source
-        (List.map
-            title
-            posts
-        )
-        "post"
-        msg
-
-
-mergeFromApi : Post Core Preview -> Post Core Preview -> Post Core Preview
-mergeFromApi fromAPI (Post (Core fromCache) _ _) =
-    mapFavorite (\_ -> fromCache.favorite) fromAPI
-
-
 {- Json -}
 -- Encoders
 
@@ -254,17 +220,9 @@ encodeFullHelper i =
 
 encodeCoreHelper : CoreInternals -> List ( String, Value )
 encodeCoreHelper i =
-    List.append
-        [ ( "date", Encode.int <| Time.posixToMillis i.date )
-        , ( "uuid", UUID.encode i.uuid )
-        ]
-        (case i.favorite of
-            Just v ->
-                [ ( "favorite", Encode.bool v ) ]
-
-            Nothing ->
-                []
-        )
+    [ ( "date", Encode.int <| Time.posixToMillis i.date )
+    , ( "uuid", UUID.encode i.uuid )
+    ]
 
 
 encodeFull : Post Core Full -> Value
@@ -314,7 +272,6 @@ coreDecodeHelper defaultFav =
     Decode.succeed CoreInternals
         |> required "uuid" UUID.decoder
         |> required "date" timeDecoder
-        |> optional "favorite" (Decode.maybe Decode.bool) defaultFav
         |> Decode.map Core
 
 
