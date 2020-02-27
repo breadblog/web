@@ -1,14 +1,13 @@
-module Page.Changelog exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.Changelog exposing (Model, Msg, fromContext, init, toContext, update, view)
 
 import Css exposing (..)
-import Data.General as General exposing (General)
+import Data.Context as Context exposing (Context)
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Message exposing (Compound)
-import Update
 import View.Page as Page exposing (PageUpdateOutput)
 
 
@@ -27,19 +26,19 @@ type alias Internals =
     {}
 
 
-init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
+init : Context -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
 init =
     Page.init {} Cmd.none Changelog
 
 
-toGeneral : Model -> General
-toGeneral =
-    Page.toGeneral
+toContext : Model -> Context
+toContext =
+    Page.toContext
 
 
-fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
+fromContext : Context -> Model -> Model
+fromContext =
+    Page.fromContext
 
 
 
@@ -63,7 +62,7 @@ update =
     Page.update updateMod
 
 
-updateMod : msg -> General -> Internals -> Update.Output ModMsg Internals
+updateMod : msg -> Context -> Internals -> Update.Output ModMsg Internals
 updateMod _ general internals =
     { model = internals
     , general = general
@@ -80,7 +79,7 @@ view model =
     Page.view model viewChangelog
 
 
-viewChangelog : General -> Internals -> List (Html (Compound m))
+viewChangelog : Context -> Internals -> List (Html (Compound m))
 viewChangelog _ _ =
     [ main_
         [ css

@@ -1,7 +1,7 @@
-module Page.About exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.About exposing (Model, Msg, fromContext, init, toContext, update, view)
 
 import Css exposing (..)
-import Data.General as General exposing (General)
+import Data.Context as Context exposing (Context)
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
@@ -24,19 +24,19 @@ type alias Internals =
     {}
 
 
-init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
+init : Context -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
 init =
     Page.init {} Cmd.none About
 
 
-toGeneral : Model -> General
-toGeneral =
-    Page.toGeneral
+toContext : Model -> Context
+toContext =
+    Page.toContext
 
 
-fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
+fromContext : Context -> Model -> Model
+fromContext =
+    Page.fromContext
 
 
 
@@ -60,7 +60,7 @@ update =
     Page.update updateMod
 
 
-updateMod : msg -> General -> Internals -> Update.Output ModMsg Internals
+updateMod : msg -> Context -> Internals -> Update.Output ModMsg Internals
 updateMod _ general internals =
     { model = internals
     , general = general
@@ -77,6 +77,6 @@ view model =
     Page.view model viewAbout
 
 
-viewAbout : General -> Internals -> List (Html (Compound m))
+viewAbout : Context -> Internals -> List (Html (Compound m))
 viewAbout _ _ =
     []

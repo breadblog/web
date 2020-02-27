@@ -3,7 +3,7 @@ module Main exposing (main)
 import Browser exposing (Document)
 import Browser.Navigation exposing (Key)
 import Css
-import Data.General as General exposing (General)
+import Data.Context as Context exposing (Context)
 import Data.Markdown as Markdown
 import Data.Problem as Problem exposing (Description(..))
 import Data.Route as Route exposing (Route(..))
@@ -12,19 +12,18 @@ import Html.Styled exposing (Html, toUnstyled, div)
 import Html.Styled.Attributes exposing (css, id)
 import Json.Encode exposing (Value)
 import Message exposing (Compound(..), Msg(..))
-import Page.About
-import Page.Changelog
-import Page.Donate
+-- import Page.About
+-- import Page.Changelog
+-- import Page.Donate
 import Page.Home
-import Page.Login
-import Page.NotFound
-import Page.Post
-import Page.Problems
-import Page.Redirect
+-- import Page.Login
+-- import Page.NotFound
+-- import Page.Post
+-- import Page.Problems
+-- import Page.Redirect
 import Style.Color
 import Style.Font as Font
 import Style.Global
-import Update
 import Url
 
 
@@ -33,11 +32,11 @@ import Url
 
 
 type Model
-    = Redirect General
-    | NotFound General
+    = Home Page.Home.Model
+    | Redirect Context
+    | NotFound Context
     | Donate Page.Donate.Model
     | About Page.About.Model
-    | Home Page.Home.Model
     | Login Page.Login.Model
     | Post Page.Post.Model
     | Changelog Page.Changelog.Model
@@ -47,11 +46,7 @@ type Model
 -- Message --
 
 
-type alias Msg =
-    Compound InternalMsg
-
-
-type InternalMsg
+type Msg
     = HomeMsg Page.Home.Msg
     | LoginMsg Page.Login.Msg
     | PostMsg Page.Post.Msg
@@ -76,7 +71,7 @@ init flags url key =
             Route.fromUrl url
 
         ( general, generalCmd ) =
-            General.init key flags
+            Context.init key flags
 
         ( model, routeCmd ) =
             changeRoute route <| Redirect general
@@ -87,7 +82,7 @@ init flags url key =
                 , Cmd.map
                     (\m ->
                         m
-                            |> GeneralMsg
+                            |> ContextMsg
                             |> Global
                     )
                     generalCmd
@@ -104,10 +99,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update compound model =
     let
         general =
-            toGeneral model
+            toContext model
 
         key =
-            General.key general
+            Context.key general
     in
     case compound of
         Global msg ->
@@ -127,16 +122,16 @@ update compound model =
                     in
                     changeRoute route model
 
-                GeneralMsg generalMsg ->
+                ContextMsg generalMsg ->
                     let
-                        ( updatedGeneral, generalCmd ) =
-                            General.update generalMsg general
+                        ( updatedContext, generalCmd ) =
+                            Context.update generalMsg general
 
                         updatedModel =
-                            fromGeneral updatedGeneral model
+                            fromContext updatedContext model
 
                         cmd =
-                            Cmd.map (\c -> Global <| GeneralMsg c) generalCmd
+                            Cmd.map (\c -> Global <| ContextMsg c) generalCmd
                     in
                     ( updatedModel, cmd )
 
@@ -162,36 +157,17 @@ update compound model =
                                 (MarkdownError <| Markdown.create "Failed to forward `ModMsg` in `Main.elm`")
                                 Nothing
 
-                        updatedGeneral =
-                            General.pushProblem problem general
+                        updatedContext =
+                            Context.pushProblem problem general
                     in
-                    ( fromGeneral updatedGeneral model, Cmd.none )
-
-
-type alias Update msg model =
-    msg -> model -> Update.Output msg model
-
-
-updatePage : (modModel -> Model) -> (modMsg -> InternalMsg) -> Update modMsg modModel -> modModel -> modMsg -> Model -> ( Model, Cmd Msg )
-updatePage transformModel transformMsg modUpdate modModel modMsg model =
-    let
-        output =
-            modUpdate modMsg modModel
-
-        cmd =
-            Cmd.map (Message.map transformMsg) output.cmd
-
-        updatedModel =
-            fromGeneral output.general <| transformModel output.model
-    in
-    ( updatedModel, cmd )
+                    ( fromContext updatedContext model, Cmd.none )
 
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
 changeRoute route model =
     let
         general =
-            toGeneral model
+            toContext model
 
         ( pageModel, cmd ) =
             case route of
@@ -224,26 +200,26 @@ changeRoute route model =
     )
 
 
-toGeneral : Model -> General
-toGeneral page =
+toContext : Model -> Context
+toContext page =
     case page of
         Home model ->
-            Page.Home.toGeneral model
+            Page.Home.toContext model
 
         Login model ->
-            Page.Login.toGeneral model
+            Page.Login.toContext model
 
         Post model ->
-            Page.Post.toGeneral model
+            Page.Post.toContext model
 
         About model ->
-            Page.About.toGeneral model
+            Page.About.toContext model
 
         Donate model ->
-            Page.Donate.toGeneral model
+            Page.Donate.toContext model
 
         Changelog model ->
-            Page.Changelog.toGeneral model
+            Page.Changelog.toContext model
 
         NotFound g ->
             g
@@ -252,26 +228,26 @@ toGeneral page =
             g
 
 
-fromGeneral : General -> Model -> Model
-fromGeneral general page =
+fromContext : Context -> Model -> Model
+fromContext general page =
     case page of
         Home model ->
-            Home <| Page.Home.fromGeneral general model
+            Home <| Page.Home.fromContext general model
 
         Login model ->
-            Login <| Page.Login.fromGeneral general model
+            Login <| Page.Login.fromContext general model
 
         Post model ->
-            Post <| Page.Post.fromGeneral general model
+            Post <| Page.Post.fromContext general model
 
         About model ->
-            About <| Page.About.fromGeneral general model
+            About <| Page.About.fromContext general model
 
         Donate model ->
-            Donate <| Page.Donate.fromGeneral general model
+            Donate <| Page.Donate.fromContext general model
 
         Changelog model ->
-            Changelog <| Page.Changelog.fromGeneral general model
+            Changelog <| Page.Changelog.fromContext general model
 
         NotFound _ ->
             NotFound general
@@ -287,8 +263,8 @@ fromGeneral general page =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Sub.map (GeneralMsg >> Global) General.networkSub
-        , Sub.map (GeneralMsg >> Global) General.fullscreenSub
+        [ Sub.map (ContextMsg >> Global) Context.networkSub
+        , Sub.map (ContextMsg >> Global) Context.fullscreenSub
         ]
 
 
@@ -307,10 +283,10 @@ body : Model -> List (Html Msg)
 body model =
     let
         general =
-            toGeneral model
+            toContext model
 
         theme =
-            General.theme general
+            Context.theme general
     in
     [ div
         [ id "app"
@@ -332,10 +308,10 @@ viewPage : Model -> List (Html Msg)
 viewPage model =
     let
         general =
-            toGeneral model
+            toContext model
 
         problems =
-            General.problems general
+            Context.problems general
 
         numProblems =
             List.length problems
@@ -384,7 +360,7 @@ viewPage model =
         _ ->
             problems
                 |> Page.Problems.view
-                |> Html.Styled.map (\c -> Global <| GeneralMsg c)
+                |> Html.Styled.map (\c -> Global <| ContextMsg c)
                 |> List.singleton
 
 

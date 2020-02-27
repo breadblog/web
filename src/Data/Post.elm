@@ -12,11 +12,11 @@ import Time
 {- Model -}
 -- Represents a Post
 -- location: where the post is stored (client/server)
--- fields: what fields post contains (preview/full)
+-- content: what content post contains (preview/full)
 
 
-type Post location fields
-    = Post location fields Internals
+type Post location content
+    = Post location content Internals
 
 
 
@@ -79,27 +79,27 @@ type alias Internals =
 {- Accessors -}
 
 
-uuid : Post Core f -> UUID
+uuid : Post Core c -> UUID
 uuid post =
     accessCore .uuid post
 
 
-description : Post l f -> String
+description : Post l c -> String
 description post =
     accessInternals .description post
 
 
-mapDescription : (String -> String) -> Post l f -> Post l f
+mapDescription : (String -> String) -> Post l c -> Post l c
 mapDescription transform post =
     mapInternals (\i -> { i | description = transform i.description }) post
 
 
-title : Post l f -> String
+title : Post l c -> String
 title post =
     accessInternals .title post
 
 
-mapTitle : (String -> String) -> Post l f -> Post l f
+mapTitle : (String -> String) -> Post l c -> Post l c
 mapTitle transform post =
     mapInternals (\i -> { i | title = transform i.title }) post
 
@@ -111,31 +111,31 @@ body post =
 
 mapBody : (Markdown -> Markdown) -> Post l Full -> Post l Full
 mapBody transform post =
-    mapFull (\f -> { f | body = transform f.body }) post
+    mapFull (\c -> { c | body = transform c.body }) post
 
 
-author : Post l f -> UUID
+author : Post l c -> UUID
 author post =
     accessInternals .author post
 
 
-date : Post Core f -> Time.Posix
+date : Post Core c -> Time.Posix
 date post =
     accessCore .date post
 
 
 
-tags : Post l f -> List UUID
+tags : Post l c -> List UUID
 tags post =
     accessInternals .tags post
 
 
-published : Post l f -> Bool
+published : Post l c -> Bool
 published post =
     accessInternals .published post
 
 
-mapPublished : (Bool -> Bool) -> Post l f -> Post l f
+mapPublished : (Bool -> Bool) -> Post l c -> Post l c
 mapPublished transform post =
     mapInternals (\i -> { i | published = transform i.published }) post
 
@@ -144,9 +144,9 @@ mapPublished transform post =
 {- Util -}
 
 
-toPreview : Post c f -> Post c Preview
-toPreview (Post c _ i) =
-    Post c Preview i
+toPreview : Post l c -> Post l Preview
+toPreview (Post l _ i) =
+    Post l Preview i
 
 
 compare : Post Core x -> Post Core y -> Bool
@@ -154,18 +154,18 @@ compare (Post (Core a) _ _) (Post (Core b) _ _) =
     UUID.compare a.uuid b.uuid
 
 
-accessInternals : (Internals -> a) -> Post l f -> a
+accessInternals : (Internals -> a) -> Post l c -> a
 accessInternals accessor (Post _ _ internals) =
     internals
         |> accessor
 
 
-mapInternals : (Internals -> Internals) -> Post l f -> Post l f
-mapInternals transform (Post l f internals) =
-    Post l f <| transform internals
+mapInternals : (Internals -> Internals) -> Post l c -> Post l c
+mapInternals transform (Post l c internals) =
+    Post l c <| transform internals
 
 
-accessCore : (CoreInternals -> a) -> Post Core f -> a
+accessCore : (CoreInternals -> a) -> Post Core c -> a
 accessCore accessor (Post (Core core) _ _) =
     core
         |> accessor

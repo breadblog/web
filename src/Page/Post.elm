@@ -1,11 +1,11 @@
-module Page.Post exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.Post exposing (Model, Msg, fromContext, init, toContext, update, view)
 
 import Api
 import Browser.Navigation as Navigation
 import Css exposing (..)
 import Css.Transitions as Transitions exposing (transition)
 import Data.Author as Author exposing (Author)
-import Data.General as General exposing (General, Msg(..))
+import Data.Context as Context exposing (Context, Msg(..))
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.Post as Post exposing (Client, Core, Full, Post)
 import Data.Problem as Problem exposing (Description(..))
@@ -19,7 +19,6 @@ import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick, onInput)
 import Http
 import List.Extra
-import Message exposing (Compound(..), Msg(..))
 import Style.Button
 import Style.Card
 import Style.Color as Color
@@ -30,11 +29,10 @@ import Style.Shadow as Shadow
 import Svg.Styled.Attributes as SvgAttributes
 import Svg.Styled.Events as SvgEvents
 import Time
-import Update
 import View.Loading
-import View.Page as Page exposing (PageUpdateOutput)
 import View.Svg
 import View.Tag
+import Page
 
 
 
@@ -72,14 +70,14 @@ type
 {------------------------------------------------------}
 
 
-init : PostType -> General -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
+init : PostType -> Context -> Page.TransformModel Internals mainModel -> Page.TransformMsg ModMsg mainMsg -> ( mainModel, Cmd mainMsg )
 init postType general =
     let
         maybeUserUUID =
-            General.user general
+            Context.user general
 
         authors =
-            General.authors general
+            Context.authors general
 
         getAuthor =
             \uuid -> Author.fromUUID uuid authors
@@ -136,17 +134,17 @@ init postType general =
                         LoadingReady
                         Cmd.none
                         (Post Route.Create)
-                        (General.pushProblem problem general)
+                        (Context.pushProblem problem general)
 
 
-fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
+fromContext : Context -> Model -> Model
+fromContext =
+    Page.fromContext
 
 
-toGeneral : Model -> General
-toGeneral =
-    Page.toGeneral
+toContext : Model -> Context
+toContext =
+    Page.toContext
 
 
 
@@ -184,7 +182,7 @@ update =
     Page.update updateMod
 
 
-updateMod : ModMsg -> General -> Internals -> Update.Output ModMsg Internals
+updateMod : ModMsg -> Context -> Internals -> Update.Output ModMsg Internals
 updateMod msg general internals =
     let
         simpleOutput model =
@@ -195,7 +193,7 @@ updateMod msg general internals =
 
         withProblem problem =
             { model = internals
-            , general = General.pushProblem problem general
+            , general = Context.pushProblem problem general
             , cmd = Cmd.none
             }
     in
@@ -205,7 +203,7 @@ updateMod msg general internals =
                 Ok post ->
                     let
                         authors =
-                            General.authors general
+                            Context.authors general
 
                         authorUUID =
                             Post.author post
@@ -303,7 +301,7 @@ updateMod msg general internals =
                     , general = general
                     , cmd =
                         Api.put
-                            { url = Api.url (General.mode general) "/post/private/"
+                            { url = Api.url (Context.mode general) "/post/private/"
                             , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
                             , body = Http.jsonBody <| Post.encodeFreshFull post
                             }
@@ -314,7 +312,7 @@ updateMod msg general internals =
                     , general = general
                     , cmd =
                         Api.post
-                            { url = Api.url (General.mode general) "/post/private/"
+                            { url = Api.url (Context.mode general) "/post/private/"
                             , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
                             , body = Http.jsonBody <| Post.encodeFull post
                             }
@@ -329,7 +327,7 @@ updateMod msg general internals =
                     \post author ->
                         { model = Ready post author
                         , general = general
-                        , cmd = Navigation.replaceUrl (General.key general) (Route.toPath <| Post <| Route.Ready <| Post.uuid post)
+                        , cmd = Navigation.replaceUrl (Context.key general) (Route.toPath <| Post <| Route.Ready <| Post.uuid post)
                         }
             in
             case internals of
@@ -359,7 +357,7 @@ updateMod msg general internals =
                 Ready post author ->
                     { model = internals
                     , general = general
-                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Edit <| Post.uuid post)
+                    , cmd = Navigation.pushUrl (Context.key general) (Route.toPath <| Post <| Route.Edit <| Post.uuid post)
                     }
 
                 _ ->
@@ -370,7 +368,7 @@ updateMod msg general internals =
                 Ready post author ->
                     { model = internals
                     , general = general
-                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath <| Post <| Route.Delete <| Post.uuid post)
+                    , cmd = Navigation.pushUrl (Context.key general) (Route.toPath <| Post <| Route.Delete <| Post.uuid post)
                     }
 
                 _ ->
@@ -383,7 +381,7 @@ updateMod msg general internals =
                     , general = general
                     , cmd =
                         Api.delete
-                            { url = Api.url (General.mode general) (UUID.toPath "/post/owner" postUUID)
+                            { url = Api.url (Context.mode general) (UUID.toPath "/post/owner" postUUID)
                             , expect = Http.expectWhatever (OnDelete >> Mod)
                             }
                     }
@@ -400,7 +398,7 @@ updateMod msg general internals =
                 Ok _ ->
                     { model = internals
                     , general = general
-                    , cmd = Navigation.pushUrl (General.key general) (Route.toPath Home)
+                    , cmd = Navigation.pushUrl (Context.key general) (Route.toPath Home)
                     }
 
         TogglePublished ->
@@ -423,7 +421,7 @@ type alias PostResult =
     Result Http.Error (Post Core Full)
 
 
-getPost : General -> UUID -> Maybe UUID -> ToInternals -> Cmd ModMsg
+getPost : Context -> UUID -> Maybe UUID -> ToInternals -> Cmd ModMsg
 getPost general postUUID maybeUserUUID toInternals =
     let
         path =
@@ -435,7 +433,7 @@ getPost general postUUID maybeUserUUID toInternals =
                     UUID.toPath "/post/public" postUUID
 
         mode =
-            General.mode general
+            Context.mode general
     in
     Api.get
         { url = Api.url mode path
@@ -443,9 +441,9 @@ getPost general postUUID maybeUserUUID toInternals =
         }
 
 
-redirect404 : General -> Cmd msg
+redirect404 : Context -> Cmd msg
 redirect404 general =
-    Navigation.pushUrl (General.key general) (Route.toPath NotFound)
+    Navigation.pushUrl (Context.key general) (Route.toPath NotFound)
 
 
 
@@ -457,11 +455,11 @@ view model =
     Page.view model viewPost
 
 
-viewPost : General -> Internals -> List (Html (Compound ModMsg))
+viewPost : Context -> Internals -> List (Html (Compound ModMsg))
 viewPost general internals =
     let
         theme =
-            General.theme general
+            Context.theme general
 
         contents =
             case internals of
@@ -474,7 +472,7 @@ viewPost general internals =
                 Ready post author ->
                     let
                         authors =
-                            General.authors general
+                            Context.authors general
                     in
                     readyView general post author
 
@@ -527,22 +525,22 @@ loadingView theme =
     ]
 
 
-peekView : General -> Post Core Full -> List (Html (Compound ModMsg))
+peekView : Context -> Post Core Full -> List (Html (Compound ModMsg))
 peekView general post =
     let
         theme =
-            General.theme general
+            Context.theme general
     in
     [ sheet theme
         []
     ]
 
 
-editView : General -> Post Core Full -> Author -> List (Html (Compound ModMsg))
+editView : Context -> Post Core Full -> Author -> List (Html (Compound ModMsg))
 editView general post author =
     let
         theme =
-            General.theme general
+            Context.theme general
     in
     [ sheet theme
         [ div
@@ -575,7 +573,7 @@ editView general post author =
             [ css [ displayFlex ]
             ]
             [ button
-                [ onClick <| Global <| GeneralMsg <| GoBack
+                [ onClick <| Global <| ContextMsg <| GoBack
                 , css
                     [ Style.Button.default
                     , Style.Button.danger theme
@@ -599,11 +597,11 @@ editView general post author =
     ]
 
 
-createView : General -> Post Client Full -> Author -> List (Html (Compound ModMsg))
+createView : Context -> Post Client Full -> Author -> List (Html (Compound ModMsg))
 createView general post author =
     let
         theme =
-            General.theme general
+            Context.theme general
     in
     [ sheet theme
         [ div
@@ -638,7 +636,7 @@ createView general post author =
                 [ displayFlex ]
             ]
             [ button
-                [ onClick <| Global <| GeneralMsg <| GoBack
+                [ onClick <| Global <| ContextMsg <| GoBack
                 , css
                     [ Style.Button.default
                     , Style.Button.danger theme
@@ -713,7 +711,7 @@ deleteView theme postUUID =
                     ]
                 ]
                 [ button
-                    [ onClick <| Global <| GeneralMsg GoBack
+                    [ onClick <| Global <| ContextMsg GoBack
                     , css
                         [ Style.Button.default
                         , backgroundColor <| Color.danger theme
@@ -735,11 +733,11 @@ deleteView theme postUUID =
     ]
 
 
-readyView : General -> Post Core Full -> Author -> List (Html (Compound ModMsg))
+readyView : Context -> Post Core Full -> Author -> List (Html (Compound ModMsg))
 readyView general post author =
     let
         theme =
-            General.theme general
+            Context.theme general
 
         postStyle =
             Style.Post.style theme
@@ -754,10 +752,10 @@ readyView general post author =
             Post.body post
 
         fullscreen =
-            General.fullscreen general
+            Context.fullscreen general
 
         myPost =
-            case General.user general of
+            case Context.user general of
                 Nothing ->
                     False
 
@@ -811,15 +809,15 @@ readyView general post author =
 {- View Helpers -}
 
 
-viewTags : General -> Post l f -> Html msg
+viewTags : Context -> Post l f -> Html msg
 viewTags general post =
     let
         theme =
-            General.theme general
+            Context.theme general
 
         tags =
             Post.tags post
-                |> List.map (\tagUUID -> Tag.find tagUUID (General.tags general))
+                |> List.map (\tagUUID -> Tag.find tagUUID (Context.tags general))
                 |> List.filterMap identity
     in
     div
@@ -856,11 +854,11 @@ delete theme styles =
         ]
 
 
-favorite : General -> Post Core f -> List Style -> Html (Compound ModMsg)
+favorite : Context -> Post Core f -> List Style -> Html (Compound ModMsg)
 favorite general post styles =
     let
         theme =
-            General.theme general
+            Context.theme general
 
         maybeFav =
             case Post.favorite post of
@@ -868,7 +866,7 @@ favorite general post styles =
                     Just f
 
                 Nothing ->
-                    case List.Extra.find (Post.compare post) (General.postPreviews general) of
+                    case List.Extra.find (Post.compare post) (Context.postPreviews general) of
                         Just p ->
                             Post.favorite p
 
@@ -878,7 +876,7 @@ favorite general post styles =
     case maybeFav of
         Just fav ->
             View.Svg.heart
-                [ SvgEvents.onClick <| Global <| GeneralMsg <| TogglePost <| Post.toPreview post
+                [ SvgEvents.onClick <| Global <| ContextMsg <| TogglePost <| Post.toPreview post
                 , SvgAttributes.css
                     (List.append
                         [ svgStyle theme
@@ -938,7 +936,7 @@ togglePublished theme post styles =
 maximize : Theme -> List Style -> Html (Compound ModMsg)
 maximize theme styles =
     View.Svg.maximize
-        [ SvgEvents.onClick <| Global <| GeneralMsg <| FullscreenElement "post-page"
+        [ SvgEvents.onClick <| Global <| ContextMsg <| FullscreenElement "post-page"
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles
@@ -949,7 +947,7 @@ maximize theme styles =
 minimize : Theme -> List Style -> Html (Compound ModMsg)
 minimize theme styles =
     View.Svg.minimize
-        [ SvgEvents.onClick <| Global <| GeneralMsg <| ExitFullscreen
+        [ SvgEvents.onClick <| Global <| ContextMsg <| ExitFullscreen
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles

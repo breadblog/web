@@ -1,7 +1,7 @@
-module Data.GeneralTest exposing (suite)
+module Data.ContextTest exposing (suite)
 
-import Data.General as General
-import Data.Version as Version exposing (Version)
+import Data.Context as Context
+import Data.Version as Version
 import Expect
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -10,10 +10,10 @@ import Test exposing (..)
 
 suite : Test
 suite =
-    describe "the Data.General module"
-        [ describe "General.init"
+    describe "the Data.Context module"
+        [ describe "Context.init"
             [ test "fails with invalid JSON" <|
-                \n ->
+                \_ ->
                     let
                         json =
                             Encode.object
@@ -30,7 +30,7 @@ suite =
                     in
                     case Version.fromString "0.0.1" of
                         Just currentVersion ->
-                            case Decode.decodeValue (General.flagsDecoder currentVersion) json of
+                            case Decode.decodeValue (Context.flagsDecoder currentVersion) json of
                                 Ok _ ->
                                     Expect.fail "should fail to parse"
 
@@ -40,7 +40,7 @@ suite =
                         Nothing ->
                             Expect.fail "invalid version"
             , test "succeeds with valid JSON" <|
-                \n ->
+                \_ ->
                     let
                         json =
                             Encode.object
@@ -57,7 +57,7 @@ suite =
                     in
                     case Version.fromString "0.0.1" of
                         Just currentVersion ->
-                            case Decode.decodeValue (General.flagsDecoder currentVersion) json of
+                            case Decode.decodeValue (Context.flagsDecoder currentVersion) json of
                                 Ok _ ->
                                     Expect.pass
 

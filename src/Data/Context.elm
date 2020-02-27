@@ -1,7 +1,9 @@
-port module Data.General exposing (General, Msg(..), flagsDecoder, focus, fullscreen, fullscreenSub, init, key, mapUser, mode, networkSub, problems, pushProblem, theme, update, user, version)
+port module Data.Context exposing (Context, Msg(..), flagsDecoder, focus, getFullscreen, fullscreenSub, init, getKey, mapUser, getMode, networkSub, getProblems, pushProblem, getTheme, update, getUser, getVersion, isPostLiked)
 
-import Api exposing (Url)
+import Api
 import Browser.Navigation exposing (Key)
+import Data.Tag as Tag exposing (Tag)
+import Data.Post as Post exposing (Post, Core)
 import Data.Config exposing (Config)
 import Data.Markdown as Markdown
 import Data.Mode as Mode exposing (Mode(..))
@@ -23,8 +25,8 @@ import Version
 {- Model -}
 
 
-type General
-    = General IGeneral
+type Context
+    = Context IContext
 
 
 type alias Flags =
@@ -35,7 +37,7 @@ type alias Flags =
     }
 
 
-type alias IGeneral =
+type alias IContext =
     { cache : Cache
     , key : Key
     , problems : List (Problem Msg)
@@ -53,13 +55,15 @@ type alias ICache =
     { version : Version
     , theme : Theme
     , user : Maybe UUID
+    , likedPosts : List UUID
+    , ignoredTags : List UUID
     }
 
 
 {- Constructors -}
 
 
-init : Key -> Value -> ( General, Cmd Msg )
+init : Key -> Value -> ( Context, Cmd Msg )
 init key_ flags =
     let
         ( decoded, cacheProblems ) =
@@ -93,7 +97,7 @@ init key_ flags =
                       ]
                     )
 
-        general =
+        context =
             { cache = decoded.cache
             , key = key_
             , problems = cacheProblems
@@ -101,9 +105,9 @@ init key_ flags =
             , network = decoded.network
             , fullscreen = decoded.fullscreen
             }
-                |> General
+                |> Context
     in
-    ( general
+    ( context
     , Cmd.batch
         [ setCache decoded.cache
         ]
@@ -115,6 +119,8 @@ defaultCache currentVersion =
     { theme = Dark
     , version = currentVersion
     , user = Nothing
+    , likedPosts = []
+    , ignoredTags = []
     }
         |> Cache
 
@@ -123,7 +129,7 @@ defaultFlags : Version -> Flags
 defaultFlags version_ =
     { cache = defaultCache version_
     , mode = Production
-    , network = Offline
+    , network = Online
     , fullscreen = False
     }
 
@@ -159,22 +165,22 @@ type Msg
 {- Update -}
 
 
-update : Msg -> General -> ( General, Cmd Msg )
-update msg general =
+update : Msg -> Context -> ( Context, Cmd Msg )
+update msg context =
     let
         (Cache iCache) =
-            cache general
+            getCache context
 
-        (General internals) =
-            general
+        (Context internals) =
+            context
 
         ( newGeneral, cmd ) =
             case msg of
                 SetTheme theme_ ->
-                    updateCache general { iCache | theme = theme_ }
+                    updateCache context { iCache | theme = theme_ }
 
                 UpdateNetwork network ->
-                    ( General { internals | network = network }
+                    ( Context { internals | network = network }
                     , Cmd.none
                     )
 
@@ -183,17 +189,17 @@ update msg general =
                         problem =
                             Problem.create "Network problem" (JsonError err) Nothing
                     in
-                    ( General { internals | problems = problem :: internals.problems }
+                    ( Context { internals | problems = problem :: internals.problems }
                     , Cmd.none
                     )
 
                 TryLogout ->
-                    ( general, tryLogout general )
+                    ( context, tryLogout context )
 
                 OnLogout res ->
                     case res of
                         Ok _ ->
-                            updateCache general { iCache | user = Nothing }
+                            updateCache context { iCache | user = Nothing }
 
                         Err err ->
                             let
@@ -203,41 +209,41 @@ update msg general =
                                         (HttpError err)
                                         Nothing
                             in
-                            ( pushProblem problem general
+                            ( pushProblem problem context
                             , Cmd.none
                             )
 
                 NavigateTo route ->
-                    navigateTo route general
+                    navigateTo route context
 
                 ReportErr _ ->
-                    ( general, Cmd.none )
+                    ( context, Cmd.none )
 
                 DismissProblem index ->
-                    ( dismissProblem index general, Cmd.none )
+                    ( dismissProblem index context, Cmd.none )
 
                 WithDismiss index nestedMsg ->
-                    update nestedMsg <| dismissProblem index general
+                    update nestedMsg <| dismissProblem index context
 
                 FullscreenElement class ->
-                    ( general, fullscreenElement class )
+                    ( context, fullscreenElement class )
 
                 ExitFullscreen ->
-                    ( general, exitFullscreen () )
+                    ( context, exitFullscreen () )
 
                 UpdateFullscreen fs ->
-                    ( General { internals | fullscreen = fs }
+                    ( Context { internals | fullscreen = fs }
                     , Cmd.none
                     )
 
                 PushProblem problem ->
-                    ( pushProblem problem general
+                    ( pushProblem problem context
                     , Cmd.none
                     )
 
                 GoBack ->
-                    ( general
-                    , Browser.Navigation.back (key general) 1
+                    ( context
+                    , Browser.Navigation.back (getKey context) 1
                     )
     in
     ( newGeneral
@@ -247,46 +253,46 @@ update msg general =
     )
 
 
-updateCache : General -> ICache -> ( General, Cmd Msg )
-updateCache general iCache =
+updateCache : Context -> ICache -> ( Context, Cmd Msg )
+updateCache context iCache =
     let
-        (General internals) =
-            general
+        (Context internals) =
+            context
 
         cache_ =
             Cache iCache
     in
-    ( General { internals | cache = cache_ }
+    ( Context { internals | cache = cache_ }
     , setCache <| cache_
     )
 
 
-dismissProblem : Int -> General -> General
-dismissProblem index (General internals) =
-    General { internals | problems = List.Extra.removeAt index internals.problems }
+dismissProblem : Int -> Context -> Context
+dismissProblem index (Context internals) =
+    Context { internals | problems = List.Extra.removeAt index internals.problems }
 
 
-navigateTo : Route -> General -> ( General, Cmd msg )
-navigateTo route general =
-    ( general
-    , Browser.Navigation.pushUrl (key general) (Route.toPath route)
+navigateTo : Route -> Context -> ( Context, Cmd msg )
+navigateTo route context =
+    ( context
+    , Browser.Navigation.pushUrl (getKey context) (Route.toPath route)
     )
 
 
-mapCache : Cache -> General -> ( General, Cmd msg )
-mapCache cache_ (General general_) =
-    ( General { general_ | cache = cache_ }
+mapCache : Cache -> Context -> ( Context, Cmd msg )
+mapCache cache_ (Context general_) =
+    ( Context { general_ | cache = cache_ }
     , setCache cache_
     )
 
 
 {- HTTP -}
 
-tryLogout : General -> Cmd Msg
-tryLogout general =
+tryLogout : Context -> Cmd Msg
+tryLogout context =
     let
         url =
-            Api.url (mode general) "/logout/"
+            Api.url (getMode context) "/logout/"
 
         expect =
             Http.expectWhatever OnLogout
@@ -361,80 +367,102 @@ fullscreenSub =
 {- Accessors (public) -}
 
 
-fullscreen : General -> Bool
-fullscreen (General internals) =
+getFullscreen : Context -> Bool
+getFullscreen (Context internals) =
     internals.fullscreen
 
 
-cache : General -> Cache
-cache (General internals) =
+getCache : Context -> Cache
+getCache (Context internals) =
     internals.cache
 
 
-version : General -> Version
-version general =
-    general
-        |> cache
-        |> cacheInternals
+getVersion : Context -> Version
+getVersion context =
+    context
+        |> getCache
+        |> toCacheInternals
         |> .version
 
 
-theme : General -> Theme
-theme general =
-    general
-        |> cache
-        |> cacheInternals
+getTheme: Context -> Theme
+getTheme context =
+    context
+        |> getCache
+        |> toCacheInternals
         |> .theme
 
 
-user : General -> Maybe UUID
-user general =
-    general
-        |> cache
-        |> cacheInternals
+getUser : Context -> Maybe UUID
+getUser context =
+    context
+        |> getCache
+        |> toCacheInternals
         |> .user
 
 
-mapUser : UUID -> General -> ( General, Cmd msg )
-mapUser uuid general =
+mapUser : UUID -> Context -> ( Context, Cmd msg )
+mapUser uuid context =
     let
-        (General internals) =
-            general
+        (Context internals) =
+            context
 
         (Cache iCache) =
             internals.cache
     in
-    mapCache (Cache { iCache | user = Just uuid }) general
+    mapCache (Cache { iCache | user = Just uuid }) context
 
 
-problems : General -> List (Problem Msg)
-problems (General general) =
-    general.problems
+getProblems : Context -> List (Problem Msg)
+getProblems (Context context) =
+    context.problems
 
 
-pushProblem : Problem Msg -> General -> General
-pushProblem problem (General general) =
-    { general | problems = problem :: general.problems }
-        |> General
+pushProblem : Problem Msg -> Context -> Context
+pushProblem problem (Context context) =
+    { context | problems = problem :: context.problems }
+        |> Context
 
 
-key : General -> Key
-key (General internals) =
+getKey : Context -> Key
+getKey (Context internals) =
     internals.key
 
 
-mode : General -> Mode
-mode (General internals) =
+getMode : Context -> Mode
+getMode (Context internals) =
     internals.config.mode
 
+
+isPostLiked : Context -> Post Core c -> Bool
+isPostLiked context post =
+    let
+        predicate =
+            post
+            |> Post.uuid
+            |> UUID.compare
+
+        (Cache iCache) =
+            getCache context
+
+    in
+    List.any predicate iCache.likedPosts
+    
 
 
 {- Accessors (private) -}
 
 
-cacheInternals : Cache -> ICache
-cacheInternals (Cache iCache) =
+toCacheInternals : Cache -> ICache
+toCacheInternals (Cache iCache) =
     iCache
+
+
+toLikedPosts : Cache -> List UUID
+toLikedPosts cache =
+    cache
+    |> toCacheInternals
+    |> .likedPosts
 
 
 
@@ -456,6 +484,8 @@ cacheDecoder =
         |> required "version" Data.Version.decoder
         |> required "theme" Theme.decoder
         |> optional "user" (Decode.nullable UUID.decoder) Nothing
+        |> optional "likedPosts" (Decode.list UUID.decoder) []
+        |> optional "ignoredTags" (Decode.list UUID.decoder) []
         |> Decode.map Cache
 
 

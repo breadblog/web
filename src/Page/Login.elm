@@ -1,8 +1,8 @@
-module Page.Login exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.Login exposing (Model, Msg, fromContext, init, toContext, update, view)
 
 import Api
 import Css exposing (..)
-import Data.General as General exposing (General, Msg(..))
+import Data.Context as Context exposing (Context, Msg(..))
 import Data.Login
 import Data.Password as Password exposing (Password)
 import Data.Route as Route exposing (Route(..))
@@ -11,10 +11,8 @@ import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events as Events exposing (onClick, onInput)
 import Http
 import Json.Decode
-import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
-import Update
-import View.Page as Page exposing (PageUpdateOutput)
+import Page
 
 
 
@@ -22,160 +20,122 @@ import View.Page as Page exposing (PageUpdateOutput)
 
 
 type alias Model =
-    Page.PageModel Internals
-
-
-type alias Internals =
-    { username : String
+    { context : Context
+    , username : String
     , password : Password
     , error : Maybe String
     }
 
 
-init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
-init =
-    Page.init initInternals Cmd.none Login
-
-
-initInternals : Internals
-initInternals =
-    { username = ""
+init : Context -> Model
+init context =
+    { context = context
+    , username = ""
     , password = Password.create ""
     , error = Nothing
     }
 
 
-toGeneral : Model -> General
-toGeneral =
-    Page.toGeneral
+toContext : Model -> Context
+toContext =
+    Page.toContext
 
 
-fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
+fromContext : Context -> Model -> Model
+fromContext =
+    Page.fromContext
 
 
 
 {- Message -}
 
 
-type alias Msg =
-    Page.Msg ModMsg
-
-
-type ModMsg
+type Msg
     = OnLogin (Result Http.Error Data.Login.Response)
     | TryLogin
     | UpdateUsername String
     | UpdatePassword Password
     | InputKeyUp Int
+    | Ctx Context.Msg
 
 
 
 {- Update -}
 
 
-update : Msg -> Model -> PageUpdateOutput ModMsg Internals
-update =
-    Page.update updateMod
-
-
-updateMod : ModMsg -> General -> Internals -> Update.Output ModMsg Internals
-updateMod msg general internals =
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg ({ context } as model) =
     case msg of
         OnLogin res ->
             case res of
-                Err err ->
-                    { model = { internals | error = Just "failed to login" }
-                    , general = general
-                    , cmd = Cmd.none
-                    }
+                Err _ ->
+                    ( { model | error = Just "failed to login"
+                      }
+                    , Cmd.none
+                    )
 
                 Ok info ->
                     let
-                        ( updated, cmd ) =
-                            General.mapUser info.uuid general
+                        ( updatedContext, cmd ) =
+                            Context.mapUser info.uuid context
                     in
-                    { model = internals
-                    , general = updated
-                    , cmd = cmd
-                    }
+                    ( { model | context = updatedContext
+                      }
+                    , Cmd.map Ctx cmd
+                    )
 
         TryLogin ->
-            let
-                cmd =
-                    attemptLogin general internals.username internals.password
-            in
-            { model = internals
-            , general = general
-            , cmd = cmd
-            }
+            ( model, attemptLogin model )
 
         UpdateUsername username ->
-            { model = { internals | username = username }
-            , general = general
-            , cmd = Cmd.none
-            }
+            ( { model | username = username }, Cmd.none )
 
         UpdatePassword password ->
-            { model = { internals | password = password }
-            , general = general
-            , cmd = Cmd.none
-            }
+            ( { model | password = password }, Cmd.none )
 
         InputKeyUp code ->
+            ( model
+            , case code of
+                13 ->
+                    attemptLogin model
+                _ ->
+                    Cmd.none
+            )
+
+        Ctx contextMsg ->
             let
-                cmd =
-                    case code of
-                        -- enter
-                        13 ->
-                            attemptLogin general internals.username internals.password
-
-                        _ ->
-                            Cmd.none
+                ( updatedContext, cmd ) =
+                    Context.update contextMsg context
             in
-            { model = internals
-            , general = general
-            , cmd = cmd
-            }
+            ( { model | context = updatedContext }
+            , Cmd.map Ctx cmd
+            )
 
 
-attemptLogin : General -> String -> Password -> Cmd (Compound ModMsg)
-attemptLogin general username password =
+attemptLogin : Model -> Cmd Msg
+attemptLogin { context, username, password } =
     let
         mode =
-            General.mode general
-
-        msg =
-            \r ->
-                r
-                    |> OnLogin
-                    |> Mod
+            Context.getMode context
     in
     Api.post
-        { expect = Http.expectJson msg <| Data.Login.decodeResponse
+        { expect = Http.expectJson OnLogin <| Data.Login.decodeResponse
         , body =
-            Http.jsonBody <|
-                Data.Login.encodeRequest <|
-                    Data.Login.Request username password
+            Data.Login.Request username password
+            |> Data.Login.encodeRequest
+            |> Http.jsonBody
         , url = Api.url mode "/login/"
         }
-
 
 
 {- View -}
 
 
-view : Model -> Page.ViewResult ModMsg
-view model =
-    Page.view model viewLogin
-
-
-viewLogin : General -> Internals -> List (Html (Compound ModMsg))
-viewLogin general internals =
+view : Model -> List (Html Msg)
+view ({ context }) =
     let
         theme =
-            General.theme general
+            Context.getTheme context
     in
     [ div
         [ class "login"
@@ -203,14 +163,14 @@ viewLogin general internals =
                 [ text "Login" ]
             , input
                 [ type_ "text"
-                , onInput (\u -> Mod <| UpdateUsername u)
-                , onKeyUp (\i -> Mod <| InputKeyUp i)
+                , onInput (\u -> UpdateUsername u)
+                , onKeyUp (\i -> InputKeyUp i)
                 ]
                 []
             , input
                 [ type_ "password"
-                , onInput (\p -> Mod <| UpdatePassword <| Password.create p)
-                , onKeyUp (\i -> Mod <| InputKeyUp i)
+                , onInput (\p -> UpdatePassword <| Password.create p)
+                , onKeyUp (\i -> InputKeyUp i)
                 ]
                 []
             , div
@@ -222,11 +182,11 @@ viewLogin general internals =
                     ]
                 ]
                 [ button
-                    [ onClick <| Global <| GeneralMsg <| TryLogout
+                    [ onClick <| Ctx TryLogout
                     ]
                     [ text "logout" ]
                 , button
-                    [ onClick <| Mod TryLogin
+                    [ onClick TryLogin
                     ]
                     [ text "submit" ]
                 ]
@@ -235,6 +195,6 @@ viewLogin general internals =
     ]
 
 
-onKeyUp : (Int -> Compound ModMsg) -> Attribute (Compound ModMsg)
+onKeyUp : (Int -> Msg) -> Attribute Msg
 onKeyUp tagger =
     Events.on "keyup" <| Json.Decode.map tagger Events.keyCode

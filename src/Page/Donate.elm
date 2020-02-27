@@ -1,22 +1,20 @@
-module Page.Donate exposing (Model, Msg, fromGeneral, init, toGeneral, update, view)
+module Page.Donate exposing (Model, Msg, fromContext, init, toContext, update, view)
 
 import Css exposing (..)
-import Data.General as General exposing (General)
+import Data.Context as Context exposing (Context)
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
-import Message exposing (Compound)
 import Style.Card as Card
 import Style.Color as Color
 import Style.Post
 import Style.Screen as Screen exposing (Screen(..))
 import Svg.Styled.Attributes as SvgAttr
-import Update
-import View.Page as Page exposing (PageUpdateOutput)
 import View.Svg as Svg
+import Page
 
 
 
@@ -24,37 +22,30 @@ import View.Svg as Svg
 
 
 type alias Model =
-    Page.PageModel Internals
+    { context : Context }
 
 
-type alias Internals =
-    {}
+init : Context -> Model
+init context =
+    { context = context }
 
 
-init : General -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
-init =
-    Page.init {} Cmd.none Donate
+
+toContext : Model -> Context
+toContext =
+    Page.toContext
 
 
-toGeneral : Model -> General
-toGeneral =
-    Page.toGeneral
-
-
-fromGeneral : General -> Model -> Model
-fromGeneral =
-    Page.fromGeneral
+fromContext : Context -> Model -> Model
+fromContext =
+    Page.fromContext
 
 
 
 -- Message --
 
 
-type alias Msg =
-    Page.Msg ModMsg
-
-
-type ModMsg
+type Msg
     = NoOp
 
 
@@ -62,33 +53,20 @@ type ModMsg
 -- Update --
 
 
-update : Msg -> Model -> PageUpdateOutput ModMsg Internals
-update =
-    Page.update updateMod
-
-
-updateMod : msg -> General -> Internals -> Update.Output ModMsg Internals
-updateMod _ general internals =
-    { model = internals
-    , general = general
-    , cmd = Cmd.none
-    }
+update : msg -> Model -> ( Model, Cmd Msg )
+update _ model =
+    ( model, Cmd.none )
 
 
 
 -- View --
 
 
-view : Model -> Page.ViewResult msg
-view model =
-    Page.view model viewDonate
-
-
-viewDonate : General -> Internals -> List (Html (Compound m))
-viewDonate general _ =
+view : Model -> List (Html Msg)
+view { context } =
     let
         theme =
-            General.theme general
+            Context.getTheme context
     in
     [ div
         [ id "donate-page"

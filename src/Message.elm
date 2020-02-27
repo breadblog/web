@@ -1,7 +1,7 @@
-module Message exposing (Compound(..), Msg(..), map)
+module Message exposing (Msg(..))
 
 import Browser
-import Data.General as General exposing (General)
+import Data.Context as Context exposing (Context)
 import Data.Theme exposing (Theme)
 import Html.Styled exposing (Html)
 import Url exposing (Url)
@@ -20,20 +20,5 @@ import Url exposing (Url)
 type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url
-    | GeneralMsg General.Msg
+    | ContextMsg Context.Msg
     | NoOp
-
-
-type Compound e
-    = Global Msg
-    | Mod e
-
-
-map : (a -> b) -> Compound a -> Compound b
-map transform compound =
-    case compound of
-        Global msg ->
-            Global msg
-
-        Mod a ->
-            Mod <| transform a
