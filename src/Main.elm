@@ -12,20 +12,19 @@ import Html.Styled exposing (Html, toUnstyled, div)
 import Html.Styled.Attributes exposing (css, id)
 import Json.Encode exposing (Value)
 import Message exposing (Compound(..), Msg(..))
--- import Page.About
--- import Page.Changelog
--- import Page.Donate
+import Page.About
+import Page.Changelog
+import Page.Donate
 import Page.Home
--- import Page.Login
--- import Page.NotFound
--- import Page.Post
--- import Page.Problems
--- import Page.Redirect
+import Page.Login
+import Page.NotFound
+import Page.Post
+import Page.Problems
+import Page.Redirect
 import Style.Color
 import Style.Font as Font
 import Style.Global
 import Url
-
 
 
 -- Model --

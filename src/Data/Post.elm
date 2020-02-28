@@ -1,10 +1,13 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, date, author, body, compare, description, empty, encodeFreshFull, encodeFull, encodePreview, fullDecoder, mapBody, mapDescription, mapPublished, mapTitle, previewDecoder, published, tags, title, toPreview, uuid)
+module Data.Post exposing (Client, Core, Full, Post, Preview, getDate, getAuthor, getBody, compare, getDescription, empty, encodeFreshFull, encodeFull, encodePreview, fullDecoder, mapBody, mapDescription, mapPublished, mapTitle, previewDecoder, getPublished, getTags, getTitle, toPreview, getUUID, fetchPreviews, fetchPrivatePost, fetchPost)
 
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.UUID as UUID exposing (UUID)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (custom, hardcoded, required)
 import Json.Encode as Encode exposing (Value)
+import Api
+import Data.Mode exposing (Mode)
+import Http
 import Time
 
 
@@ -79,13 +82,13 @@ type alias Internals =
 {- Accessors -}
 
 
-uuid : Post Core c -> UUID
-uuid post =
+getUUID : Post Core c -> UUID
+getUUID post =
     accessCore .uuid post
 
 
-description : Post l c -> String
-description post =
+getDescription : Post l c -> String
+getDescription post =
     accessInternals .description post
 
 
@@ -94,8 +97,8 @@ mapDescription transform post =
     mapInternals (\i -> { i | description = transform i.description }) post
 
 
-title : Post l c -> String
-title post =
+getTitle : Post l c -> String
+getTitle post =
     accessInternals .title post
 
 
@@ -104,8 +107,8 @@ mapTitle transform post =
     mapInternals (\i -> { i | title = transform i.title }) post
 
 
-body : Post l Full -> Markdown
-body post =
+getBody : Post l Full -> Markdown
+getBody post =
     accessFull .body post
 
 
@@ -114,24 +117,24 @@ mapBody transform post =
     mapFull (\c -> { c | body = transform c.body }) post
 
 
-author : Post l c -> UUID
-author post =
+getAuthor : Post l c -> UUID
+getAuthor post =
     accessInternals .author post
 
 
-date : Post Core c -> Time.Posix
-date post =
+getDate : Post Core c -> Time.Posix
+getDate post =
     accessCore .date post
 
 
 
-tags : Post l c -> List UUID
-tags post =
+getTags : Post l c -> List UUID
+getTags post =
     accessInternals .tags post
 
 
-published : Post l c -> Bool
-published post =
+getPublished : Post l c -> Bool
+getPublished post =
     accessInternals .published post
 
 
@@ -198,29 +201,59 @@ empty userUUID =
         }
 
 
+{- Http -}
+
+
+fetchPost : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
+fetchPost toMsg mode uuid =
+    Api.get
+        { url = Api.url mode <| UUID.toPath "/post/public" uuid
+        , expect = Http.expectJson toMsg fullDecoder
+        }
+
+
+fetchPrivatePost : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
+fetchPrivatePost toMsg mode uuid =
+    Api.get
+        { url = Api.url mode <| UUID.toPath "/post/private" uuid
+        , expect = Http.expectJson toMsg fullDecoder
+        }
+
+
+fetchPreviews : (Result Http.Error (List (Post Core Preview)) -> msg) -> Mode -> Int -> Cmd msg
+fetchPreviews toMsg mode page =
+    let
+        path =
+            "/post?start=" ++ String.fromInt page ++ "&count=" ++ String.fromInt Api.count
+    in
+    Api.get
+        { url = Api.url mode path
+        , expect = Http.expectJson toMsg <| Decode.list previewDecoder
+        }
+
+
 {- Json -}
--- Encoders
 
 
 encodeInternalsHelper : Internals -> List ( String, Value )
 encodeInternalsHelper i =
-    [ ( "title", Encode.string i.title )
-    , ( "description", Encode.string i.description )
-    , ( "tags", Encode.list UUID.encode i.tags )
-    , ( "author", UUID.encode i.author )
-    , ( "published", Encode.bool i.published )
+    [ ( "getTitle", Encode.string i.title )
+    , ( "getDescription", Encode.string i.description )
+    , ( "getTags", Encode.list UUID.encode i.tags )
+    , ( "getAuthor", UUID.encode i.author )
+    , ( "getPublished", Encode.bool i.published )
     ]
 
 
 encodeFullHelper : FullInternals -> List ( String, Value )
 encodeFullHelper i =
-    [ ( "body", Markdown.encode i.body )
+    [ ( "getBody", Markdown.encode i.body )
     ]
 
 
 encodeCoreHelper : CoreInternals -> List ( String, Value )
 encodeCoreHelper i =
-    [ ( "date", Encode.int <| Time.posixToMillis i.date )
+    [ ( "getDate", Encode.int <| Time.posixToMillis i.date )
     , ( "uuid", UUID.encode i.uuid )
     ]
 
@@ -254,31 +287,29 @@ encodeFreshFull (Post _ (Full fullInternals) internals) =
 
 
 
--- Decoders
-
 
 internalsDecoder : Decoder Internals
 internalsDecoder =
     Decode.succeed Internals
-        |> required "title" Decode.string
-        |> required "description" Decode.string
-        |> required "tags" (Decode.list UUID.decoder)
-        |> required "author" UUID.decoder
-        |> required "published" Decode.bool
+        |> required "getTitle" Decode.string
+        |> required "getDescription" Decode.string
+        |> required "getTags" (Decode.list UUID.decoder)
+        |> required "getAuthor" UUID.decoder
+        |> required "getPublished" Decode.bool
 
 
-coreDecodeHelper : Maybe Bool -> Decoder Core
-coreDecodeHelper defaultFav =
+coreDecodeHelper : Decoder Core
+coreDecodeHelper =
     Decode.succeed CoreInternals
         |> required "uuid" UUID.decoder
-        |> required "date" timeDecoder
+        |> required "getDate" timeDecoder
         |> Decode.map Core
 
 
 fullDecodeHelper : Decoder Full
 fullDecodeHelper =
     Decode.succeed FullInternals
-        |> required "body" Markdown.decoder
+        |> required "getBody" Markdown.decoder
         |> Decode.map Full
 
 
@@ -291,10 +322,10 @@ timeDecoder =
             )
 
 
-previewDecoder : Maybe Bool -> Decoder (Post Core Preview)
-previewDecoder defaultFav =
+previewDecoder : Decoder (Post Core Preview)
+previewDecoder =
     Decode.succeed Post
-        |> custom (coreDecodeHelper defaultFav)
+        |> custom coreDecodeHelper
         |> hardcoded Preview
         |> custom internalsDecoder
 
@@ -302,6 +333,6 @@ previewDecoder defaultFav =
 fullDecoder : Decoder (Post Core Full)
 fullDecoder =
     Decode.succeed Post
-        |> custom (coreDecodeHelper Nothing)
+        |> custom coreDecodeHelper
         |> custom fullDecodeHelper
         |> custom internalsDecoder

@@ -18,7 +18,6 @@ import Style.Font as Font
 import Style.Screen as Screen exposing (Screen(..))
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes
-import Update
 import View.Svg as Svg
 
 

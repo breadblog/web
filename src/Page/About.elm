@@ -7,26 +7,19 @@ import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import Message exposing (Compound)
-import Update
-import View.Page as Page exposing (PageUpdateOutput)
-
+import Page
 
 
 -- Model --
 
 
 type alias Model =
-    Page.PageModel Internals
+    { context : Context }
 
 
-type alias Internals =
-    {}
-
-
-init : Context -> Page.TransformModel Internals model -> Page.TransformMsg modMsg msg -> ( model, Cmd msg )
+init : Context -> Model
 init =
-    Page.init {} Cmd.none About
+    Model
 
 
 toContext : Model -> Context
@@ -42,12 +35,7 @@ fromContext =
 
 -- Message --
 
-
-type alias Msg =
-    Page.Msg ModMsg
-
-
-type ModMsg
+type Msg
     = NoOp
 
 
@@ -55,28 +43,17 @@ type ModMsg
 -- Update --
 
 
-update : Msg -> Model -> PageUpdateOutput ModMsg Internals
-update =
-    Page.update updateMod
-
-
-updateMod : msg -> Context -> Internals -> Update.Output ModMsg Internals
-updateMod _ general internals =
-    { model = internals
-    , general = general
-    , cmd = Cmd.none
-    }
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        NoOp ->
+            ( model, Cmd.none )
 
 
 
 -- View --
 
 
-view : Model -> Page.ViewResult msg
-view model =
-    Page.view model viewAbout
-
-
-viewAbout : Context -> Internals -> List (Html (Compound m))
-viewAbout _ _ =
+view : Model -> List (Html Msg)
+view _ =
     []
