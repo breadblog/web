@@ -57,8 +57,8 @@ type State
     | Read (Post Core Full) Author
     | Peek (Post Core Full) Author
     | Edit (Post Core Full) Author
-    | LoadingCreate
     | Create (Post Client Full) Author
+    | LoadingCreate
     | Delete UUID
     | Redirect
 
@@ -80,73 +80,6 @@ init postType context =
             Debug.todo "create"
 
 
--- oldInit : PostType -> Context -> ( Model, Cmd Msg )
--- oldInit postType general =
---     let
---         maybeUserUUID =
---             Context.user general
-
---         authors =
---             Context.authors general
-
---         getAuthor =
---             \uuid -> Author.fromUUID uuid authors
---     in
---     case postType of
---         Route.Ready postUUID ->
---             Page.init
---                 LoadingReady
---                 (getPost general postUUID maybeUserUUID Read)
---                 (Post <| Route.Ready postUUID)
---                 general
-
---         Route.Edit postUUID ->
---             Page.init
---                 LoadingEdit
---                 (getPost general postUUID maybeUserUUID Edit)
---                 (Post <| Route.Edit postUUID)
---                 general
-
---         Route.Delete postUUID ->
---             Page.init
---                 (Delete postUUID)
---                 Cmd.none
---                 (Post <| Route.Delete postUUID)
---                 general
-
---         Route.Create ->
---             case maybeUserUUID of
---                 Just userUUID ->
---                     case Author.fromUUID userUUID authors of
---                         Just author ->
---                             Page.init
---                                 (Create (Post.empty userUUID) author)
---                                 Cmd.none
---                                 (Post Route.Create)
---                                 general
-
---                         Nothing ->
---                             Page.init
---                                 Redirect
---                                 (redirect404 general)
---                                 (Post Route.Create)
---                                 general
-
---                 Nothing ->
---                     let
---                         problem =
---                             Problem.create
---                                 "Not Logged In"
---                                 (MarkdownError <| Markdown.create "you must be logged in to create a post")
---                                 (Just <| Problem.createHandler "Log In" (NavigateTo Login))
---                     in
---                     Page.init
---                         LoadingReady
---                         Cmd.none
---                         (Post Route.Create)
---                         (Context.pushProblem problem general)
-
-
 fromContext : Context -> Model -> Model
 fromContext =
     Page.fromContext
@@ -166,249 +99,206 @@ type Msg
     | OnTitleInput String
     | OnDescriptionInput String
     | OnBodyInput String
-    | WritePost
-    | WritePostRes (Result Http.Error (Post Core Full))
+    | TogglePublished
     | EditCurrentPost
     | DeleteCurrentPost
     | ConfirmDelete
+    | WritePost
+    -- Http
+    | OnPost (Result Http.Error (Post Core Full))
+    | OnAuthor (Result Http.Error (Author))
+    | OnWritePost (Result Http.Error (Post Core Full))
     | OnDelete (Result Http.Error ())
-    | TogglePublished
 
 
 
 {- Update -}
 
 
--- update : Msg -> Model -> ( Model, Cmd Msg )
--- update msg model =
---     let
---         simpleOutput model =
---             { model = model
---             , general = general
---             , cmd = Cmd.none
---             }
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg ({ context, state } as model) =
+    case msg of
+        Ctx contextMsg ->
+            let
+                (updatedContext, cmd) =
+                    Context.update contextMsg context
 
---         withProblem problem =
---             { model = internals
---             , general = Context.pushProblem problem general
---             , cmd = Cmd.none
---             }
---     in
---     case msg of
---         GotPost toInternals res ->
---             case res of
---                 Ok post ->
---                     let
---                         authors =
---                             Context.authors general
+            in
+            ( { model | context = updatedContext }, Cmd.map Ctx cmd )
 
---                         authorUUID =
---                             Post.getAuthor post
+        OnTitleUpdate title ->
+            updatePostProperty (Post.mapTitle (always title)) model
 
---                         maybeAuthor =
---                             Author.fromUUID authorUUID authors
---                     in
---                     case maybeAuthor of
---                         Just author ->
---                             { model = toInternals post author
---                             , general = general
---                             , cmd = Cmd.none
---                             }
+        OnDescriptionInput description ->
+            updatePostProperty (Post.mapDescription (always description)) model
 
---                         Nothing ->
---                             { model = Redirect
---                             , cmd = redirect404 general
---                             , general = general
---                             }
+        OnBodyInput body ->
+            updatePostProperty (Post.mapBody (always <| Markdown.create body)) model
 
---                 Err err ->
---                     { model = internals
---                     , cmd = redirect404 general
---                     , general = general
---                     }
+        TogglePublished ->
+            updatePostProperty (Post.mapPublished not) model
 
---         OnTitleInput str ->
---             let
---                 updatePost =
---                     \p ->
---                         Post.mapTitle
---                             (str
---                                 |> String.left 64
---                                 |> always
---                             )
---                             p
---             in
---             case internals of
---                 Edit post author ->
---                     simpleOutput <| Edit (updatePost post) author
+        EditCurrentPost ->
+            case state of
+                Read post author ->
+                    if isAuthorLoggedIn context author then
+                        Edit post author
+                    else
+                        Debug.todo "handle this"
 
---                 Create post author ->
---                     simpleOutput <| Create (updatePost post) author
+                Peek post author ->
+                    if isAuthorLoggedIn context author then
+                        Edit post author
+                    else
+                        Debug.todo "handle this"
 
---                 _ ->
---                     simpleOutput internals
+                _ ->
+                    Debug.todo "handle this"
 
---         OnBodyInput str ->
---             let
---                 updatePost =
---                     \p ->
---                         Post.mapBody
---                             (str
---                                 |> String.left 100000
---                                 |> Markdown.create
---                                 |> always
---                             )
---                             p
---             in
---             case internals of
---                 Edit post author ->
---                     simpleOutput <| Edit (updatePost post) author
+        DeleteCurrentPost ->
+            case state of
+                Read post author ->
+                    goToDeleteIfLoggedIn context post author
 
---                 Create post author ->
---                     simpleOutput <| Create (updatePost post) author
+                Edit post author ->
+                    goToDeleteIfLoggedIn context post author
 
---                 _ ->
---                     simpleOutput internals
+                Peek post author ->
+                    goToDeleteIfLoggedIn context post author
 
---         OnDescriptionInput str ->
---             let
---                 updatePost =
---                     \p ->
---                         Post.mapDescription
---                             (str
---                                 |> String.left 256
---                                 |> always
---                             )
---                             p
---             in
---             case internals of
---                 Edit post author ->
---                     simpleOutput <| Edit (updatePost post) author
+                _ ->
+                    Debug.todo "handle this"
 
---                 Create post author ->
---                     simpleOutput <| Create (updatePost post) author
+        ConfirmDelete ->
+            case state of
+                Delete postUUID ->
+                    ( model
+                    , Post.delete OnDelete (Context.getMode context) postUUID
+                    )
 
---                 _ ->
---                     simpleOutput internals
+                _ ->
+                    Debug.todo "handle this"
 
---         WritePost ->
---             case internals of
---                 Create post author ->
---                     { model = internals
---                     , general = general
---                     , cmd =
---                         Api.put
---                             { url = Api.url (Context.mode general) "/post/private/"
---                             , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
---                             , body = Http.jsonBody <| Post.encodeFreshFull post
---                             }
---                     }
+        WritePost ->
+            case state of
+                Create post author ->
+                    if isAuthorLoggedIn context author then
+                        ( model
+                        , Post.post WritePostRes (Context.getMode context) post
+                        )
+                    else
+                        Debug.todo "handle this"
 
---                 Edit post author ->
---                     { model = internals
---                     , general = general
---                     , cmd =
---                         Api.post
---                             { url = Api.url (Context.mode general) "/post/private/"
---                             , expect = Http.expectJson (WritePostRes >> Mod) Post.fullDecoder
---                             , body = Http.jsonBody <| Post.encodeFull post
---                             }
---                     }
+                Edit post author ->
+                    if isAuthorLoggedIn context author then
+                        ( model
+                        , Post.put WritePostRes (Context.getMode context) post
+                        )
+                    else
+                        Debug.todo "should be a problem"
 
---                 _ ->
---                     simpleOutput internals
+                _ ->
+                    Debug.todo "handle this"
 
---         WritePostRes res ->
---             let
---                 onOk =
---                     \post author ->
---                         { model = Read post author
---                         , general = general
---                         , cmd = Navigation.replaceUrl (Context.key general) (Route.toPath <| Post <| Route.Ready <| Post.uuid post)
---                         }
---             in
---             case internals of
---                 Create _ author ->
---                     case res of
---                         Ok post ->
---                             onOk post author
+        OnPost res ->
+            case res of
+                Ok post ->
+                    case state of
+                        Loading maybeAuthor _ intent ->
+                            loadIntent maybeAuthor (Just post) intent
 
---                         Err err ->
---                             withProblem <|
---                                 Problem.create "Failed to create post" (HttpError err) Nothing
+                        _ ->
+                            Debug.todo "handle this"
 
---                 Edit _ author ->
---                     case res of
---                         Ok post ->
---                             onOk post author
 
---                         Err err ->
---                             withProblem <|
---                                 Problem.create "Failed to edit post" (HttpError err) Nothing
+                Err err ->
+                    Debug.todo "handle this"
 
---                 _ ->
---                     simpleOutput internals
+        OnAuthor res ->
+            case res of
+                Ok author ->
+                    case state of
+                        Loading _ maybePost intent ->
+                            loadIntent (Just author) maybePost intent
 
---         EditCurrentPost ->
---             case internals of
---                 Read post author ->
---                     { model = internals
---                     , general = general
---                     , cmd = Navigation.pushUrl (Context.key general) (Route.toPath <| Post <| Route.Edit <| Post.uuid post)
---                     }
+                        _ ->
+                            Debug.todo "handle this"
 
---                 _ ->
---                     simpleOutput internals
+                Err err ->
+                    Debug.todo "handle this"
 
---         DeleteCurrentPost ->
---             case internals of
---                 Read post author ->
---                     { model = internals
---                     , general = general
---                     , cmd = Navigation.pushUrl (Context.key general) (Route.toPath <| Post <| Route.Delete <| Post.uuid post)
---                     }
+        OnWritePost res ->
+            case res of
+                Ok post ->
+                    case state of
+                        Edit _ author ->
+                            ( { model | state = Read post author }
+                            , Cmd.none
+                            )
 
---                 _ ->
---                     simpleOutput internals
+                        Create _ author ->
+                            ( { model | state = Read post author }
+                            , Cmd.none
+                            )
 
---         ConfirmDelete ->
---             case internals of
---                 Delete postUUID ->
---                     { model = internals
---                     , general = general
---                     , cmd =
---                         Api.delete
---                             { url = Api.url (Context.mode general) (UUID.toPath "/post/owner" postUUID)
---                             , expect = Http.expectWhatever (OnDelete >> Mod)
---                             }
---                     }
+                        _ ->
+                            Debug.todo "handle this"
 
---                 _ ->
---                     simpleOutput internals
+                Err err ->
+                    Debug.todo "handle this"
 
---         OnDelete res ->
---             case res of
---                 Err err ->
---                     withProblem <|
---                         Problem.create "Failed to delete post" (HttpError err) Nothing
 
---                 Ok _ ->
---                     { model = internals
---                     , general = general
---                     , cmd = Navigation.pushUrl (Context.key general) (Route.toPath Home)
---                     }
+loadIntent : Maybe Author -> Maybe (Post Core Full) -> CoreIntent -> ( Model, Cmd Msg )
+loadIntent maybeAuthor maybePost intent =
+    case (maybeAuthor, maybePost) of
+        (Just author, Just post) ->
+            case intent of
+                ToRead ->
+                    ( Read post author, Cmd.none )
 
---         TogglePublished ->
---             case internals of
---                 Edit post author ->
---                     simpleOutput <| Edit (Post.mapPublished not post) author
+                ToPeek ->
+                    ( Peek post author, Cmd.none )
 
---                 Create post author ->
---                     simpleOutput <| Create (Post.mapPublished not post) author
+                ToEdit ->
+                    ( Peek post author, Cmd.none )
 
---                 _ ->
---                     simpleOutput internals
+        (_, _) ->
+            Loading maybeAuthor maybePost intent
 
+
+goToDeleteIfLoggedIn : Context -> Post Core Full -> Author -> ( Model, Cmd Msg )
+goToDeleteIfLoggedIn context post author =
+    if isAuthorLoggedIn context author then
+        ( model
+        , Navigation.pushUrl (Context.key context) (Route.toPath <| Post <| Route.Delete <| Post.uuid post)
+        )
+    else
+        ( model, Cmd.none )
+
+
+isAuthorLoggedIn : Context -> Author -> Bool
+isAuthorLoggedIn context author =
+    case Context.user context of
+        Just user ->
+            author
+            |> Author.uuid
+            |> UUID.compare user
+
+        _ ->
+            False
+
+
+updatePostProperty : (Post l Full -> Post l Full) -> Model -> ( Model, Cmd Msg )
+updatePostProperty mapPost ({ state } as model) =
+    case state of
+        Edit post author ->
+            ( { model | state = Edit (mapPost post) author }, Cmd.none )
+
+        Create post author ->
+            ( { model | state = Create (mapPost post) author }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 {- Util -}

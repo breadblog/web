@@ -1,4 +1,4 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, getDate, getAuthor, getBody, compare, getDescription, empty, encodeFreshFull, encodeFull, encodePreview, fullDecoder, mapBody, mapDescription, mapPublished, mapTitle, previewDecoder, getPublished, getTags, getTitle, toPreview, getUUID, fetchPreviews, fetchPrivatePost, fetchPost)
+module Data.Post exposing (Client, Core, Full, Post, Preview, getDate, getAuthor, getBody, compare, getDescription, empty, encodeFreshFull, encodeFull, encodePreview, fullDecoder, mapBody, mapDescription, mapPublished, mapTitle, previewDecoder, getPublished, getTags, getTitle, toPreview, getUUID, fetchPreviews, fetchPrivate, fetch, delete, edit, put)
 
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.UUID as UUID exposing (UUID)
@@ -204,16 +204,16 @@ empty userUUID =
 {- Http -}
 
 
-fetchPost : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
-fetchPost toMsg mode uuid =
+fetch : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
+fetch toMsg mode uuid =
     Api.get
         { url = Api.url mode <| UUID.toPath "/post/public" uuid
         , expect = Http.expectJson toMsg fullDecoder
         }
 
 
-fetchPrivatePost : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
-fetchPrivatePost toMsg mode uuid =
+fetchPrivate : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
+fetchPrivate toMsg mode uuid =
     Api.get
         { url = Api.url mode <| UUID.toPath "/post/private" uuid
         , expect = Http.expectJson toMsg fullDecoder
@@ -229,6 +229,31 @@ fetchPreviews toMsg mode page =
     Api.get
         { url = Api.url mode path
         , expect = Http.expectJson toMsg <| Decode.list previewDecoder
+        }
+
+
+delete : (Result Http.Error () -> msg) -> Mode -> UUID -> Cmd msg
+delete toMsg mode uuid =
+    Api.delete
+        { url = Api.url mode <| UUID.toPath "/post/owner/" uuid
+        , expect = Http.expectWhatever toMsg
+        }
+
+put : (Result Http.Error (Post Core Full) -> msg) -> Mode -> Post Client Full -> Cmd msg
+put toMsg mode post =
+    Api.put
+        { url = Api.url mode "/post/private/"
+        , expect = Http.expectJson toMsg fullDecoder
+        , body = Http.jsonBody <| encodeFreshFull post
+        }
+
+
+edit : (Result Http.Error (Post Core Full) -> msg) -> Mode -> Post Core Full -> Cmd msg
+edit toMsg mode post =
+    Api.post
+        { url = Api.url mode "/post/private/"
+        , expect = Http.expectJson toMsg fullDecoder
+        , body = Http.jsonBody <| encodeFull post
         }
 
 
