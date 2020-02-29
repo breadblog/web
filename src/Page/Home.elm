@@ -8,10 +8,6 @@ import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
-import Message exposing (Compound(..))
-import Style.Color as Color
-import View.Footer as Footer
-import View.Header as Header
 import Page
 
 
@@ -56,7 +52,7 @@ type Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg general internals =
+update msg model =
     case msg of
         NoOp ->
             ( model, Cmd.none )
@@ -72,7 +68,7 @@ view model =
 
 
 viewHome : Model -> List (Html Msg)
-viewHome general internals =
+viewHome _ =
     [ main_
         [ css
             [ flexGrow <| num 1

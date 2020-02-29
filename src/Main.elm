@@ -11,7 +11,6 @@ import Data.Theme exposing (Theme(..))
 import Html.Styled exposing (Html, toUnstyled, div)
 import Html.Styled.Attributes exposing (css, id)
 import Json.Encode exposing (Value)
-import Message exposing (Compound(..), Msg(..))
 import Page.About
 import Page.Changelog
 import Page.Donate
@@ -31,13 +30,13 @@ import Url
 
 
 type Model
-    = Home Page.Home.Model
-    | Redirect Context
+    = Redirect Context
     | NotFound Context
-    | Donate Page.Donate.Model
-    | About Page.About.Model
+    | Home Page.Home.Model
     | Login Page.Login.Model
     | Post Page.Post.Model
+    | Donate Page.Donate.Model
+    | About Page.About.Model
     | Changelog Page.Changelog.Model
 
 
@@ -46,17 +45,14 @@ type Model
 
 
 type Msg
-    = HomeMsg Page.Home.Msg
+    = LinkClicked Browser.UrlRequest
+    | UrlChanged Url
+    | HomeMsg Page.Home.Msg
     | LoginMsg Page.Login.Msg
     | PostMsg Page.Post.Msg
     | DonateMsg Page.Donate.Msg
     | AboutMsg Page.About.Msg
     | ChangelogMsg Page.Changelog.Msg
-
-
-toMsg : (e -> InternalMsg) -> e -> Msg
-toMsg transform msg =
-    Mod <| transform <| msg
 
 
 
@@ -95,7 +91,7 @@ init flags url key =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update compound model =
+update msg model =
     let
         general =
             toContext model
@@ -103,93 +99,79 @@ update compound model =
         key =
             Context.key general
     in
-    case compound of
-        Global msg ->
-            case msg of
-                LinkClicked urlRequest ->
-                    case urlRequest of
-                        Browser.Internal url ->
-                            ( model, Browser.Navigation.pushUrl key (Url.toString url) )
+    case (msg, model) of
+        ( LinkClicked urlRequest, _ ) ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Browser.Navigation.pushUrl key (Url.toString url) )
 
-                        Browser.External href ->
-                            ( model, Browser.Navigation.load href )
+                Browser.External href ->
+                    ( model, Browser.Navigation.load href )
 
-                UrlChanged url ->
-                    let
-                        route =
-                            Route.fromUrl url
-                    in
-                    changeRoute route model
+        ( UrlChanged url, _ ) ->
+            let
+                route =
+                    Route.fromUrl url
+            in
+            changeRoute route model
 
-                ContextMsg generalMsg ->
-                    let
-                        ( updatedContext, generalCmd ) =
-                            Context.update generalMsg general
+        ( HomeMsg homeMsg, Home homeModel ) ->
+            toPage HomeMsg Home <| Page.Home.update homeMsg homeModel
 
-                        updatedModel =
-                            fromContext updatedContext model
+        ( LoginMsg loginMsg, Login loginModel ) ->
+            toPage LoginMsg Login <| Page.Login.update loginMsg loginModel
 
-                        cmd =
-                            Cmd.map (\c -> Global <| ContextMsg c) generalCmd
-                    in
-                    ( updatedModel, cmd )
+        ( PostMsg postMsg, Post postModel ) ->
+            toPage PostMsg Post <| Page.Post.update postMsg postModel
 
-                NoOp ->
-                    ( model, Cmd.none )
+        ( DonateMsg donateMsg, Donate donateModel ) ->
+            toPage DonateMsg Donate <| Page.Donate.update donateMsg donateModel
 
-        Mod msg ->
-            case ( model, msg ) of
-                ( Home homeModel, HomeMsg homeMsg ) ->
-                    updatePage Home HomeMsg Page.Home.update homeModel homeMsg model
+        ( AboutMsg aboutMsg, About aboutModel ) ->
+            toPage AboutMsg About <| Page.About.update aboutMsg aboutModel
 
-                ( Post postModel, PostMsg postMsg ) ->
-                    updatePage Post PostMsg Page.Post.update postModel postMsg model
+        ( ChangelogMsg changelogMsg, Changelog changelogModel ) ->
+            toPage ChangelogMsg Changelog <| Page.Changelog.update changelogMsg changelogModel
 
-                ( Login loginModel, LoginMsg loginMsg ) ->
-                    updatePage Login LoginMsg Page.Login.update loginModel loginMsg model
+        _ ->
+            ( model, Cmd.none )
 
-                _ ->
-                    let
-                        problem =
-                            Problem.create
-                                "Failed to Forward"
-                                (MarkdownError <| Markdown.create "Failed to forward `ModMsg` in `Main.elm`")
-                                Nothing
 
-                        updatedContext =
-                            Context.pushProblem problem general
-                    in
-                    ( fromContext updatedContext model, Cmd.none )
+toPage : (msg -> Msg) -> (model -> Model) -> ( model, Cmd msg ) -> ( Model, Cmd Msg )
+toPage transformMsg transformModel ( model, cmd ) =
+    ( transformModel model
+    , Cmd.map transformMsg cmd
+    )
 
 
 changeRoute : Route -> Model -> ( Model, Cmd Msg )
 changeRoute route model =
     let
-        general =
+        context =
             toContext model
 
         ( pageModel, cmd ) =
             case route of
                 Route.Home ->
-                    Page.Home.init general Home (toMsg HomeMsg)
+                    toPage HomeMsg Home <| Page.Home.init context
 
                 Route.Login ->
-                    Page.Login.init general Login (toMsg LoginMsg)
-
-                Route.NotFound ->
-                    ( NotFound general, Cmd.none )
+                    toPage LoginMsg Login <| Page.Login.init context
 
                 Route.Donate ->
-                    Page.Donate.init general Donate (toMsg DonateMsg)
+                    toPage DonateMsg Donate <| Page.Donate.init context
 
                 Route.About ->
-                    Page.About.init general About (toMsg AboutMsg)
+                    toPage AboutMsg About <| Page.About.init context
 
-                Route.Post uuid ->
-                    Page.Post.init uuid general Post (toMsg PostMsg)
+                Route.Post postType ->
+                    toPage PostMsg Post <| Page.Post.init context postType
 
                 Route.Changelog ->
-                    Page.Changelog.init general Changelog (toMsg ChangelogMsg)
+                    toPage ChangelogMsg Changelog <| Page.Changelog.init context
+
+                Route.NotFound ->
+                    ( NotFound context, Cmd.none )
     in
     ( pageModel
     , Cmd.batch
@@ -225,35 +207,6 @@ toContext page =
 
         Redirect g ->
             g
-
-
-fromContext : Context -> Model -> Model
-fromContext general page =
-    case page of
-        Home model ->
-            Home <| Page.Home.fromContext general model
-
-        Login model ->
-            Login <| Page.Login.fromContext general model
-
-        Post model ->
-            Post <| Page.Post.fromContext general model
-
-        About model ->
-            About <| Page.About.fromContext general model
-
-        Donate model ->
-            Donate <| Page.Donate.fromContext general model
-
-        Changelog model ->
-            Changelog <| Page.Changelog.fromContext general model
-
-        NotFound _ ->
-            NotFound general
-
-        Redirect _ ->
-            Redirect general
-
 
 
 -- Subscriptions --

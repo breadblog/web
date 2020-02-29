@@ -63,34 +63,6 @@ type State
     | Redirect
 
 
-
-init : PostType -> Context -> ( Model, Cmd Msg )
-init postType context =
-    case postType of
-        Route.Read uuid ->
-            Debug.todo "read"
-
-        Route.Edit uuid ->
-            Debug.todo "edit"
-
-        Route.Delete uuid ->
-            Debug.todo "delete"
-
-        Route.Create ->
-            Debug.todo "create"
-
-
-fromContext : Context -> Model -> Model
-fromContext =
-    Page.fromContext
-
-
-toContext : Model -> Context
-toContext =
-    Page.toContext
-
-
-
 {- Message -}
 
 
@@ -111,12 +83,94 @@ type Msg
     | OnDelete (Result Http.Error ())
 
 
+{- Init -}
+
+
+init : Context -> PostType -> ( Model, Cmd Msg )
+init postType context =
+    let
+        withContext state =
+            { context = context
+            , state = state
+            }
+    in
+    case postType of
+        Route.Read uuid ->
+            initCore context ToRead uuid
+
+        Route.Edit uuid ->
+            initCore context ToEdit uuid
+
+        Route.Peek uuid ->
+            initCore context ToPeek uuid
+
+        Route.Delete uuid ->
+            ( withContext <| Delete uuid
+            , Cmd.none
+            )
+
+        Route.Create ->
+            case Context.getUser context of
+                Just uuid ->
+                    ( withContext LoadingCreate
+                    , Author.fetch OnAuthor (Context.getMode context) uuid
+                    )
+
+                Nothing ->
+                    ( { context = context
+                      , state = Redirect
+                      }
+                    , Navigation.replaceUrl (Context.getKey context) Route.Login
+                    )
+
+
+
+initCore : Context -> Intent -> UUID -> ( Model, Cmd Msg )
+initCore context intent postUUID =
+    ( { context = context
+      , state = Loading Nothing Nothing intent
+      }
+    , fetchPost context postUUID
+    )
+
+
+fetchPost : Context -> UUID -> Cmd Msg
+fetchPost context uuid =
+    let
+        mode =
+            Context.getMode context
+    in
+    case Context.getUser context of
+        Just _ ->
+            Post.fetchPrivate OnPost mode uuid
+
+        Nothing ->
+            Post.fetch OnPost mode uuid
+
+
+fromContext : Context -> Model -> Model
+fromContext =
+    Page.fromContext
+
+
+toContext : Model -> Context
+toContext =
+    Page.toContext
+
+
+
+
 
 {- Update -}
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ context, state } as model) =
+    let
+        noop =
+            ( model, Cmd.none )
+
+    in
     case msg of
         Ctx contextMsg ->
             let
@@ -139,16 +193,27 @@ update msg ({ context, state } as model) =
             updatePostProperty (Post.mapPublished not) model
 
         EditCurrentPost ->
+            let
+                goToEdit post =
+                    ( model
+                    , post
+                        |> Post.getUUID
+                        |> Route.Edit
+                        |> Route.Post
+                        |> Route.toPath
+                        |> Navigation.pushUrl <| Context.getKey context
+                    )
+            in
             case state of
                 Read post author ->
                     if isAuthorLoggedIn context author then
-                        Edit post author
+                        goToEdit post
                     else
                         Debug.todo "handle this"
 
                 Peek post author ->
                     if isAuthorLoggedIn context author then
-                        Edit post author
+                        goToEdit post
                     else
                         Debug.todo "handle this"
 
@@ -184,7 +249,7 @@ update msg ({ context, state } as model) =
                 Create post author ->
                     if isAuthorLoggedIn context author then
                         ( model
-                        , Post.post WritePostRes (Context.getMode context) post
+                        , Post.post OnWritePost (Context.getMode context) post
                         )
                     else
                         Debug.todo "handle this"
@@ -192,13 +257,13 @@ update msg ({ context, state } as model) =
                 Edit post author ->
                     if isAuthorLoggedIn context author then
                         ( model
-                        , Post.put WritePostRes (Context.getMode context) post
+                        , Post.put OnWritePost (Context.getMode context) post
                         )
                     else
                         Debug.todo "should be a problem"
 
                 _ ->
-                    Debug.todo "handle this"
+                    noop
 
         OnPost res ->
             case res of
@@ -208,7 +273,7 @@ update msg ({ context, state } as model) =
                             loadIntent maybeAuthor (Just post) intent
 
                         _ ->
-                            Debug.todo "handle this"
+                            noop
 
 
                 Err err ->
@@ -222,7 +287,7 @@ update msg ({ context, state } as model) =
                             loadIntent (Just author) maybePost intent
 
                         _ ->
-                            Debug.todo "handle this"
+                            ( Model, Cmd.none )
 
                 Err err ->
                     Debug.todo "handle this"
@@ -230,22 +295,40 @@ update msg ({ context, state } as model) =
         OnWritePost res ->
             case res of
                 Ok post ->
-                    case state of
-                        Edit _ author ->
-                            ( { model | state = Read post author }
-                            , Cmd.none
+                    let
+                        goToRead =
+                            ( model
+                            , post
+                                |> Post.getUUID
+                                |> Route.Read
+                                |> Route.Post
+                                |> Route.toPath
+                                |> Navigation.replaceUrl (Context.getKey context) 
                             )
 
-                        Create _ author ->
-                            ( { model | state = Read post author }
-                            , Cmd.none
-                            )
+                    in
+                    case state of
+                        Edit _ _ ->
+                            goToRead
+
+                        Create _ _ ->
+                            goToRead
 
                         _ ->
-                            Debug.todo "handle this"
+                            noop
 
                 Err err ->
                     Debug.todo "handle this"
+
+        OnDelete res ->
+            case res of
+                Ok _ ->
+                    ( model
+                    , Navigation.pushUrl (Context.getKey context) (Route.toPath Home)
+                    )
+
+                Err err ->
+                    Debug.todo "handle me"
 
 
 loadIntent : Maybe Author -> Maybe (Post Core Full) -> CoreIntent -> ( Model, Cmd Msg )
@@ -314,41 +397,38 @@ redirect404 general =
 {- View -}
 
 
-view : Model -> Page.ViewResult Msg
-view ({ context } as model) =
+view : Model -> Html Msg
+view ({ context, state } as model) =
     let
         theme =
             Context.theme context
 
         contents =
-            case model of
-                LoadingReady ->
-                    loadingView theme
+            case state of
+                 Loading _ _ _ ->
+                     loadingView theme
 
-                Redirect ->
-                    [ div [ css [ flexGrow <| num 1 ] ] [] ]
+                 Read post author ->
+                     let
+                         authors =
+                             Context.authors context
+                     in
+                     readyView context post author
 
-                Read post author ->
-                    let
-                        authors =
-                            Context.authors context
-                    in
-                    readyView context post author
+                 Peek post author ->
+                     peekView context post
 
-                Peek post author ->
-                    peekView context post
+                 Edit post author ->
+                     editView context post author
 
-                LoadingEdit ->
-                    loadingView theme
+                 Create post author ->
+                     createView context post author
 
-                Edit post author ->
-                    editView context post author
+                 Delete postUUID ->
+                     deleteView theme postUUID
 
-                Create post author ->
-                    createView context post author
-
-                Delete postUUID ->
-                    deleteView theme postUUID
+                 Redirect ->
+                     [ div [ css [ flexGrow <| num 1 ] ] [] ]
     in
     [ div
         [ class "page post-page"
@@ -457,10 +537,10 @@ editView general post author =
 
 
 createView : Context -> Post Client Full -> Author -> List (Html Msg)
-createView general post author =
+createView context post author =
     let
         theme =
-            Context.theme general
+            Context.theme context
     in
     [ sheet theme
         [ div
@@ -495,7 +575,7 @@ createView general post author =
                 [ displayFlex ]
             ]
             [ button
-                [ onClick <| Global <| ContextMsg <| GoBack
+                [ onClick <| Ctx <| GoBack
                 , css
                     [ Style.Button.default
                     , Style.Button.danger theme
@@ -886,7 +966,7 @@ titleInput theme title =
     input
         [ class "title-input"
         , value title
-        , onInput <| OnTitleInput >> Mod
+        , onInput <| OnTitleInput
         , autofocus True
         , css
             [ inputStyle theme
@@ -907,7 +987,7 @@ descInput theme desc =
     textarea
         [ class "desc-input"
         , value desc
-        , onInput <| OnDescriptionInput >> Mod
+        , onInput <| OnDescriptionInput
         , css
             [ inputStyle theme
             , fontWeight <| int 500
@@ -925,7 +1005,7 @@ bodyInput theme body =
     textarea
         [ class "desc-input"
         , Markdown.toValue body
-        , onInput <| OnBodyInput >> Mod
+        , onInput OnBodyInput
         , css
             [ inputStyle theme
             , fontWeight <| int 500
