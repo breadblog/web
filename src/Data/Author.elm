@@ -1,12 +1,15 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, name, username, uuid)
+module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, name, username, getUUID, fetch)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
+import Data.Mode as Mode exposing (Mode)
 import Data.Username as Username exposing (Username)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
+import Http
+import Api
 
 
 
@@ -44,8 +47,8 @@ bio (Author internals) =
     internals.bio
 
 
-uuid : Author -> UUID
-uuid (Author internals) =
+getUUID : Author -> UUID
+getUUID (Author internals) =
     internals.uuid
 
 
@@ -73,7 +76,7 @@ fromUUID authorUUID list =
     List.Extra.find
         (\a ->
             a
-                |> uuid
+                |> getUUID
                 |> UUID.compare authorUUID
         )
         list
@@ -83,6 +86,15 @@ compare : Author -> Author -> Bool
 compare (Author a) (Author b) =
     a.uuid == b.uuid
 
+
+{- Http -}
+
+fetch : (Result Http.Error Author -> msg) -> Mode -> UUID -> Cmd msg
+fetch toMsg mode uuid =
+    Api.get
+        { url = Api.url mode <| UUID.toPath "/author/" uuid
+        , expect = Http.expectJson toMsg decoder
+        }
 
 
 {- JSON -}

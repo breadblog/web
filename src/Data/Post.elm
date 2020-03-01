@@ -207,7 +207,7 @@ empty userUUID =
 fetch : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
 fetch toMsg mode uuid =
     Api.get
-        { url = Api.url mode <| UUID.toPath "/post/public" uuid
+        { url = Api.url mode <| UUID.toPath "/post/public/" uuid
         , expect = Http.expectJson toMsg fullDecoder
         }
 
@@ -215,7 +215,7 @@ fetch toMsg mode uuid =
 fetchPrivate : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
 fetchPrivate toMsg mode uuid =
     Api.get
-        { url = Api.url mode <| UUID.toPath "/post/private" uuid
+        { url = Api.url mode <| UUID.toPath "/post/private/" uuid
         , expect = Http.expectJson toMsg fullDecoder
         }
 

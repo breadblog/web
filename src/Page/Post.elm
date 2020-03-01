@@ -48,7 +48,6 @@ type alias Model =
 
 type CoreIntent
     = ToRead
-    | ToPeek
     | ToEdit
 
 
@@ -101,9 +100,6 @@ init postType context =
         Route.Edit uuid ->
             initCore context ToEdit uuid
 
-        Route.Peek uuid ->
-            initCore context ToPeek uuid
-
         Route.Delete uuid ->
             ( withContext <| Delete uuid
             , Cmd.none
@@ -125,7 +121,7 @@ init postType context =
 
 
 
-initCore : Context -> Intent -> UUID -> ( Model, Cmd Msg )
+initCore : Context -> CoreIntent -> UUID -> ( Model, Cmd Msg )
 initCore context intent postUUID =
     ( { context = context
       , state = Loading Nothing Nothing intent
@@ -180,7 +176,7 @@ update msg ({ context, state } as model) =
             in
             ( { model | context = updatedContext }, Cmd.map Ctx cmd )
 
-        OnTitleUpdate title ->
+        OnTitleInput title ->
             updatePostProperty (Post.mapTitle (always title)) model
 
         OnDescriptionInput description ->
@@ -201,7 +197,7 @@ update msg ({ context, state } as model) =
                         |> Route.Edit
                         |> Route.Post
                         |> Route.toPath
-                        |> Navigation.pushUrl <| Context.getKey context
+                        |> Navigation.pushUrl (Context.getKey context)
                     )
             in
             case state of
@@ -249,7 +245,7 @@ update msg ({ context, state } as model) =
                 Create post author ->
                     if isAuthorLoggedIn context author then
                         ( model
-                        , Post.post OnWritePost (Context.getMode context) post
+                        , Post.edit OnWritePost (Context.getMode context) post
                         )
                     else
                         Debug.todo "handle this"
@@ -339,9 +335,6 @@ loadIntent maybeAuthor maybePost intent =
                 ToRead ->
                     ( Read post author, Cmd.none )
 
-                ToPeek ->
-                    ( Peek post author, Cmd.none )
-
                 ToEdit ->
                     ( Peek post author, Cmd.none )
 
@@ -349,11 +342,11 @@ loadIntent maybeAuthor maybePost intent =
             Loading maybeAuthor maybePost intent
 
 
-goToDeleteIfLoggedIn : Context -> Post Core Full -> Author -> ( Model, Cmd Msg )
-goToDeleteIfLoggedIn context post author =
+goToDeleteIfLoggedIn : Model -> Post Core Full -> Author -> ( Model, Cmd Msg )
+goToDeleteIfLoggedIn ({ context } as model) post author =
     if isAuthorLoggedIn context author then
         ( model
-        , Navigation.pushUrl (Context.key context) (Route.toPath <| Post <| Route.Delete <| Post.uuid post)
+        , Navigation.pushUrl (Context.getKey context) (Route.toPath <| Post <| Route.Delete <| Post.getUUID post)
         )
     else
         ( model, Cmd.none )
@@ -361,10 +354,10 @@ goToDeleteIfLoggedIn context post author =
 
 isAuthorLoggedIn : Context -> Author -> Bool
 isAuthorLoggedIn context author =
-    case Context.user context of
+    case Context.getUser context of
         Just user ->
             author
-            |> Author.uuid
+            |> Author.getUUID
             |> UUID.compare user
 
         _ ->
@@ -390,7 +383,7 @@ updatePostProperty mapPost ({ state } as model) =
 
 redirect404 : Context -> Cmd msg
 redirect404 general =
-    Navigation.pushUrl (Context.key general) (Route.toPath NotFound)
+    Navigation.pushUrl (Context.getKey general) (Route.toPath NotFound)
 
 
 
@@ -401,7 +394,7 @@ view : Model -> Html Msg
 view ({ context, state } as model) =
     let
         theme =
-            Context.theme context
+            Context.getTheme context
 
         contents =
             case state of
@@ -409,11 +402,7 @@ view ({ context, state } as model) =
                      loadingView theme
 
                  Read post author ->
-                     let
-                         authors =
-                             Context.authors context
-                     in
-                     readyView context post author
+                     readView context post author
 
                  Peek post author ->
                      peekView context post
@@ -468,7 +457,7 @@ peekView : Context -> Post Core Full -> List (Html Msg)
 peekView general post =
     let
         theme =
-            Context.theme general
+            Context.getTheme general
     in
     [ sheet theme
         []
@@ -479,7 +468,7 @@ editView : Context -> Post Core Full -> Author -> List (Html Msg)
 editView general post author =
     let
         theme =
-            Context.theme general
+            Context.getTheme general
     in
     [ sheet theme
         [ div
@@ -540,7 +529,7 @@ createView : Context -> Post Client Full -> Author -> List (Html Msg)
 createView context post author =
     let
         theme =
-            Context.theme context
+            Context.getTheme context
     in
     [ sheet theme
         [ div
@@ -650,7 +639,7 @@ deleteView theme postUUID =
                     ]
                 ]
                 [ button
-                    [ onClick <| Global <| ContextMsg GoBack
+                    [ onClick <| Ctx <| GoBack
                     , css
                         [ Style.Button.default
                         , backgroundColor <| Color.danger theme
@@ -672,11 +661,11 @@ deleteView theme postUUID =
     ]
 
 
-readyView : Context -> Post Core Full -> Author -> List (Html Msg)
-readyView general post author =
+readView : Context -> Post Core Full -> Author -> List (Html Msg)
+readView general post author =
     let
         theme =
-            Context.theme general
+            Context.getTheme general
 
         postStyle =
             Style.Post.style theme
@@ -691,15 +680,15 @@ readyView general post author =
             Post.getBody post
 
         fullscreen =
-            Context.fullscreen general
+            Context.getFullscreen general
 
         myPost =
-            case Context.user general of
+            case Context.getUser general of
                 Nothing ->
                     False
 
                 Just userUUID ->
-                    UUID.compare (Author.uuid author) userUUID
+                    UUID.compare (Author.getUUID author) userUUID
 
         -- fav =
     in
@@ -752,7 +741,7 @@ viewTags : Context -> Post l f -> Html msg
 viewTags general post =
     let
         theme =
-            Context.theme general
+            Context.getTheme general
 
         tags =
             Post.getTags post
@@ -797,7 +786,7 @@ favorite : Context -> Post Core f -> List Style -> Html Msg
 favorite general post styles =
     let
         theme =
-            Context.theme general
+            Context.getTheme general
 
         maybeFav =
             case Post.favorite post of
@@ -815,7 +804,7 @@ favorite general post styles =
     case maybeFav of
         Just fav ->
             View.Svg.heart
-                [ SvgEvents.onClick <| Global <| ContextMsg <| TogglePost <| Post.toPreview post
+                [ SvgEvents.onClick <| Ctx <| TogglePost <| Post.toUUID post
                 , SvgAttributes.css
                     (List.append
                         [ svgStyle theme
@@ -875,7 +864,7 @@ togglePublished theme post styles =
 maximize : Theme -> List Style -> Html Msg
 maximize theme styles =
     View.Svg.maximize
-        [ SvgEvents.onClick <| Global <| ContextMsg <| FullscreenElement "post-page"
+        [ SvgEvents.onClick <| Ctx <| FullscreenElement "post-page"
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles
@@ -886,7 +875,7 @@ maximize theme styles =
 minimize : Theme -> List Style -> Html Msg
 minimize theme styles =
     View.Svg.minimize
-        [ SvgEvents.onClick <| Global <| ContextMsg <| ExitFullscreen
+        [ SvgEvents.onClick <| Ctx <| ExitFullscreen
         , SvgAttributes.css
             [ svgStyle theme
             , Css.batch styles

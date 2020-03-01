@@ -158,6 +158,7 @@ type Msg
     | ExitFullscreen
     | UpdateFullscreen Bool
     | PushProblem (Problem Msg)
+    | TogglePost UUID
     | GoBack
 
 
@@ -176,8 +177,8 @@ update msg context =
 
         ( newGeneral, cmd ) =
             case msg of
-                SetTheme theme_ ->
-                    updateCache context { iCache | theme = theme_ }
+                SetTheme newTheme ->
+                    updateCache context { iCache | theme = newTheme }
 
                 UpdateNetwork network ->
                     ( Context { internals | network = network }
@@ -241,6 +242,11 @@ update msg context =
                     , Cmd.none
                     )
 
+                TogglePost uuid ->
+                    updateCache context
+                        { iCache | likedPosts = togglePost uuid iCache.likedPosts
+                        }
+
                 GoBack ->
                     ( context
                     , Browser.Navigation.back (getKey context) 1
@@ -254,17 +260,25 @@ update msg context =
 
 
 updateCache : Context -> ICache -> ( Context, Cmd Msg )
-updateCache context iCache =
+updateCache (Context iContext) updatedCacheInternals =
     let
-        (Context internals) =
-            context
-
-        cache_ =
-            Cache iCache
+        updatedCache =
+            Cache updatedCacheInternals
+        
     in
-    ( Context { internals | cache = cache_ }
-    , setCache <| cache_
+    ( Context { iContext | cache = updatedCache }
+    , setCache updatedCache
     )
+
+
+togglePost : UUID -> List UUID -> List UUID
+togglePost uuid list =
+    case List.Extra.find (UUID.compare uuid) list of
+        Just _ ->
+            List.filter (UUID.compare uuid >> not) list
+        
+        Nothing ->
+            uuid :: list
 
 
 dismissProblem : Int -> Context -> Context
@@ -439,7 +453,7 @@ isPostLiked context post =
     let
         predicate =
             post
-            |> Post.uuid
+            |> Post.getUUID
             |> UUID.compare
 
         (Cache iCache) =

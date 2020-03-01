@@ -21,8 +21,8 @@ type alias Model =
 
 
 
-init : Context -> Model
-init =
+init : Context -> ( Model, Cmd Msg )
+init context =
     ( { posts = []
       , context = context
       }
@@ -62,13 +62,8 @@ update msg model =
 -- View --
 
 
-view : Model -> Page.ViewResult ModMsg
+view : Model -> List (Html Msg)
 view model =
-    Page.view model viewHome
-
-
-viewHome : Model -> List (Html Msg)
-viewHome _ =
     [ main_
         [ css
             [ flexGrow <| num 1
