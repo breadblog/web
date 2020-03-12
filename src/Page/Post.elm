@@ -14,11 +14,13 @@ import Data.Tag as Tag exposing (Tag)
 import Data.Theme exposing (Theme)
 import Data.UUID as UUID exposing (UUID)
 import Data.Username as Username
+import Debug
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick, onInput)
 import Http
 import List.Extra
+import Page
 import Style.Button
 import Style.Card
 import Style.Color as Color
@@ -32,8 +34,6 @@ import Time
 import View.Loading
 import View.Svg
 import View.Tag
-import Page
-import Debug
 
 
 
@@ -62,6 +62,7 @@ type State
     | Redirect
 
 
+
 {- Message -}
 
 
@@ -75,11 +76,12 @@ type Msg
     | DeleteCurrentPost
     | ConfirmDelete
     | WritePost
-    -- Http
+      -- Http
     | OnPost (Result Http.Error (Post Core Full))
-    | OnAuthor (Result Http.Error (Author))
+    | OnAuthor (Result Http.Error Author)
     | OnWritePost (Result Http.Error (Post Core Full))
     | OnDelete (Result Http.Error ())
+
 
 
 {- Init -}
@@ -120,7 +122,6 @@ init context postType =
                     )
 
 
-
 initCore : Context -> CoreIntent -> UUID -> ( Model, Cmd Msg )
 initCore context intent postUUID =
     ( { context = context
@@ -155,8 +156,6 @@ toContext =
 
 
 
-
-
 {- Update -}
 
 
@@ -165,14 +164,12 @@ update msg ({ context, state } as model) =
     let
         noop =
             ( model, Cmd.none )
-
     in
     case msg of
         Ctx contextMsg ->
             let
-                (updatedContext, cmd) =
+                ( updatedContext, cmd ) =
                     Context.update contextMsg context
-
             in
             ( { model | context = updatedContext }, Cmd.map Ctx cmd )
 
@@ -180,7 +177,6 @@ update msg ({ context, state } as model) =
             let
                 updatePost post =
                     Post.mapTitle (always title) post
-
             in
             case state of
                 Edit post ->
@@ -196,7 +192,6 @@ update msg ({ context, state } as model) =
             let
                 updatePost post =
                     Post.mapDescription (always description) post
-
             in
             case state of
                 Edit post ->
@@ -208,12 +203,10 @@ update msg ({ context, state } as model) =
                 _ ->
                     noop
 
-
         OnBodyInput body ->
             let
                 updatePost post =
                     Post.mapBody (Markdown.create >> always <| body) post
-
             in
             case state of
                 Edit post ->
@@ -229,7 +222,6 @@ update msg ({ context, state } as model) =
             let
                 updatePost post =
                     Post.mapPublished not post
-
             in
             case state of
                 Edit post ->
@@ -257,12 +249,14 @@ update msg ({ context, state } as model) =
                 Read post ->
                     if isAuthor context post then
                         goToEdit post
+
                     else
                         Debug.todo "handle this"
 
                 Peek post ->
                     if isAuthor context post then
                         goToEdit post
+
                     else
                         Debug.todo "handle this"
 
@@ -300,6 +294,7 @@ update msg ({ context, state } as model) =
                         ( model
                         , Post.put OnWritePost (Context.getMode context) post
                         )
+
                     else
                         Debug.todo "handle this"
 
@@ -308,6 +303,7 @@ update msg ({ context, state } as model) =
                         ( model
                         , Post.edit OnWritePost (Context.getMode context) post
                         )
+
                     else
                         Debug.todo "should be a problem"
 
@@ -328,7 +324,6 @@ update msg ({ context, state } as model) =
 
                         _ ->
                             noop
-
 
                 Err err ->
                     Debug.todo "handle this"
@@ -357,9 +352,8 @@ update msg ({ context, state } as model) =
                                 |> Route.Read
                                 |> Route.Post
                                 |> Route.toPath
-                                |> Navigation.replaceUrl (Context.getKey context) 
+                                |> Navigation.replaceUrl (Context.getKey context)
                             )
-
                     in
                     case state of
                         Edit _ ->
@@ -385,16 +379,15 @@ update msg ({ context, state } as model) =
                     Debug.todo "handle me"
 
 
-
 goToDeleteIfLoggedIn : Model -> Post Core Full -> ( Model, Cmd Msg )
 goToDeleteIfLoggedIn ({ context } as model) post =
     if isAuthor context post then
         ( model
         , Navigation.pushUrl (Context.getKey context) (Route.toPath <| Post <| Route.Delete <| Post.getUUID post)
         )
+
     else
         ( model, Cmd.none )
-
 
 
 isAuthor : Context -> Post l b -> Bool
@@ -402,16 +395,16 @@ isAuthor context post =
     case Context.getUser context of
         Just user ->
             post
-            |> Post.getAuthor
-            |> Author.getUUID
-            |> UUID.compare user
+                |> Post.getAuthor
+                |> Author.getUUID
+                |> UUID.compare user
 
         _ ->
             False
 
 
-{- Util -}
 
+{- Util -}
 
 
 redirect404 : Context -> Cmd msg
@@ -431,29 +424,29 @@ view ({ context, state } as model) =
 
         contents =
             case state of
-                 Loading _ ->
-                     loadingView theme
+                Loading _ ->
+                    loadingView theme
 
-                 LoadingCreate ->
-                     loadingView theme
+                LoadingCreate ->
+                    loadingView theme
 
-                 Read post ->
-                     readView context post
+                Read post ->
+                    readView context post
 
-                 Peek post ->
-                     peekView context post
+                Peek post ->
+                    peekView context post
 
-                 Edit post ->
-                     editView context post
+                Edit post ->
+                    editView context post
 
-                 Create post author ->
-                     createView context post author
+                Create post author ->
+                    createView context post author
 
-                 Delete postUUID ->
-                     deleteView theme postUUID
+                Delete postUUID ->
+                    deleteView theme postUUID
 
-                 Redirect ->
-                     [ div [ css [ flexGrow <| num 1 ] ] [] ]
+                Redirect ->
+                    [ div [ css [ flexGrow <| num 1 ] ] [] ]
     in
     [ div
         [ class "page post-page"
@@ -470,7 +463,10 @@ view ({ context, state } as model) =
     ]
 
 
+
 -- TODO: don't flicker
+
+
 loadingView : Theme -> List (Html Msg)
 loadingView theme =
     [ div
@@ -541,7 +537,7 @@ editView general post =
             [ css [ displayFlex ]
             ]
             [ button
-                [ onClick <| Ctx <|  GoBack
+                [ onClick <| Ctx <| GoBack
                 , css
                     [ Style.Button.default
                     , Style.Button.danger theme
@@ -831,7 +827,6 @@ favorite context post styles =
 
         isLiked =
             Context.isPostLiked context post
-
     in
     View.Svg.heart
         [ SvgEvents.onClick <| Ctx <| TogglePost <| Post.getUUID post

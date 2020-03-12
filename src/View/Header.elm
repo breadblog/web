@@ -7,7 +7,7 @@ import Data.Context as Context exposing (Context, Msg(..))
 import Data.Route as Route exposing (Route(..))
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
-import Data.Username as Username 
+import Data.Username as Username
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onBlur, onClick, onFocus, onInput)

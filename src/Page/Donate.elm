@@ -8,13 +8,13 @@ import Data.Theme exposing (Theme)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)
+import Page
 import Style.Card as Card
 import Style.Color as Color
 import Style.Post
 import Style.Screen as Screen exposing (Screen(..))
 import Svg.Styled.Attributes as SvgAttr
 import View.Svg as Svg
-import Page
 
 
 
@@ -28,7 +28,6 @@ type alias Model =
 init : Context -> ( Model, Cmd Msg )
 init context =
     ( { context = context }, Cmd.none )
-
 
 
 toContext : Model -> Context

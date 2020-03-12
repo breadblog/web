@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, Msg, fromContextMsg, fromContext, init, toContext, update, view)
+module Page.Home exposing (Model, Msg, fromContext, fromContextMsg, init, toContext, update, view)
 
 import Css exposing (..)
 import Data.Context as Context exposing (Context)
@@ -11,6 +11,7 @@ import Html.Styled.Events exposing (onClick)
 import Page
 
 
+
 -- Model
 
 
@@ -18,7 +19,6 @@ type alias Model =
     { context : Context
     , posts : List (Post Core Preview)
     }
-
 
 
 init : Context -> ( Model, Cmd Msg )
@@ -53,6 +53,7 @@ type Msg
     = Ctx Context.Msg
 
 
+
 -- Update --
 
 
@@ -61,9 +62,8 @@ update msg ({ context } as model) =
     case msg of
         Ctx contextMsg ->
             let
-                (updatedContext, cmd) =
+                ( updatedContext, cmd ) =
                     Context.update contextMsg context
-
             in
             ( { model | context = updatedContext }, Cmd.map Ctx cmd )
 

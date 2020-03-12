@@ -1,15 +1,15 @@
-port module Data.Context exposing (Context, Msg(..), flagsDecoder, focus, getFullscreen, fullscreenSub, init, getKey, mapUser, getMode, networkSub, getProblems, pushProblem, getTheme, update, getUser, getVersion, isPostLiked, isLoggedIn)
+port module Data.Context exposing (Context, Msg(..), flagsDecoder, focus, fullscreenSub, getFullscreen, getKey, getMode, getProblems, getTheme, getUser, getVersion, init, isLoggedIn, isPostLiked, mapUser, networkSub, pushProblem, update)
 
 import Api
 import Browser.Navigation exposing (Key)
-import Data.Tag as Tag exposing (Tag)
-import Data.Post as Post exposing (Post, Core)
 import Data.Config exposing (Config)
 import Data.Markdown as Markdown
 import Data.Mode as Mode exposing (Mode(..))
 import Data.Network as Network exposing (Network(..))
+import Data.Post as Post exposing (Core, Post)
 import Data.Problem as Problem exposing (Description(..), Problem)
 import Data.Route as Route exposing (Route(..))
+import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
 import Data.UUID as UUID exposing (UUID)
 import Data.Version exposing (Version)
@@ -58,6 +58,7 @@ type alias ICache =
     , likedPosts : List UUID
     , ignoredTags : List UUID
     }
+
 
 
 {- Constructors -}
@@ -244,7 +245,8 @@ update msg context =
 
                 TogglePost uuid ->
                     updateCache context
-                        { iCache | likedPosts = togglePost uuid iCache.likedPosts
+                        { iCache
+                            | likedPosts = togglePost uuid iCache.likedPosts
                         }
 
                 GoBack ->
@@ -264,7 +266,6 @@ updateCache (Context iContext) updatedCacheInternals =
     let
         updatedCache =
             Cache updatedCacheInternals
-        
     in
     ( Context { iContext | cache = updatedCache }
     , setCache updatedCache
@@ -276,7 +277,7 @@ togglePost uuid list =
     case List.Extra.find (UUID.compare uuid) list of
         Just _ ->
             List.filter (UUID.compare uuid >> not) list
-        
+
         Nothing ->
             uuid :: list
 
@@ -310,7 +311,9 @@ isLoggedIn context =
             False
 
 
+
 {- HTTP -}
+
 
 tryLogout : Context -> Cmd Msg
 tryLogout context =
@@ -409,7 +412,7 @@ getVersion context =
         |> .version
 
 
-getTheme: Context -> Theme
+getTheme : Context -> Theme
 getTheme context =
     context
         |> getCache
@@ -463,15 +466,14 @@ isPostLiked context post =
     let
         predicate =
             post
-            |> Post.getUUID
-            |> UUID.compare
+                |> Post.getUUID
+                |> UUID.compare
 
         (Cache iCache) =
             getCache context
-
     in
     List.any predicate iCache.likedPosts
-    
+
 
 
 {- Accessors (private) -}
@@ -485,8 +487,8 @@ toCacheInternals (Cache iCache) =
 toLikedPosts : Cache -> List UUID
 toLikedPosts cache =
     cache
-    |> toCacheInternals
-    |> .likedPosts
+        |> toCacheInternals
+        |> .likedPosts
 
 
 

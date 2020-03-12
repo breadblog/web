@@ -1,15 +1,15 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, getDate, getAuthor, getBody, compare, getDescription, empty, encodeFreshFull, encodeFull, encodePreview, fullDecoder, mapBody, mapDescription, mapPublished, mapTitle, previewDecoder, getPublished, getTags, getTitle, toPreview, getUUID, fetchPreviews, fetchPrivate, fetch, delete, edit, put)
+module Data.Post exposing (Client, Core, Full, Post, Preview, compare, delete, edit, empty, encodeFreshFull, encodeFull, encodePreview, fetch, fetchPreviews, fetchPrivate, fullDecoder, getAuthor, getBody, getDate, getDescription, getPublished, getTags, getTitle, getUUID, mapBody, mapDescription, mapPublished, mapTitle, previewDecoder, put, toPreview)
 
-import Data.Markdown as Markdown exposing (Markdown)
-import Data.UUID as UUID exposing (UUID)
-import Data.Tag as Tag exposing (Tag)
+import Api
 import Data.Author as Author exposing (Author)
+import Data.Markdown as Markdown exposing (Markdown)
+import Data.Mode exposing (Mode)
+import Data.Tag as Tag exposing (Tag)
+import Data.UUID as UUID exposing (UUID)
+import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (custom, hardcoded, required)
 import Json.Encode as Encode exposing (Value)
-import Api
-import Data.Mode exposing (Mode)
-import Http
 import Time
 
 
@@ -129,7 +129,6 @@ getDate post =
     accessCore .date post
 
 
-
 getTags : Post l c -> List Tag
 getTags post =
     accessInternals .tags post
@@ -203,6 +202,7 @@ empty author =
         }
 
 
+
 {- Http -}
 
 
@@ -241,6 +241,7 @@ delete toMsg mode uuid =
         , expect = Http.expectWhatever toMsg
         }
 
+
 put : (Result Http.Error (Post Core Full) -> msg) -> Mode -> Post Client Full -> Cmd msg
 put toMsg mode post =
     Api.put
@@ -259,6 +260,7 @@ edit toMsg mode post =
         }
 
 
+
 {- Json -}
 
 
@@ -269,8 +271,8 @@ encodeInternalsHelper i =
     , ( "tags", Encode.list (Tag.getUUID >> UUID.encode) i.tags )
     , ( "author"
       , i.author
-        |> Author.getUUID
-        |> UUID.encode
+            |> Author.getUUID
+            |> UUID.encode
       )
     , ( "published", Encode.bool i.published )
     ]
@@ -315,8 +317,6 @@ encodeFreshFull (Post _ (Full fullInternals) internals) =
             |> (++) (encodeInternalsHelper internals)
             |> (++) (encodeFullHelper fullInternals)
         )
-
-
 
 
 internalsDecoder : Decoder Internals

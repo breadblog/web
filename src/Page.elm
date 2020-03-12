@@ -1,4 +1,4 @@
-module Page exposing (toContext, fromContext)
+module Page exposing (fromContext, toContext)
 
 
 toContext : { m | context : c } -> c

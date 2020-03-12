@@ -11,8 +11,8 @@ import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events as Events exposing (onClick, onInput)
 import Http
 import Json.Decode
-import Style.Color as Color
 import Page
+import Style.Color as Color
 
 
 
@@ -29,12 +29,12 @@ type alias Model =
 
 init : Context -> ( Model, Cmd Msg )
 init context =
-    ({ context = context
-    , username = ""
-    , password = Password.create ""
-    , error = Nothing
-    },
-    Cmd.none
+    ( { context = context
+      , username = ""
+      , password = Password.create ""
+      , error = Nothing
+      }
+    , Cmd.none
     )
 
 
@@ -71,7 +71,8 @@ update msg ({ context } as model) =
         OnLogin res ->
             case res of
                 Err _ ->
-                    ( { model | error = Just "failed to login"
+                    ( { model
+                        | error = Just "failed to login"
                       }
                     , Cmd.none
                     )
@@ -81,7 +82,8 @@ update msg ({ context } as model) =
                         ( updatedContext, cmd ) =
                             Context.mapUser info.uuid context
                     in
-                    ( { model | context = updatedContext
+                    ( { model
+                        | context = updatedContext
                       }
                     , Cmd.map Ctx cmd
                     )
@@ -100,6 +102,7 @@ update msg ({ context } as model) =
             , case code of
                 13 ->
                     attemptLogin model
+
                 _ ->
                     Cmd.none
             )
@@ -124,17 +127,18 @@ attemptLogin { context, username, password } =
         { expect = Http.expectJson OnLogin <| Data.Login.decodeResponse
         , body =
             Data.Login.Request username password
-            |> Data.Login.encodeRequest
-            |> Http.jsonBody
+                |> Data.Login.encodeRequest
+                |> Http.jsonBody
         , url = Api.url mode "/login/"
         }
+
 
 
 {- View -}
 
 
 view : Model -> List (Html Msg)
-view ({ context }) =
+view { context } =
     let
         theme =
             Context.getTheme context

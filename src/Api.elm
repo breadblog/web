@@ -1,8 +1,8 @@
 module Api exposing (Url, count, delete, get, post, put, url)
 
+import Constants
 import Data.Mode exposing (Mode(..))
 import Http exposing (Body, Expect, Header)
-import Constants
 
 
 type Url

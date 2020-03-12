@@ -8,7 +8,7 @@ import Data.Markdown as Markdown
 import Data.Problem as Problem exposing (Description(..))
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme(..))
-import Html.Styled exposing (Html, toUnstyled, div)
+import Html.Styled exposing (Html, div, toUnstyled)
 import Html.Styled.Attributes exposing (css, id)
 import Json.Encode exposing (Value)
 import Page.About
@@ -24,6 +24,7 @@ import Style.Color
 import Style.Font as Font
 import Style.Global
 import Url exposing (Url)
+
 
 
 -- Model --
@@ -93,9 +94,8 @@ update msg model =
 
         key =
             Context.getKey context
-
     in
-    case (msg, model) of
+    case ( msg, model ) of
         ( Ctx ctxMsg, _ ) ->
             update (fromContextMsg ctxMsg model) model
 
@@ -216,7 +216,6 @@ toContext page =
 
         Redirect g ->
             g
-
 
 
 
