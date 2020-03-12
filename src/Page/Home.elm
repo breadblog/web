@@ -1,4 +1,4 @@
-module Page.Home exposing (Model, Msg, fromContext, init, toContext, update, view)
+module Page.Home exposing (Model, Msg, fromContextMsg, fromContext, init, toContext, update, view)
 
 import Css exposing (..)
 import Data.Context as Context exposing (Context)
@@ -40,22 +40,32 @@ fromContext =
     Page.fromContext
 
 
+fromContextMsg : Context.Msg -> Msg
+fromContextMsg msg =
+    Ctx msg
+
+
 
 -- Message --
 
 
 type Msg
-    = NoOp
+    = Ctx Context.Msg
 
 
 -- Update --
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update msg ({ context } as model) =
     case msg of
-        NoOp ->
-            ( model, Cmd.none )
+        Ctx contextMsg ->
+            let
+                (updatedContext, cmd) =
+                    Context.update contextMsg context
+
+            in
+            ( { model | context = updatedContext }, Cmd.map Ctx cmd )
 
 
 

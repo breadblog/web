@@ -52,10 +52,10 @@ type CoreIntent
 
 
 type State
-    = Loading (Maybe Author) (Maybe (Post Core Full)) CoreIntent
-    | Read (Post Core Full) Author
-    | Peek (Post Core Full) Author
-    | Edit (Post Core Full) Author
+    = Loading CoreIntent
+    | Read (Post Core Full)
+    | Peek (Post Core Full)
+    | Edit (Post Core Full)
     | Create (Post Client Full) Author
     | LoadingCreate
     | Delete UUID
@@ -86,7 +86,7 @@ type Msg
 
 
 init : Context -> PostType -> ( Model, Cmd Msg )
-init postType context =
+init context postType =
     let
         withContext state =
             { context = context
@@ -116,7 +116,7 @@ init postType context =
                     ( { context = context
                       , state = Redirect
                       }
-                    , Navigation.replaceUrl (Context.getKey context) Route.Login
+                    , Navigation.replaceUrl (Context.getKey context) (Route.toPath Route.Login)
                     )
 
 
@@ -124,7 +124,7 @@ init postType context =
 initCore : Context -> CoreIntent -> UUID -> ( Model, Cmd Msg )
 initCore context intent postUUID =
     ( { context = context
-      , state = Loading Nothing Nothing intent
+      , state = Loading intent
       }
     , fetchPost context postUUID
     )
@@ -177,16 +177,69 @@ update msg ({ context, state } as model) =
             ( { model | context = updatedContext }, Cmd.map Ctx cmd )
 
         OnTitleInput title ->
-            updatePostProperty (Post.mapTitle (always title)) model
+            let
+                updatePost post =
+                    Post.mapTitle (always title) post
+
+            in
+            case state of
+                Edit post ->
+                    ( { model | state = Edit (updatePost post) }, Cmd.none )
+
+                Create post author ->
+                    ( { model | state = Create (updatePost post) author }, Cmd.none )
+
+                _ ->
+                    noop
 
         OnDescriptionInput description ->
-            updatePostProperty (Post.mapDescription (always description)) model
+            let
+                updatePost post =
+                    Post.mapDescription (always description) post
+
+            in
+            case state of
+                Edit post ->
+                    ( { model | state = Edit (updatePost post) }, Cmd.none )
+
+                Create post author ->
+                    ( { model | state = Create (updatePost post) author }, Cmd.none )
+
+                _ ->
+                    noop
+
 
         OnBodyInput body ->
-            updatePostProperty (Post.mapBody (always <| Markdown.create body)) model
+            let
+                updatePost post =
+                    Post.mapBody (Markdown.create >> always <| body) post
+
+            in
+            case state of
+                Edit post ->
+                    ( { model | state = Edit (updatePost post) }, Cmd.none )
+
+                Create post author ->
+                    ( { model | state = Create (updatePost post) author }, Cmd.none )
+
+                _ ->
+                    noop
 
         TogglePublished ->
-            updatePostProperty (Post.mapPublished not) model
+            let
+                updatePost post =
+                    Post.mapPublished not post
+
+            in
+            case state of
+                Edit post ->
+                    ( { model | state = Edit (updatePost post) }, Cmd.none )
+
+                Create post author ->
+                    ( { model | state = Create (updatePost post) author }, Cmd.none )
+
+                _ ->
+                    noop
 
         EditCurrentPost ->
             let
@@ -201,14 +254,14 @@ update msg ({ context, state } as model) =
                     )
             in
             case state of
-                Read post author ->
-                    if isAuthorLoggedIn context author then
+                Read post ->
+                    if isAuthor context post then
                         goToEdit post
                     else
                         Debug.todo "handle this"
 
-                Peek post author ->
-                    if isAuthorLoggedIn context author then
+                Peek post ->
+                    if isAuthor context post then
                         goToEdit post
                     else
                         Debug.todo "handle this"
@@ -218,14 +271,14 @@ update msg ({ context, state } as model) =
 
         DeleteCurrentPost ->
             case state of
-                Read post author ->
-                    goToDeleteIfLoggedIn context post author
+                Read post ->
+                    goToDeleteIfLoggedIn model post
 
-                Edit post author ->
-                    goToDeleteIfLoggedIn context post author
+                Edit post ->
+                    goToDeleteIfLoggedIn model post
 
-                Peek post author ->
-                    goToDeleteIfLoggedIn context post author
+                Peek post ->
+                    goToDeleteIfLoggedIn model post
 
                 _ ->
                     Debug.todo "handle this"
@@ -243,17 +296,17 @@ update msg ({ context, state } as model) =
         WritePost ->
             case state of
                 Create post author ->
-                    if isAuthorLoggedIn context author then
+                    if isAuthor context post then
                         ( model
-                        , Post.edit OnWritePost (Context.getMode context) post
+                        , Post.put OnWritePost (Context.getMode context) post
                         )
                     else
                         Debug.todo "handle this"
 
-                Edit post author ->
-                    if isAuthorLoggedIn context author then
+                Edit post ->
+                    if isAuthor context post then
                         ( model
-                        , Post.put OnWritePost (Context.getMode context) post
+                        , Post.edit OnWritePost (Context.getMode context) post
                         )
                     else
                         Debug.todo "should be a problem"
@@ -265,8 +318,13 @@ update msg ({ context, state } as model) =
             case res of
                 Ok post ->
                     case state of
-                        Loading maybeAuthor _ intent ->
-                            loadIntent maybeAuthor (Just post) intent
+                        Loading intent ->
+                            case intent of
+                                ToRead ->
+                                    ( { model | state = Read post }, Cmd.none )
+
+                                ToEdit ->
+                                    ( { model | state = Edit post }, Cmd.none )
 
                         _ ->
                             noop
@@ -279,11 +337,11 @@ update msg ({ context, state } as model) =
             case res of
                 Ok author ->
                     case state of
-                        Loading _ maybePost intent ->
-                            loadIntent (Just author) maybePost intent
+                        LoadingCreate ->
+                            ( { model | state = Create (Post.empty author) author }, Cmd.none )
 
                         _ ->
-                            ( Model, Cmd.none )
+                            ( model, Cmd.none )
 
                 Err err ->
                     Debug.todo "handle this"
@@ -304,7 +362,7 @@ update msg ({ context, state } as model) =
 
                     in
                     case state of
-                        Edit _ _ ->
+                        Edit _ ->
                             goToRead
 
                         Create _ _ ->
@@ -327,24 +385,10 @@ update msg ({ context, state } as model) =
                     Debug.todo "handle me"
 
 
-loadIntent : Maybe Author -> Maybe (Post Core Full) -> CoreIntent -> ( Model, Cmd Msg )
-loadIntent maybeAuthor maybePost intent =
-    case (maybeAuthor, maybePost) of
-        (Just author, Just post) ->
-            case intent of
-                ToRead ->
-                    ( Read post author, Cmd.none )
 
-                ToEdit ->
-                    ( Peek post author, Cmd.none )
-
-        (_, _) ->
-            Loading maybeAuthor maybePost intent
-
-
-goToDeleteIfLoggedIn : Model -> Post Core Full -> Author -> ( Model, Cmd Msg )
-goToDeleteIfLoggedIn ({ context } as model) post author =
-    if isAuthorLoggedIn context author then
+goToDeleteIfLoggedIn : Model -> Post Core Full -> ( Model, Cmd Msg )
+goToDeleteIfLoggedIn ({ context } as model) post =
+    if isAuthor context post then
         ( model
         , Navigation.pushUrl (Context.getKey context) (Route.toPath <| Post <| Route.Delete <| Post.getUUID post)
         )
@@ -352,29 +396,18 @@ goToDeleteIfLoggedIn ({ context } as model) post author =
         ( model, Cmd.none )
 
 
-isAuthorLoggedIn : Context -> Author -> Bool
-isAuthorLoggedIn context author =
+
+isAuthor : Context -> Post l b -> Bool
+isAuthor context post =
     case Context.getUser context of
         Just user ->
-            author
+            post
+            |> Post.getAuthor
             |> Author.getUUID
             |> UUID.compare user
 
         _ ->
             False
-
-
-updatePostProperty : (Post l Full -> Post l Full) -> Model -> ( Model, Cmd Msg )
-updatePostProperty mapPost ({ state } as model) =
-    case state of
-        Edit post author ->
-            ( { model | state = Edit (mapPost post) author }, Cmd.none )
-
-        Create post author ->
-            ( { model | state = Create (mapPost post) author }, Cmd.none )
-
-        _ ->
-            ( model, Cmd.none )
 
 
 {- Util -}
@@ -390,7 +423,7 @@ redirect404 general =
 {- View -}
 
 
-view : Model -> Html Msg
+view : Model -> List (Html Msg)
 view ({ context, state } as model) =
     let
         theme =
@@ -398,17 +431,20 @@ view ({ context, state } as model) =
 
         contents =
             case state of
-                 Loading _ _ _ ->
+                 Loading _ ->
                      loadingView theme
 
-                 Read post author ->
-                     readView context post author
+                 LoadingCreate ->
+                     loadingView theme
 
-                 Peek post author ->
+                 Read post ->
+                     readView context post
+
+                 Peek post ->
                      peekView context post
 
-                 Edit post author ->
-                     editView context post author
+                 Edit post ->
+                     editView context post
 
                  Create post author ->
                      createView context post author
@@ -434,6 +470,7 @@ view ({ context, state } as model) =
     ]
 
 
+-- TODO: don't flicker
 loadingView : Theme -> List (Html Msg)
 loadingView theme =
     [ div
@@ -464,11 +501,14 @@ peekView general post =
     ]
 
 
-editView : Context -> Post Core Full -> Author -> List (Html Msg)
-editView general post author =
+editView : Context -> Post Core Full -> List (Html Msg)
+editView general post =
     let
         theme =
             Context.getTheme general
+
+        author =
+            Post.getAuthor post
     in
     [ sheet theme
         [ div
@@ -661,11 +701,11 @@ deleteView theme postUUID =
     ]
 
 
-readView : Context -> Post Core Full -> Author -> List (Html Msg)
-readView general post author =
+readView : Context -> Post Core Full -> List (Html Msg)
+readView context post =
     let
         theme =
-            Context.getTheme general
+            Context.getTheme context
 
         postStyle =
             Style.Post.style theme
@@ -679,11 +719,14 @@ readView general post author =
         body =
             Post.getBody post
 
+        author =
+            Post.getAuthor post
+
         fullscreen =
-            Context.getFullscreen general
+            Context.getFullscreen context
 
         myPost =
-            case Context.getUser general of
+            case Context.getUser context of
                 Nothing ->
                     False
 
@@ -700,7 +743,7 @@ readView general post author =
             [ authorLink author theme
             , divider theme
             , viewTitle theme title
-            , viewTags general post
+            , viewTags context post
             , filler
             , if myPost then
                 delete theme []
@@ -718,7 +761,7 @@ readView general post author =
               else
                 maximize theme []
             , favorite
-                general
+                context
                 post
                 []
             ]
@@ -745,8 +788,6 @@ viewTags general post =
 
         tags =
             Post.getTags post
-                |> List.map (\tagUUID -> Tag.find tagUUID (Context.tags general))
-                |> List.filterMap identity
     in
     div
         [ class "tags-container"
@@ -783,50 +824,36 @@ delete theme styles =
 
 
 favorite : Context -> Post Core f -> List Style -> Html Msg
-favorite general post styles =
+favorite context post styles =
     let
         theme =
-            Context.getTheme general
+            Context.getTheme context
 
-        maybeFav =
-            case Post.favorite post of
-                Just f ->
-                    Just f
+        isLiked =
+            Context.isPostLiked context post
 
-                Nothing ->
-                    case List.Extra.find (Post.compare post) (Context.postPreviews general) of
-                        Just p ->
-                            Post.favorite p
-
-                        Nothing ->
-                            Nothing
     in
-    case maybeFav of
-        Just fav ->
-            View.Svg.heart
-                [ SvgEvents.onClick <| Ctx <| TogglePost <| Post.toUUID post
-                , SvgAttributes.css
-                    (List.append
-                        [ svgStyle theme
-                        , marginRight (px 15)
-                        , fillIf fav Color.favorite
-                        , color <|
-                            if fav then
-                                Color.favorite
+    View.Svg.heart
+        [ SvgEvents.onClick <| Ctx <| TogglePost <| Post.getUUID post
+        , SvgAttributes.css
+            (List.append
+                [ svgStyle theme
+                , marginRight (px 15)
+                , fillIf isLiked Color.favorite
+                , color <|
+                    if isLiked then
+                        Color.favorite
 
-                            else
-                                Color.tertiaryFont <| theme
-                        , hover
-                            [ fillIf fav Color.favorite
-                            , color Color.favorite
-                            ]
-                        ]
-                        styles
-                    )
+                    else
+                        Color.tertiaryFont <| theme
+                , hover
+                    [ fillIf isLiked Color.favorite
+                    , color Color.favorite
+                    ]
                 ]
-
-        Nothing ->
-            text ""
+                styles
+            )
+        ]
 
 
 fillIf : Bool -> Color -> Style
@@ -918,7 +945,7 @@ authorLink : Author -> Theme -> Html Msg
 authorLink author theme =
     a
         [ class "author"
-        , href <| UUID.toPath "/author" (Author.uuid author)
+        , href <| UUID.toPath "/author" (Author.getUUID author)
         , css
             [ textDecoration none
             , marginLeft <| px 15

@@ -23,7 +23,7 @@ import Page.Redirect
 import Style.Color
 import Style.Font as Font
 import Style.Global
-import Url
+import Url exposing (Url)
 
 
 -- Model --
@@ -53,6 +53,7 @@ type Msg
     | DonateMsg Page.Donate.Msg
     | AboutMsg Page.About.Msg
     | ChangelogMsg Page.Changelog.Msg
+    | Ctx Context.Msg
 
 
 
@@ -65,22 +66,16 @@ init flags url key =
         route =
             Route.fromUrl url
 
-        ( general, generalCmd ) =
+        ( context, ctxCmd ) =
             Context.init key flags
 
         ( model, routeCmd ) =
-            changeRoute route <| Redirect general
+            changeRoute route <| Redirect context
 
         cmd =
             Cmd.batch
                 [ routeCmd
-                , Cmd.map
-                    (\m ->
-                        m
-                            |> ContextMsg
-                            |> Global
-                    )
-                    generalCmd
+                , Cmd.map Ctx ctxCmd
                 ]
     in
     ( model, cmd )
@@ -93,13 +88,17 @@ init flags url key =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        general =
+        context =
             toContext model
 
         key =
-            Context.key general
+            Context.getKey context
+
     in
     case (msg, model) of
+        ( Ctx ctxMsg, _ ) ->
+            update (fromContextMsg ctxMsg model) model
+
         ( LinkClicked urlRequest, _ ) ->
             case urlRequest of
                 Browser.Internal url ->
@@ -135,6 +134,16 @@ update msg model =
 
         _ ->
             ( model, Cmd.none )
+
+
+fromContextMsg : Context.Msg -> Model -> Msg
+fromContextMsg msg model =
+    case model of
+        Home _ ->
+            HomeMsg <| Page.Home.fromContextMsg msg
+
+        _ ->
+            Debug.todo "this is a problem, exhaustive pattern match"
 
 
 toPage : (msg -> Msg) -> (model -> Model) -> ( model, Cmd msg ) -> ( Model, Cmd Msg )
@@ -209,14 +218,16 @@ toContext page =
             g
 
 
+
+
 -- Subscriptions --
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Sub.map (ContextMsg >> Global) Context.networkSub
-        , Sub.map (ContextMsg >> Global) Context.fullscreenSub
+        [ Sub.map Ctx Context.networkSub
+        , Sub.map Ctx Context.fullscreenSub
         ]
 
 
@@ -234,11 +245,11 @@ view model =
 body : Model -> List (Html Msg)
 body model =
     let
-        general =
+        context =
             toContext model
 
         theme =
-            Context.theme general
+            Context.getTheme context
     in
     [ div
         [ id "app"
@@ -259,11 +270,11 @@ body model =
 viewPage : Model -> List (Html Msg)
 viewPage model =
     let
-        general =
+        context =
             toContext model
 
         problems =
-            Context.problems general
+            Context.getProblems context
 
         numProblems =
             List.length problems
@@ -280,39 +291,39 @@ viewPage model =
 
                 Donate donate ->
                     List.map
-                        (Html.Styled.map (Message.map DonateMsg))
+                        (Html.Styled.map DonateMsg)
                         (Page.Donate.view donate)
 
                 About about ->
                     List.map
-                        (Html.Styled.map (Message.map AboutMsg))
+                        (Html.Styled.map AboutMsg)
                         (Page.About.view about)
 
                 Home home ->
                     List.map
-                        (Html.Styled.map (Message.map HomeMsg))
+                        (Html.Styled.map HomeMsg)
                         (Page.Home.view home)
 
                 Login login ->
                     List.map
-                        (Html.Styled.map (Message.map LoginMsg))
+                        (Html.Styled.map LoginMsg)
                         (Page.Login.view login)
 
                 Post post ->
                     List.map
-                        (Html.Styled.map (Message.map PostMsg))
+                        (Html.Styled.map PostMsg)
                         (Page.Post.view post)
 
                 Changelog changelog ->
                     List.map
-                        (Html.Styled.map (Message.map ChangelogMsg))
+                        (Html.Styled.map ChangelogMsg)
                         (Page.Changelog.view changelog)
 
         -- Problems exist
         _ ->
             problems
                 |> Page.Problems.view
-                |> Html.Styled.map (\c -> Global <| ContextMsg c)
+                |> Html.Styled.map Ctx
                 |> List.singleton
 
 
@@ -327,6 +338,6 @@ main =
         , view = view
         , update = update
         , subscriptions = subscriptions
-        , onUrlChange = \u -> Global <| UrlChanged u
-        , onUrlRequest = \r -> Global <| LinkClicked r
+        , onUrlChange = \u -> UrlChanged u
+        , onUrlRequest = \r -> LinkClicked r
         }

@@ -2,6 +2,8 @@ module Data.Post exposing (Client, Core, Full, Post, Preview, getDate, getAuthor
 
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.UUID as UUID exposing (UUID)
+import Data.Tag as Tag exposing (Tag)
+import Data.Author as Author exposing (Author)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (custom, hardcoded, required)
 import Json.Encode as Encode exposing (Value)
@@ -72,8 +74,8 @@ type Preview
 type alias Internals =
     { title : String
     , description : String
-    , tags : List UUID
-    , author : UUID
+    , tags : List Tag
+    , author : Author
     , published : Bool
     }
 
@@ -117,7 +119,7 @@ mapBody transform post =
     mapFull (\c -> { c | body = transform c.body }) post
 
 
-getAuthor : Post l c -> UUID
+getAuthor : Post l c -> Author
 getAuthor post =
     accessInternals .author post
 
@@ -128,7 +130,7 @@ getDate post =
 
 
 
-getTags : Post l c -> List UUID
+getTags : Post l c -> List Tag
 getTags post =
     accessInternals .tags post
 
@@ -185,8 +187,8 @@ mapFull transform (Post l (Full full) i) =
     Post l (Full <| transform full) i
 
 
-empty : UUID -> Post Client Full
-empty userUUID =
+empty : Author -> Post Client Full
+empty author =
     Post
         Client
         (Full
@@ -196,7 +198,7 @@ empty userUUID =
         { title = ""
         , description = ""
         , tags = []
-        , author = userUUID
+        , author = author
         , published = False
         }
 
@@ -262,23 +264,27 @@ edit toMsg mode post =
 
 encodeInternalsHelper : Internals -> List ( String, Value )
 encodeInternalsHelper i =
-    [ ( "getTitle", Encode.string i.title )
-    , ( "getDescription", Encode.string i.description )
-    , ( "getTags", Encode.list UUID.encode i.tags )
-    , ( "getAuthor", UUID.encode i.author )
-    , ( "getPublished", Encode.bool i.published )
+    [ ( "title", Encode.string i.title )
+    , ( "description", Encode.string i.description )
+    , ( "tags", Encode.list (Tag.getUUID >> UUID.encode) i.tags )
+    , ( "author"
+      , i.author
+        |> Author.getUUID
+        |> UUID.encode
+      )
+    , ( "published", Encode.bool i.published )
     ]
 
 
 encodeFullHelper : FullInternals -> List ( String, Value )
 encodeFullHelper i =
-    [ ( "getBody", Markdown.encode i.body )
+    [ ( "body", Markdown.encode i.body )
     ]
 
 
 encodeCoreHelper : CoreInternals -> List ( String, Value )
 encodeCoreHelper i =
-    [ ( "getDate", Encode.int <| Time.posixToMillis i.date )
+    [ ( "date", Encode.int <| Time.posixToMillis i.date )
     , ( "uuid", UUID.encode i.uuid )
     ]
 
@@ -318,8 +324,8 @@ internalsDecoder =
     Decode.succeed Internals
         |> required "getTitle" Decode.string
         |> required "getDescription" Decode.string
-        |> required "getTags" (Decode.list UUID.decoder)
-        |> required "getAuthor" UUID.decoder
+        |> required "getTags" (Decode.list Tag.decoder)
+        |> required "getAuthor" Author.decoder
         |> required "getPublished" Decode.bool
 
 

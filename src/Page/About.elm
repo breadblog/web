@@ -17,9 +17,9 @@ type alias Model =
     { context : Context }
 
 
-init : Context -> Model
-init =
-    Model
+init : Context -> ( Model, Cmd Msg )
+init context =
+    ( Model context, Cmd.none )
 
 
 toContext : Model -> Context

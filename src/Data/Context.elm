@@ -1,4 +1,4 @@
-port module Data.Context exposing (Context, Msg(..), flagsDecoder, focus, getFullscreen, fullscreenSub, init, getKey, mapUser, getMode, networkSub, getProblems, pushProblem, getTheme, update, getUser, getVersion, isPostLiked)
+port module Data.Context exposing (Context, Msg(..), flagsDecoder, focus, getFullscreen, fullscreenSub, init, getKey, mapUser, getMode, networkSub, getProblems, pushProblem, getTheme, update, getUser, getVersion, isPostLiked, isLoggedIn)
 
 import Api
 import Browser.Navigation exposing (Key)
@@ -298,6 +298,16 @@ mapCache cache_ (Context general_) =
     ( Context { general_ | cache = cache_ }
     , setCache cache_
     )
+
+
+isLoggedIn : Context -> Bool
+isLoggedIn context =
+    case getUser context of
+        Just user ->
+            True
+
+        _ ->
+            False
 
 
 {- HTTP -}

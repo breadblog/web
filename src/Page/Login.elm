@@ -27,13 +27,15 @@ type alias Model =
     }
 
 
-init : Context -> Model
+init : Context -> ( Model, Cmd Msg )
 init context =
-    { context = context
+    ({ context = context
     , username = ""
     , password = Password.create ""
     , error = Nothing
-    }
+    },
+    Cmd.none
+    )
 
 
 toContext : Model -> Context

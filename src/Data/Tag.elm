@@ -1,4 +1,4 @@
-module Data.Tag exposing (Tag, compare, decoder, encode, find, name, toSource)
+module Data.Tag exposing (Tag, compare, decoder, encode, find, getUUID, getName, toSource)
 
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
@@ -27,9 +27,14 @@ type alias Internals =
 {- Accessors -}
 
 
-name : Tag -> String
-name (Tag internals) =
+getName : Tag -> String
+getName (Tag internals) =
     internals.name
+
+
+getUUID : Tag -> UUID
+getUUID (Tag internals) =
+    internals.uuid
 
 
 {- Util -}

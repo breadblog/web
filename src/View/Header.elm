@@ -450,7 +450,7 @@ logo shownScreens theme =
 tagsContent : Theme -> List Tag -> List (Html (Compound Msg))
 tagsContent theme =
     List.map
-        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (Global <| ContextMsg <| ToggleTag t))
+        (\t -> checkboxDropdownItem (Tag.getName t) theme (Tag.watched t) (Global <| ContextMsg <| ToggleTag t))
 
 
 
