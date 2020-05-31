@@ -2,8 +2,8 @@
   "name": "blog-web",
   "version": "0.0.39",
   "scripts": {
-    "test": "elm-test --compiler ./node_modules/.bin/elm",
-    "start": "cross-env WEBPACK_ENV=dev webpack-dev-server",
+    "test": "elm-test",
+    "start": "webpack-dev-server",
     "clean": "rimraf dist/",
     "analyse": "elm-analyse",
     "lint": "npm run lint:elm && npm run lint:js",

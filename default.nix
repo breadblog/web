@@ -26,6 +26,7 @@ in stdenv.mkDerivation {
     yarn
     yarnPkg
     elm2nix
+    elm-test
     elm-format
     elm-analyse
     nodejs-14_x
@@ -46,6 +47,7 @@ in stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out
+    yarn test
     webpack
     mv ./dist $out/www
   '';
