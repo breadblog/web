@@ -1,4 +1,4 @@
-{ pkgs ? import ./nix/nixpkgs.nix {}
+{ pkgs ? let nixpkgs = import ./nix/nixpkgs.nix {}; in import nixpkgs { config = {}; }
 , env ? "prod"
 }:
 

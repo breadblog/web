@@ -1,25 +1,50 @@
-name: tests
+name: Elm CI
 
-on: [push]
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  test:
+    runs-on: ubuntu-18.04
     strategy:
       matrix:
         node-version: [12.x]
-
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm install
-    - run: npm run build
-    - run: npm run lint
-    - run: npm test
+    - run: yarn install
+    - run: yarn run build
+    - run: yarn run lint
+    - run: yarn run test
       env:
         CI: true
+  nix-build:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: cachix/install-nix-action@v10
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - name: Build
+      run: make
+  bump:
+    runs-on: ubuntu-18.04
+    needs: [ test, nix-build ]
+    if: github.ref == 'refs/heads/master'
+    steps:
+    - uses: actions/checkout@v2
+    - name: bump commit
+      run: make bump
+    - name: commit
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "Commit Buddy"
+        git add VERSION
+        git commit -m "bump COMMIT to $(cat COMMIT)"
+        git tag v$(cat VERSION)

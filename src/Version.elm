@@ -1,4 +1,4 @@
--- TODO: this should be generated from package.json
+-- THIS IS GENERATED AUTOMATICALLY
 module Version exposing (current)
 
 import Data.Version exposing (Version)

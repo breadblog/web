@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+version_file=$1
+
+echo "version_file=${version_file}"
+
+# Modified from https://itnext.io/creating-a-github-action-to-tag-commits-2722f1560dec #
+
+# get latest tag (to limit messages)
+t=$(git describe --tags `git rev-list --tags --max-count=1`)
+
+cmd="cat ${version_file}"
+
+# get latest version
+version="$(cat "$version_file")"
+
+echo "got version ${version}"
+
+# if there are none, get all
+if [ -z "$t" ]
+then
+    log=$(git log --pretty=oneline)
+else
+    log=$(git log $t..HEAD --pretty=oneline)
+fi
+
+echo "updating version based on log:\n\n${log}"
+
+case "$log" in
+    *#major* ) new=$(semver bump major $version);;
+    *#patch* ) new=$(semver bump patch $version);;
+    * ) new=$(semver bump minor $version);;
+esac
+
+echo $new > $version_file
+
+echo "updated to version ${new}"

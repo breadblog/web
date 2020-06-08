@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+commit_file=$1
+
+echo "commit_file=$commit_file"
+
+commit=$(git rev-parse HEAD)
+
+echo $commit > $commit_file
+
+echo "successfully updated commit file to ${commit}"

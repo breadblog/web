@@ -1,6 +1,15 @@
-{ pkgs ? import ./nix/nixpkgs.nix {}
-, env ? "dev"
+{ env ? "dev",
+  isDev ? true
 }:
+
+let
+  nixpkgs =
+    import ./nix/nixpkgs.nix {};
+
+  pkgs =
+    import nixpkgs { config = {}; };
+
+in
 
 with pkgs;
 
@@ -15,16 +24,23 @@ mkShell {
   LOCALE_ARCHIVE_2_11 = "${glibcLocales}/lib/locale/locale-archive";
   LANG = "en_US.UTF-8";
 
-  buildInputs = with elmPackages; [
-    elm
-    yarn
-    nixops
-    elm2nix
-    elm-format
-    elm-analyse
-    nodejs-14_x
-    glibcLocales
-    elm-language-server
+  buildInputs = builtins.concatLists [
+    [
+      semver-tool
+      glibcLocales
+    ]
+    (if env == "ci" then [
+
+    ] else if env == "dev" then with elmPackages; [
+      elm
+      yarn
+      nixops
+      elm2nix
+      elm-format
+      elm-analyse
+      nodejs-14_x
+      elm-language-server
+    ] else [])
   ];
 }
 

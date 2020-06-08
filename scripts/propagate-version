@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+version_file=$1
+elm_version_file=$2
+package_json=$3
+
+echo "version_file=$version_file"
+echo "elm_version_file=$elm_version_file"
+echo "package_json=$package_json"
+
+version="$(cat "$version_file")"
+
+echo "updating to ${version}"
+
+cat > $elm_version_file << EndOfMessage
+-- THIS IS GENERATED AUTOMATICALLY
+module Version exposing (current)
+
+import Data.Version exposing (Version)
+
+
+current : Maybe Version
+current =
+    Data.Version.fromString "$version"
+EndOfMessage
+
+echo "created new Elm version file:\n\n$(cat "$elm_version_file")"
+
+sed -i -r "s/^(\s*\"version\": \")[0-9\.]+(\",{0,1})$/\1$version\2/" $package_json
+
+echo "updated package.json"
