@@ -19,7 +19,7 @@ type Route
 
 
 type PostType
-    = Ready UUID
+    = Read UUID
     | Create
     | Edit UUID
     | Delete UUID
@@ -38,7 +38,7 @@ urlParser =
 
         -- Posts
         , Parser.map (Post Create) (s "post" </> s "create")
-        , Parser.map (Post << Ready) (s "post" </> UUID.urlParser)
+        , Parser.map (Post << Read) (s "post" </> UUID.urlParser)
         , Parser.map (Post << Edit) (s "post" </> s "edit" </> UUID.urlParser)
         , Parser.map (Post << Delete) (s "post" </> s "delete" </> UUID.urlParser)
 
@@ -125,7 +125,7 @@ toName route =
                 Edit _ ->
                     "Edit Post"
 
-                Ready _ ->
+                Read _ ->
                     "Post"
 
         Changelog ->
@@ -165,7 +165,7 @@ toPath route =
                 Create ->
                     relative [ "/post/create" ] []
 
-                Ready postUUID ->
+                Read postUUID ->
                     relative [ UUID.toPath "/post" postUUID ] []
 
                 Edit postUUID ->

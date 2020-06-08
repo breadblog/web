@@ -1,11 +1,10 @@
 module Page.Problems exposing (view)
 
 import Css exposing (..)
-import Css.Transitions as Transitions exposing (transition)
-import Data.General exposing (Msg(..))
+import Data.Context exposing (Msg(..))
 import Data.Markdown as Markdown
 import Data.Problem as Problem exposing (Description(..), Problem)
-import Data.Theme as Theme exposing (Theme(..))
+import Data.Theme exposing (Theme(..))
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onClick)

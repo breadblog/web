@@ -2,7 +2,7 @@ module View.Footer exposing (Model, Msg, init, update, view)
 
 import Css exposing (..)
 import Css.Transitions as Transitions exposing (transition)
-import Data.General as General exposing (General)
+import Data.Context as Context exposing (Context)
 import Data.Route as Route exposing (Route(..))
 import Data.Theme exposing (Theme)
 import Data.Version exposing (Version)
@@ -12,7 +12,6 @@ import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
 import Style.Dimension as Dimension
 import Svg.Styled.Attributes
-import Update
 import View.Svg as Svg exposing (Icon)
 
 
@@ -64,7 +63,7 @@ type Msg
 -- Update --
 
 
-update : Msg -> General -> Model -> Update.Output Msg Model
+update : Msg -> Context -> Model -> Update.Output Msg Model
 update msg general model =
     let
         simpleOutput m =

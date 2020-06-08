@@ -1,10 +1,10 @@
-import '@js/highlight'
-import { Elm } from '@main'
-import { migrate } from '@js/migrations'
-import * as routes from '@js/routes'
-import '@font/firacode'
-import '@font/indieflower'
-import '@font/montserrat'
+import './highlight'
+import { Elm } from '../Main.elm'
+import { migrate } from './migrations'
+import * as routes from './routes'
+import '../fonts/firacode'
+import '../fonts/indieflower'
+import '../fonts/montserrat'
 
 const { localStorage } = window
 

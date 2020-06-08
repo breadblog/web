@@ -1,5 +1,7 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, mapWatched, mergeFromApi, name, username, uuid, watched)
+module Data.Author exposing (Author, bio, compare, decoder, encode, fetch, fromUUID, getUUID, name, username)
 
+import Api
+import Data.Mode as Mode exposing (Mode)
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
 import Data.Username as Username exposing (Username)
@@ -8,7 +10,6 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
-import Util
 
 
 
@@ -23,7 +24,6 @@ type alias Internals =
     { username : Username
     , name : String
     , bio : String
-    , watched : Bool
     , uuid : UUID
     }
 
@@ -37,16 +37,6 @@ username (Author internals) =
     internals.username
 
 
-mapWatched : (Bool -> Bool) -> Author -> Author
-mapWatched transform (Author internals) =
-    Author { internals | watched = transform internals.watched }
-
-
-watched : Author -> Bool
-watched (Author internals) =
-    internals.watched
-
-
 name : Author -> String
 name (Author internals) =
     internals.name
@@ -57,8 +47,8 @@ bio (Author internals) =
     internals.bio
 
 
-uuid : Author -> UUID
-uuid (Author internals) =
+getUUID : Author -> UUID
+getUUID (Author internals) =
     internals.uuid
 
 
@@ -86,7 +76,7 @@ fromUUID authorUUID list =
     List.Extra.find
         (\a ->
             a
-                |> uuid
+                |> getUUID
                 |> UUID.compare authorUUID
         )
         list
@@ -97,9 +87,16 @@ compare (Author a) (Author b) =
     a.uuid == b.uuid
 
 
-mergeFromApi : Author -> Author -> Author
-mergeFromApi (Author a) (Author b) =
-    Author { a | watched = b.watched }
+
+{- Http -}
+
+
+fetch : (Result Http.Error Author -> msg) -> Mode -> UUID -> Cmd msg
+fetch toMsg mode uuid =
+    Api.get
+        { url = Api.url mode <| UUID.toPath "/author/" uuid
+        , expect = Http.expectJson toMsg decoder
+        }
 
 
 
@@ -112,9 +109,6 @@ decoder =
         |> required "username" Username.decoder
         |> required "name" Decode.string
         |> required "bio" Decode.string
-        -- Default "watched" because core doesn't provide
-        -- don't hardcode because need to decode from cache
-        |> optional "watched" Decode.bool True
         |> required "uuid" UUID.decoder
         |> Decode.map Author
 
@@ -125,6 +119,5 @@ encode (Author internals) =
         [ ( "username", Username.encode internals.username )
         , ( "name", Encode.string internals.name )
         , ( "bio", Encode.string internals.bio )
-        , ( "watched", Encode.bool internals.watched )
         , ( "uuid", UUID.encode internals.uuid )
         ]

@@ -1,17 +1,15 @@
 module View.Header exposing (Model, Msg(..), init, update, view)
 
 import Css exposing (..)
-import Css.Media as Media exposing (only, screen, withMedia)
 import Css.Transitions as Transitions exposing (transition)
 import Data.Author as Author exposing (Author)
-import Data.General as General exposing (General, Msg(..))
+import Data.Context as Context exposing (Context, Msg(..))
 import Data.Route as Route exposing (Route(..))
-import Data.Search as Search exposing (Result, Source)
 import Data.Tag as Tag exposing (Tag)
 import Data.Theme as Theme exposing (Theme(..))
-import Data.Username as Username exposing (Username)
+import Data.Username as Username
 import Html.Styled exposing (..)
-import Html.Styled.Attributes as Attr exposing (..)
+import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (onBlur, onClick, onFocus, onInput)
 import Message exposing (Compound(..), Msg(..))
 import Style.Color as Color
@@ -20,7 +18,6 @@ import Style.Font as Font
 import Style.Screen as Screen exposing (Screen(..))
 import Style.Shadow as Shadow
 import Svg.Styled.Attributes
-import Update
 import View.Svg as Svg
 
 
@@ -108,7 +105,7 @@ type Msg
 {- Update -}
 
 
-update : Msg -> General -> Model -> Update.Output Msg Model
+update : Msg -> Context -> Model -> Update.Output Msg Model
 update msg general model =
     let
         simpleOutput m =
@@ -140,7 +137,7 @@ update msg general model =
 
                 cmd =
                     if updatedValue then
-                        General.focus "search"
+                        Context.focus "search"
 
                     else
                         Cmd.none
@@ -453,7 +450,7 @@ logo shownScreens theme =
 tagsContent : Theme -> List Tag -> List (Html (Compound Msg))
 tagsContent theme =
     List.map
-        (\t -> checkboxDropdownItem (Tag.name t) theme (Tag.watched t) (Global <| GeneralMsg <| ToggleTag t))
+        (\t -> checkboxDropdownItem (Tag.getName t) theme (Tag.watched t) (Global <| ContextMsg <| ToggleTag t))
 
 
 
@@ -463,7 +460,7 @@ tagsContent theme =
 authorsContent : Theme -> List Author -> List (Html (Compound Msg))
 authorsContent theme =
     List.map
-        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (Global <| GeneralMsg <| ToggleAuthor a))
+        (\a -> checkboxDropdownItem (Username.toString <| Author.username a) theme (Author.watched a) (Global <| ContextMsg <| ToggleAuthor a))
 
 
 
@@ -473,7 +470,7 @@ authorsContent theme =
 themeContent : Theme -> List (Html (Compound Msg))
 themeContent theme =
     List.map
-        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (Global <| GeneralMsg <| SetTheme t))
+        (\t -> dropdownItem theme (Theme.toString t) (t == theme) (Global <| ContextMsg <| SetTheme t))
         Theme.all
 
 

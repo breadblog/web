@@ -24,4 +24,4 @@ view theme attributes tag =
             ]
             attributes
         )
-        [ text <| Tag.name tag ]
+        [ text <| Tag.getName tag ]
