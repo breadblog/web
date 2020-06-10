@@ -7,7 +7,7 @@ import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
 import Platform exposing (Task)
-import Endpoint exposing (Endpoint)
+import Action exposing (Action)
 import Http
 import Data.Mode exposing (Mode)
 
@@ -78,9 +78,9 @@ compare (Tag a) (Tag b) =
 {- HTTP -}
 
 
-fetch : Mode -> Endpoint -> Task Http.Error Tag
+fetch : Mode -> Action -> Task Http.Error Tag
 fetch mode endpoint =
-    Endpoint.get { endpoint = endpoint, decoder = decoder, mode = mode }
+    Action.get { endpoint = endpoint, decoder = decoder, mode = mode }
 
 
 

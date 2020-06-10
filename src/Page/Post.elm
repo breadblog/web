@@ -1,6 +1,6 @@
 module Page.Post exposing (Model, Msg, fromContext, init, toContext, update, view)
 
-import Endpoint
+import Action
 import Browser.Navigation as Navigation
 import Css exposing (..)
 import Css.Transitions as Transitions exposing (transition)

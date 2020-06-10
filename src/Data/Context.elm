@@ -18,6 +18,7 @@ import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
 import Version
+import Action exposing (Action)
 
 
 
@@ -314,11 +315,11 @@ isLoggedIn context =
 {- HTTP -}
 
 
-tryLogout : Endpoint -> Cmd Msg
+tryLogout : Action -> Cmd Msg
 tryLogout endpoint =
     let
         url =
-            Api.url (getMode context) "/logout/"
+            Action.url (getMode context) "/logout/"
 
         expect =
             Http.expectWhatever OnLogout

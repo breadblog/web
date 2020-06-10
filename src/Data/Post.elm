@@ -3,7 +3,7 @@ module Data.Post exposing (Client, Core, Full, Post, Preview, empty, index, show
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.Mode exposing (Mode)
 import Data.UUID as UUID exposing (UUID)
-import Endpoint exposing (Endpoint)
+import Action exposing (Action)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (custom, required)
@@ -34,8 +34,8 @@ type Core
 type alias ICore =
     { uuid : UUID
     , date : Time.Posix
-    , author : Endpoint
-    , tags : List Endpoint
+    , author : Action
+    , tags : List Action
     }
 
 
@@ -133,7 +133,7 @@ getDate post =
     accessCore .date post
 
 
-getTags : Post Core c -> List Endpoint
+getTags : Post Core c -> List Action
 getTags post =
     accessCore .tags post
 
@@ -216,19 +216,19 @@ empty author =
 {- Http -}
 
 
-show : Mode -> Endpoint -> Task Http.Error (Post Core Full)
+show : Mode -> Action -> Task Http.Error (Post Core Full)
 show mode endpoint =
-    Endpoint.get { mode = mode, decoder = coreFullDecoder, endpoint = endpoint }
+    Action.get { mode = mode, decoder = coreFullDecoder, endpoint = endpoint }
 
 
-index : Mode -> Endpoint -> Task Http.Error (List (Post Core Preview))
+index : Mode -> Action -> Task Http.Error (List (Post Core Preview))
 index mode endpoint =
-    Endpoint.get { mode = mode, decoder = Decode.list corePreviewDecoder, endpoint = endpoint }
+    Action.get { mode = mode, decoder = Decode.list corePreviewDecoder, endpoint = endpoint }
 
 
-create : Mode -> Endpoint -> Post Client Full -> Task Http.Error (Post Core Full)
+create : Mode -> Action -> Post Client Full -> Task Http.Error (Post Core Full)
 create mode endpoint post =
-    Endpoint.create { mode = mode, endpoint = endpoint, body = encodeClientFull post |> Http.jsonBody, decoder = coreFullDecoder }
+    Action.create { mode = mode, endpoint = endpoint, body = encodeClientFull post |> Http.jsonBody, decoder = coreFullDecoder }
 
 
 
@@ -322,8 +322,8 @@ coreDecoder =
     Decode.succeed ICore
         |> required "uuid" UUID.decoder
         |> required "date" timeDecoder
-        |> required "author" Endpoint.decoder
-        |> required "tags" (Decode.list Endpoint.decoder)
+        |> required "author" Action.decoder
+        |> required "tags" (Decode.list Action.decoder)
         |> Decode.map Core
 
 

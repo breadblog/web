@@ -1,6 +1,6 @@
 module Page.Login exposing (Model, Msg, fromContext, init, toContext, update, view)
 
-import Endpoint
+import Action
 import Css exposing (..)
 import Data.Context as Context exposing (Context, Msg(..))
 import Data.Login

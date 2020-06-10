@@ -4,7 +4,7 @@ import Data.Mode as Mode exposing (Mode)
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
 import Data.Username as Username exposing (Username)
-import Endpoint exposing (Endpoint)
+import Action exposing (Action)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
@@ -92,14 +92,14 @@ compare (Author a) (Author b) =
 {- Http -}
 
 
-show : Mode -> Endpoint -> Task Http.Error Author
+show : Mode -> Action -> Task Http.Error Author
 show mode endpoint =
-    Endpoint.get { decoder = decoder, endpoint = endpoint, mode = mode }
+    Action.get { decoder = decoder, endpoint = endpoint, mode = mode }
 
 
-index : Mode -> Endpoint -> Task Http.Error (List Author)
+index : Mode -> Action -> Task Http.Error (List Author)
 index mode endpoint =
-    Endpoint.get { decoder = Decode.list decoder, endpoint = endpoint, mode = mode }
+    Action.get { decoder = Decode.list decoder, endpoint = endpoint, mode = mode }
 
 
 
