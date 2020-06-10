@@ -1,6 +1,7 @@
 module Page.Home exposing (Model, Msg, fromContext, fromContextMsg, init, toContext, update, view)
 
 import Css exposing (..)
+import Data.Author as Author exposing (Author)
 import Data.Context as Context exposing (Context)
 import Data.Post as Post exposing (Core, Post, Preview)
 import Data.Route as Route exposing (Route(..))
@@ -9,6 +10,7 @@ import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (class, css, href)
 import Html.Styled.Events exposing (onClick)
 import Page
+import Http
 
 
 
@@ -18,13 +20,15 @@ import Page
 type alias Model =
     { context : Context
     , posts : List (Post Core Preview)
+    , authors : List Author
     }
 
 
 init : Context -> ( Model, Cmd Msg )
 init context =
-    ( { posts = []
-      , context = context
+    ( { context = context
+      , posts = []
+      , authors = []
       }
     , Cmd.none
     )
@@ -51,6 +55,7 @@ fromContextMsg msg =
 
 type Msg
     = Ctx Context.Msg
+    | Fetch Http.Error (List (Post Core Preview), List Author)
 
 
 
@@ -66,6 +71,9 @@ update msg ({ context } as model) =
                     Context.update contextMsg context
             in
             ( { model | context = updatedContext }, Cmd.map Ctx cmd )
+
+        Fetch ->
+            Debug.todo "here"
 
 
 

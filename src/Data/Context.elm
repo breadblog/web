@@ -1,6 +1,5 @@
 port module Data.Context exposing (Context, Msg(..), flagsDecoder, focus, fullscreenSub, getFullscreen, getKey, getMode, getProblems, getTheme, getUser, getVersion, init, isLoggedIn, isPostLiked, mapUser, networkSub, pushProblem, update)
 
-import Api
 import Browser.Navigation exposing (Key)
 import Data.Config exposing (Config)
 import Data.Markdown as Markdown
@@ -129,7 +128,7 @@ defaultCache currentVersion =
 defaultFlags : Version -> Flags
 defaultFlags version_ =
     { cache = defaultCache version_
-    , mode = Production
+    , mode = Mode.default
     , network = Online
     , fullscreen = False
     }
@@ -304,7 +303,7 @@ mapCache cache_ (Context general_) =
 isLoggedIn : Context -> Bool
 isLoggedIn context =
     case getUser context of
-        Just user ->
+        Just _ ->
             True
 
         _ ->
@@ -315,8 +314,8 @@ isLoggedIn context =
 {- HTTP -}
 
 
-tryLogout : Context -> Cmd Msg
-tryLogout context =
+tryLogout : Endpoint -> Cmd Msg
+tryLogout endpoint =
     let
         url =
             Api.url (getMode context) "/logout/"
@@ -324,7 +323,7 @@ tryLogout context =
         expect =
             Http.expectWhatever OnLogout
     in
-    Api.post
+    Api.create
         { url = url
         , expect = expect
         , body = Http.emptyBody

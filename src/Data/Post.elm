@@ -1,15 +1,14 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, compare, delete, edit, empty, encodeFreshFull, encodeFull, encodePreview, fetch, fetchPreviews, fetchPrivate, fullDecoder, getAuthor, getBody, getDate, getDescription, getPublished, getTags, getTitle, getUUID, mapBody, mapDescription, mapPublished, mapTitle, previewDecoder, put, toPreview)
+module Data.Post exposing (Client, Core, Full, Post, Preview, empty, index, show, getUUID)
 
-import Api
-import Data.Author as Author exposing (Author)
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.Mode exposing (Mode)
-import Data.Tag as Tag exposing (Tag)
 import Data.UUID as UUID exposing (UUID)
+import Endpoint exposing (Endpoint)
 import Http
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (custom, hardcoded, required)
+import Json.Decode.Pipeline exposing (custom, required)
 import Json.Encode as Encode exposing (Value)
+import Task exposing (Task)
 import Time
 
 
@@ -29,12 +28,14 @@ type Post location content
 
 
 type Core
-    = Core CoreInternals
+    = Core ICore
 
 
-type alias CoreInternals =
+type alias ICore =
     { uuid : UUID
     , date : Time.Posix
+    , author : Endpoint
+    , tags : List Endpoint
     }
 
 
@@ -43,7 +44,13 @@ type alias CoreInternals =
 
 
 type Client
-    = Client
+    = Client IClient
+
+
+type alias IClient =
+    { author : UUID
+    , tags : List UUID
+    }
 
 
 
@@ -51,10 +58,10 @@ type Client
 
 
 type Full
-    = Full FullInternals
+    = Full IFull
 
 
-type alias FullInternals =
+type alias IFull =
     { body : Markdown
     }
 
@@ -64,7 +71,11 @@ type alias FullInternals =
 
 
 type Preview
-    = Preview
+    = Preview IPreview
+
+
+type alias IPreview =
+    {}
 
 
 
@@ -74,8 +85,6 @@ type Preview
 type alias Internals =
     { title : String
     , description : String
-    , tags : List Tag
-    , author : Author
     , published : Bool
     }
 
@@ -119,19 +128,14 @@ mapBody transform post =
     mapFull (\c -> { c | body = transform c.body }) post
 
 
-getAuthor : Post l c -> Author
-getAuthor post =
-    accessInternals .author post
-
-
 getDate : Post Core c -> Time.Posix
 getDate post =
     accessCore .date post
 
 
-getTags : Post l c -> List Tag
+getTags : Post Core c -> List Endpoint
 getTags post =
-    accessInternals .tags post
+    accessCore .tags post
 
 
 getPublished : Post l c -> Bool
@@ -150,7 +154,7 @@ mapPublished transform post =
 
 toPreview : Post l c -> Post l Preview
 toPreview (Post l _ i) =
-    Post l Preview i
+    Post l (Preview {}) i
 
 
 compare : Post Core x -> Post Core y -> Bool
@@ -169,35 +173,41 @@ mapInternals transform (Post l c internals) =
     Post l c <| transform internals
 
 
-accessCore : (CoreInternals -> a) -> Post Core c -> a
+accessCore : (ICore -> a) -> Post Core c -> a
 accessCore accessor (Post (Core core) _ _) =
     core
         |> accessor
 
 
-accessFull : (FullInternals -> a) -> Post l Full -> a
+accessFull : (IFull -> a) -> Post l Full -> a
 accessFull accessor (Post _ (Full full) _) =
     full
         |> accessor
 
+accessClient : (IClient -> a) -> Post Client c -> a
+accessClient accessor (Post (Client client) _ _) =
+    client |> accessor
 
-mapFull : (FullInternals -> FullInternals) -> Post l Full -> Post l Full
+
+mapFull : (IFull -> IFull) -> Post l Full -> Post l Full
 mapFull transform (Post l (Full full) i) =
     Post l (Full <| transform full) i
 
 
-empty : Author -> Post Client Full
+empty : UUID -> Post Client Full
 empty author =
     Post
-        Client
+        (Client
+            { author = author
+            , tags = []
+            }
+        )
         (Full
             { body = Markdown.create ""
             }
         )
         { title = ""
         , description = ""
-        , tags = []
-        , author = author
         , published = False
         }
 
@@ -206,116 +216,96 @@ empty author =
 {- Http -}
 
 
-fetch : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
-fetch toMsg mode uuid =
-    Api.get
-        { url = Api.url mode <| UUID.toPath "/post/public/" uuid
-        , expect = Http.expectJson toMsg fullDecoder
-        }
+show : Mode -> Endpoint -> Task Http.Error (Post Core Full)
+show mode endpoint =
+    Endpoint.get { mode = mode, decoder = coreFullDecoder, endpoint = endpoint }
 
 
-fetchPrivate : (Result Http.Error (Post Core Full) -> msg) -> Mode -> UUID -> Cmd msg
-fetchPrivate toMsg mode uuid =
-    Api.get
-        { url = Api.url mode <| UUID.toPath "/post/private/" uuid
-        , expect = Http.expectJson toMsg fullDecoder
-        }
+index : Mode -> Endpoint -> Task Http.Error (List (Post Core Preview))
+index mode endpoint =
+    Endpoint.get { mode = mode, decoder = Decode.list corePreviewDecoder, endpoint = endpoint }
 
 
-fetchPreviews : (Result Http.Error (List (Post Core Preview)) -> msg) -> Mode -> Int -> Cmd msg
-fetchPreviews toMsg mode page =
-    let
-        path =
-            "/post?start=" ++ String.fromInt page ++ "&count=" ++ String.fromInt Api.count
-    in
-    Api.get
-        { url = Api.url mode path
-        , expect = Http.expectJson toMsg <| Decode.list previewDecoder
-        }
-
-
-delete : (Result Http.Error () -> msg) -> Mode -> UUID -> Cmd msg
-delete toMsg mode uuid =
-    Api.delete
-        { url = Api.url mode <| UUID.toPath "/post/owner/" uuid
-        , expect = Http.expectWhatever toMsg
-        }
-
-
-put : (Result Http.Error (Post Core Full) -> msg) -> Mode -> Post Client Full -> Cmd msg
-put toMsg mode post =
-    Api.put
-        { url = Api.url mode "/post/private/"
-        , expect = Http.expectJson toMsg fullDecoder
-        , body = Http.jsonBody <| encodeFreshFull post
-        }
-
-
-edit : (Result Http.Error (Post Core Full) -> msg) -> Mode -> Post Core Full -> Cmd msg
-edit toMsg mode post =
-    Api.post
-        { url = Api.url mode "/post/private/"
-        , expect = Http.expectJson toMsg fullDecoder
-        , body = Http.jsonBody <| encodeFull post
-        }
+create : Mode -> Endpoint -> Post Client Full -> Task Http.Error (Post Core Full)
+create mode endpoint post =
+    Endpoint.create { mode = mode, endpoint = endpoint, body = encodeClientFull post |> Http.jsonBody, decoder = coreFullDecoder }
 
 
 
 {- Json -}
 
 
-encodeInternalsHelper : Internals -> List ( String, Value )
-encodeInternalsHelper i =
-    [ ( "title", Encode.string i.title )
-    , ( "description", Encode.string i.description )
-    , ( "tags", Encode.list (Tag.getUUID >> UUID.encode) i.tags )
-    , ( "author"
-      , i.author
-            |> Author.getUUID
-            |> UUID.encode
+encodeFull : Full -> List ( String, Value )
+encodeFull (Full full) =
+    [ ( "body", Markdown.encode full.body )
+    ]
+
+
+encodePreview : Preview -> List ( String, Value )
+encodePreview (Preview preview) =
+    []
+
+
+encodeCore : Core -> List ( String, Value )
+encodeCore (Core core) =
+    [ ( "date", Encode.int <| Time.posixToMillis core.date )
+    , ( "uuid", UUID.encode core.uuid )
+    ]
+
+
+encodeClient : Client -> List ( String, Value )
+encodeClient (Client client) =
+    [ ( "tags", Encode.list UUID.encode client.tags )
+    , ( "author" , UUID.encode client.author
       )
-    , ( "published", Encode.bool i.published )
     ]
 
 
-encodeFullHelper : FullInternals -> List ( String, Value )
-encodeFullHelper i =
-    [ ( "body", Markdown.encode i.body )
+encodeInternals : Internals -> List ( String, Value )
+encodeInternals internals =
+    [ ( "title", Encode.string internals.title )
+    , ( "description", Encode.string internals.description )
+    , ( "published", Encode.bool internals.published )
     ]
 
 
-encodeCoreHelper : CoreInternals -> List ( String, Value )
-encodeCoreHelper i =
-    [ ( "date", Encode.int <| Time.posixToMillis i.date )
-    , ( "uuid", UUID.encode i.uuid )
-    ]
-
-
-encodeFull : Post Core Full -> Value
-encodeFull (Post (Core coreInternals) (Full fullInternals) internals) =
+encodeCoreFull : Post Core Full -> Value
+encodeCoreFull (Post core full internals) =
     Encode.object
         ([]
-            |> (++) (encodeInternalsHelper internals)
-            |> (++) (encodeFullHelper fullInternals)
-            |> (++) (encodeCoreHelper coreInternals)
+            |> (++) (encodeInternals internals)
+            |> (++) (encodeCore core)
+            |> (++) (encodeFull full)
         )
 
 
-encodePreview : Post Core Preview -> Value
-encodePreview (Post (Core coreInternals) _ internals) =
+encodeClientFull : Post Client Full -> Value
+encodeClientFull (Post client full internals) =
     Encode.object
         ([]
-            |> (++) (encodeInternalsHelper internals)
-            |> (++) (encodeCoreHelper coreInternals)
+            |> (++) (encodeInternals internals)
+            |> (++) (encodeClient client)
+            |> (++) (encodeFull full)
         )
 
 
-encodeFreshFull : Post Client Full -> Value
-encodeFreshFull (Post _ (Full fullInternals) internals) =
+encodeCorePreview : Post Core Preview -> Value
+encodeCorePreview (Post core preview internals) =
     Encode.object
         ([]
-            |> (++) (encodeInternalsHelper internals)
-            |> (++) (encodeFullHelper fullInternals)
+            |> (++) (encodeInternals internals)
+            |> (++) (encodePreview preview)
+            |> (++) (encodeCore core)
+        )
+
+
+encodeClientPreview : Post Client Preview -> Value
+encodeClientPreview (Post client preview internals) =
+    Encode.object
+        ([]
+            |> (++) (encodeInternals internals)
+            |> (++) (encodeClient client)
+            |> (++) (encodePreview preview)
         )
 
 
@@ -324,24 +314,38 @@ internalsDecoder =
     Decode.succeed Internals
         |> required "getTitle" Decode.string
         |> required "getDescription" Decode.string
-        |> required "getTags" (Decode.list Tag.decoder)
-        |> required "getAuthor" Author.decoder
         |> required "getPublished" Decode.bool
 
 
-coreDecodeHelper : Decoder Core
-coreDecodeHelper =
-    Decode.succeed CoreInternals
+coreDecoder : Decoder Core
+coreDecoder =
+    Decode.succeed ICore
         |> required "uuid" UUID.decoder
-        |> required "getDate" timeDecoder
+        |> required "date" timeDecoder
+        |> required "author" Endpoint.decoder
+        |> required "tags" (Decode.list Endpoint.decoder)
         |> Decode.map Core
 
 
-fullDecodeHelper : Decoder Full
-fullDecodeHelper =
-    Decode.succeed FullInternals
+fullDecoder : Decoder Full
+fullDecoder =
+    Decode.succeed IFull
         |> required "getBody" Markdown.decoder
         |> Decode.map Full
+
+
+previewDecoder : Decoder Preview
+previewDecoder =
+    Decode.succeed IPreview
+        |> Decode.map Preview
+
+
+clientDecoder : Decoder Client
+clientDecoder =
+    Decode.succeed IClient
+        |> required "author" UUID.decoder
+        |> required "tags" (Decode.list UUID.decoder)
+        |> Decode.map Client
 
 
 timeDecoder : Decoder Time.Posix
@@ -353,17 +357,33 @@ timeDecoder =
             )
 
 
-previewDecoder : Decoder (Post Core Preview)
-previewDecoder =
+corePreviewDecoder : Decoder (Post Core Preview)
+corePreviewDecoder =
     Decode.succeed Post
-        |> custom coreDecodeHelper
-        |> hardcoded Preview
+        |> custom coreDecoder
+        |> custom previewDecoder
         |> custom internalsDecoder
 
 
-fullDecoder : Decoder (Post Core Full)
-fullDecoder =
+coreFullDecoder : Decoder (Post Core Full)
+coreFullDecoder =
     Decode.succeed Post
-        |> custom coreDecodeHelper
-        |> custom fullDecodeHelper
+        |> custom coreDecoder
+        |> custom fullDecoder
+        |> custom internalsDecoder
+
+
+clientPreviewDecoder : Decoder (Post Client Preview)
+clientPreviewDecoder =
+    Decode.succeed Post
+        |> custom clientDecoder
+        |> custom previewDecoder
+        |> custom internalsDecoder
+
+
+clientFullDecoder : Decoder (Post Client Full)
+clientFullDecoder =
+    Decode.succeed Post
+        |> custom clientDecoder
+        |> custom fullDecoder
         |> custom internalsDecoder

@@ -1,8 +1,9 @@
-import hljs from 'highlight.js/lib/highlight'
+import hljs, { registerLanguage } from 'highlight.js'
 import 'highlight.js/styles/gruvbox-dark'
 import javascript from 'highlight.js/lib/languages/javascript'
 import css from 'highlight.js/lib/languages/css'
 import elm from 'highlight.js/lib/languages/elm'
+import elixir from 'highlight.js/lib/languages/elixir'
 import go from 'highlight.js/lib/languages/go'
 import haskell from 'highlight.js/lib/languages/haskell'
 import scss from 'highlight.js/lib/languages/scss'
@@ -12,18 +13,19 @@ import json from 'highlight.js/lib/languages/json'
 import ini from 'highlight.js/lib/languages/ini'
 import xml from 'highlight.js/lib/languages/xml'
 
-hljs.registerLanguage('javascript', javascript)
-hljs.registerLanguage('css', css)
-hljs.registerLanguage('elm', elm)
-hljs.registerLanguage('go', go)
-hljs.registerLanguage('haskell', haskell)
-hljs.registerLanguage('scss', scss)
-hljs.registerLanguage('dockerfile', dockerfile)
-hljs.registerLanguage('sql', sql)
-hljs.registerLanguage('json', json)
-hljs.registerLanguage('ini', ini)
-hljs.registerLanguage('html', xml)
-hljs.registerLanguage('xml', xml)
+registerLanguage('javascript', javascript)
+registerLanguage('css', css)
+registerLanguage('elm', elm)
+registerLanguage('go', go)
+registerLanguage('elixir', elixir)
+registerLanguage('haskell', haskell)
+registerLanguage('scss', scss)
+registerLanguage('dockerfile', dockerfile)
+registerLanguage('sql', sql)
+registerLanguage('json', json)
+registerLanguage('ini', ini)
+registerLanguage('html', xml)
+registerLanguage('xml', xml)
 
 // simply adding "hljs" to window is enough to allow
 // elm-explorations/markdown to automatically highlight

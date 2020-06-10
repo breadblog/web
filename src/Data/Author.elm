@@ -1,15 +1,16 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, fetch, fromUUID, getUUID, name, username)
+module Data.Author exposing (Author, bio, compare, decoder, encode, show, index, fromUUID, getUUID, name, username)
 
-import Api
 import Data.Mode as Mode exposing (Mode)
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
 import Data.Username as Username exposing (Username)
+import Endpoint exposing (Endpoint)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
+import Platform exposing (Task)
 
 
 
@@ -91,12 +92,14 @@ compare (Author a) (Author b) =
 {- Http -}
 
 
-fetch : (Result Http.Error Author -> msg) -> Mode -> UUID -> Cmd msg
-fetch toMsg mode uuid =
-    Api.get
-        { url = Api.url mode <| UUID.toPath "/author/" uuid
-        , expect = Http.expectJson toMsg decoder
-        }
+show : Mode -> Endpoint -> Task Http.Error Author
+show mode endpoint =
+    Endpoint.get { decoder = decoder, endpoint = endpoint, mode = mode }
+
+
+index : Mode -> Endpoint -> Task Http.Error (List Author)
+index mode endpoint =
+    Endpoint.get { decoder = Decode.list decoder, endpoint = endpoint, mode = mode }
 
 
 

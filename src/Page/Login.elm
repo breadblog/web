@@ -1,6 +1,6 @@
 module Page.Login exposing (Model, Msg, fromContext, init, toContext, update, view)
 
-import Api
+import Endpoint
 import Css exposing (..)
 import Data.Context as Context exposing (Context, Msg(..))
 import Data.Login
@@ -123,7 +123,7 @@ attemptLogin { context, username, password } =
         mode =
             Context.getMode context
     in
-    Api.post
+    Api.create
         { expect = Http.expectJson OnLogin <| Data.Login.decodeResponse
         , body =
             Data.Login.Request username password

@@ -1,6 +1,6 @@
 module Page.Post exposing (Model, Msg, fromContext, init, toContext, update, view)
 
-import Api
+import Endpoint
 import Browser.Navigation as Navigation
 import Css exposing (..)
 import Css.Transitions as Transitions exposing (transition)
@@ -142,7 +142,8 @@ fetchPost context uuid =
             Post.fetchPrivate OnPost mode uuid
 
         Nothing ->
-            Post.fetch OnPost mode uuid
+            Debug.todo "fix"
+            -- Post.fetch OnPost mode uuid
 
 
 fromContext : Context -> Model -> Model
