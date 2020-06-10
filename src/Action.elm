@@ -1,4 +1,4 @@
-module Action exposing (Action, ActionSet, discover, perform, performGratis, performGratisWith, performWith)
+module Action exposing (Action, ActionSet, discover, perform, performGratis, performGratisWith, performWith, decoder)
 
 {-| An Action is a **verb** that can be performed to change application state
 and is driven by an outside force. Currently this driver is driven by a HATEOAS

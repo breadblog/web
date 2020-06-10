@@ -1,10 +1,9 @@
-module Data.Post exposing (Client, Core, Full, Post, Preview, empty, index, show, getUUID)
+module Data.Post exposing (Client, Core, Full, Post, Preview, empty, getUUID)
 
+import Action exposing (Action)
 import Data.Markdown as Markdown exposing (Markdown)
 import Data.Mode exposing (Mode)
 import Data.UUID as UUID exposing (UUID)
-import Action exposing (Action)
-import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (custom, required)
 import Json.Encode as Encode exposing (Value)
@@ -14,9 +13,6 @@ import Time
 
 
 {- Model -}
--- Represents a Post
--- location: where the post is stored (client/server)
--- content: what content post contains (preview/full)
 
 
 type Post location content
@@ -37,6 +33,15 @@ type alias ICore =
     , author : Action
     , tags : List Action
     }
+
+
+type alias TagAction =
+    { show : Maybe Action
+    }
+
+
+type alias AuthorAction =
+    { show : Maybe Action }
 
 
 
@@ -184,6 +189,7 @@ accessFull accessor (Post _ (Full full) _) =
     full
         |> accessor
 
+
 accessClient : (IClient -> a) -> Post Client c -> a
 accessClient accessor (Post (Client client) _ _) =
     client |> accessor
@@ -213,25 +219,6 @@ empty author =
 
 
 
-{- Http -}
-
-
-show : Mode -> Action -> Task Http.Error (Post Core Full)
-show mode endpoint =
-    Action.get { mode = mode, decoder = coreFullDecoder, endpoint = endpoint }
-
-
-index : Mode -> Action -> Task Http.Error (List (Post Core Preview))
-index mode endpoint =
-    Action.get { mode = mode, decoder = Decode.list corePreviewDecoder, endpoint = endpoint }
-
-
-create : Mode -> Action -> Post Client Full -> Task Http.Error (Post Core Full)
-create mode endpoint post =
-    Action.create { mode = mode, endpoint = endpoint, body = encodeClientFull post |> Http.jsonBody, decoder = coreFullDecoder }
-
-
-
 {- Json -}
 
 
@@ -256,7 +243,8 @@ encodeCore (Core core) =
 encodeClient : Client -> List ( String, Value )
 encodeClient (Client client) =
     [ ( "tags", Encode.list UUID.encode client.tags )
-    , ( "author" , UUID.encode client.author
+    , ( "author"
+      , UUID.encode client.author
       )
     ]
 
@@ -325,6 +313,17 @@ coreDecoder =
         |> required "author" Action.decoder
         |> required "tags" (Decode.list Action.decoder)
         |> Decode.map Core
+
+tagActionDecoder : Decoder TagAction
+tagActionDecoder =
+    Decode.succeed TagAction
+        |> required "show" (Decode.maybe Action.decoder)
+
+
+authorActionDecoder : Decoder AuthorAction
+authorActionDecoder =
+    Decode.succeed AuthorAction
+        |> required "show" (Decode.maybe Action.decoder)
 
 
 fullDecoder : Decoder Full

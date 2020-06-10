@@ -1,11 +1,10 @@
-module Data.Author exposing (Author, bio, compare, decoder, encode, show, index, fromUUID, getUUID, name, username)
+module Data.Author exposing (Author, bio, compare, decoder, encode, fromUUID, getUUID, index, name, show, username)
 
+import Action exposing (Action)
 import Data.Mode as Mode exposing (Mode)
 import Data.Search as Search exposing (Source)
 import Data.UUID as UUID exposing (UUID)
 import Data.Username as Username exposing (Username)
-import Action exposing (Action)
-import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode exposing (Value)
@@ -89,21 +88,10 @@ compare (Author a) (Author b) =
 
 
 
-{- Http -}
-
-
-show : Mode -> Action -> Task Http.Error Author
-show mode endpoint =
-    Action.get { decoder = decoder, endpoint = endpoint, mode = mode }
-
-
-index : Mode -> Action -> Task Http.Error (List Author)
-index mode endpoint =
-    Action.get { decoder = Decode.list decoder, endpoint = endpoint, mode = mode }
-
-
-
 {- JSON -}
+
+
+actionDecoder : Decoder AuthorAction
 
 
 decoder : Decoder Author
